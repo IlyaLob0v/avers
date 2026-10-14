@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Avers.Desktop",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/Avers.Desktop/bin/Debug/net10.0/Avers.Desktop.dll",
+      "cwd": "${workspaceFolder}",
+      "console": "internalConsole"
+    },
+    {
+      "name": "Avers.Server",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/Avers.Server/bin/Debug/net10.0/Avers.Server.dll",
+      "cwd": "${workspaceFolder}/src/Avers.Server",
+      "env": { "ASPNETCORE_ENVIRONMENT": "Development" }
+    }
+  ]
+}

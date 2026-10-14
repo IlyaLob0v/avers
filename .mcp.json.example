@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "postgres-stand": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-e", "DATABASE_URI", "crystaldba/postgres-mcp", "--access-mode=restricted"],
+      "env": { "DATABASE_URI": "postgresql://avers_ro:${PG_RO_PASSWORD}@localhost:5432/avers" }
+    },
+    "oracle-stand": {
+      "command": "sql",
+      "args": ["-mcp"],
+      "env": { "TNS_ADMIN": "${HOME}/oracle/network/admin" }
+    }
+  }
+}

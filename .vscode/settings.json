@@ -1,0 +1,27 @@
+{
+  "files.encoding": "utf8",
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "editor.formatOnSave": true,
+  "editor.rulers": [120],
+  "dotnet.defaultSolution": "Avers.sln",
+  "dotnet.server.useOmnisharp": false,
+  "[markdown]": {
+    "editor.formatOnSave": false,
+    "editor.wordWrap": "on"
+  },
+  "cSpell.language": "en,ru",
+  "cSpell.words": ["Аверс", "АДС", "ПЖРЭУ", "ПЖРУ", "СКПТ", "ППР", "ОЭК", "ТСЖ", "отводов", "радиомеханик", "Avalonia", "Npgsql", "ora2pg"],
+  "files.exclude": {
+    "**/bin": true,
+    "**/obj": true
+  },
+  "search.exclude": {
+    "**/bin": true,
+    "**/obj": true,
+    "db/legacy/dumps": true
+  },
+  "git.autofetch": true,
+  "git.inputValidation": true
+}

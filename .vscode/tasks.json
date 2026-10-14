@@ -1,0 +1,56 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["build", "Avers.sln", "-c", "Debug", "/property:GenerateFullPaths=true", "/consoleloggerparameters:NoSummary"],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "test",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["test", "Avers.sln", "--logger", "console;verbosity=normal"],
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "format",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["format", "Avers.sln"],
+      "problemMatcher": []
+    },
+    {
+      "label": "run: desktop",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["run", "--project", "src/Avers.Desktop/Avers.Desktop.csproj"],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "run: server",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["watch", "--project", "src/Avers.Server/Avers.Server.csproj"],
+      "isBackground": true,
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "publish: desktop win-x64",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["publish", "src/Avers.Desktop/Avers.Desktop.csproj", "-c", "Release", "-r", "win-x64", "--self-contained", "true", "-o", "publish/desktop"],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "db: up (PostgreSQL в Docker)",
+      "type": "shell",
+      "command": "docker compose -f db/docker-compose.yml up -d",
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+publish/
+artifacts/
+
+# Локальные данные и секреты
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+secrets/
+*.pfx
+*.pem
+
+# Выгрузки из боевых баз (персональные данные не коммитим)
+db/legacy/dumps/
+db/legacy/data/
+*.dmp
+*.dbf
+*.DBF
+
+# Claude Code: локальные настройки пользователя
+.claude/settings.local.json
+
+# ОС и редакторы
+.DS_Store
+Thumbs.db

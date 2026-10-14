@@ -1,0 +1,23 @@
+{
+  "recommendations": [
+    "ms-dotnettools.csdevkit",
+    "ms-dotnettools.csharp",
+    "avaloniateam.vscode-avalonia",
+    "ckolkman.vscode-postgres",
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-pg",
+    "oracle.sql-developer",
+    "eamodio.gitlens",
+    "github.vscode-pull-request-github",
+    "github.vscode-github-actions",
+    "editorconfig.editorconfig",
+    "davidanson.vscode-markdownlint",
+    "bierner.markdown-mermaid",
+    "hediet.vscode-drawio",
+    "streetsidesoftware.code-spell-checker",
+    "streetsidesoftware.code-spell-checker-russian",
+    "humao.rest-client",
+    "ms-azuretools.vscode-containers",
+    "anthropic.claude-code"
+  ]
+}
