@@ -1,0 +1,116 @@
+using Avers.Domain;
+using Microsoft.EntityFrameworkCore;
+
+namespace Avers.Data;
+
+public sealed class AversDbContext : DbContext
+{
+    public AversDbContext(DbContextOptions<AversDbContext> options) : base(options) { }
+
+    public DbSet<Organization> Organizations => Set<Organization>();
+    public DbSet<Street> Streets => Set<Street>();
+    public DbSet<House> Houses => Set<House>();
+    public DbSet<HouseScheme> HouseSchemes => Set<HouseScheme>();
+    public DbSet<PprEntry> PprEntries => Set<PprEntry>();
+    public DbSet<Subscriber> Subscribers => Set<Subscriber>();
+    public DbSet<YearPayment> Payments => Set<YearPayment>();
+    public DbSet<WorkTicket> Tickets => Set<WorkTicket>();
+    public DbSet<CourtCase> CourtCases => Set<CourtCase>();
+    public DbSet<UnifiedReceipt> UnifiedReceipts => Set<UnifiedReceipt>();
+    public DbSet<Mechanic> Mechanics => Set<Mechanic>();
+    public DbSet<Material> Materials => Set<Material>();
+    public DbSet<IntercomPanel> IntercomPanels => Set<IntercomPanel>();
+    public DbSet<IntercomTicket> IntercomTickets => Set<IntercomTicket>();
+    public DbSet<AppUser> Users => Set<AppUser>();
+
+    protected override void OnModelCreating(ModelBuilder model)
+    {
+        model.Entity<Organization>(e =>
+        {
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Branch).HasMaxLength(200);
+            e.Property(x => x.Address).HasMaxLength(300);
+            e.Property(x => x.Phones).HasMaxLength(200);
+        });
+
+        model.Entity<Street>(e =>
+        {
+            e.Property(x => x.Name).HasMaxLength(120).IsRequired();
+            e.HasIndex(x => x.Name).IsUnique();
+        });
+
+        model.Entity<House>(e =>
+        {
+            e.Property(x => x.Number).HasMaxLength(20).IsRequired();
+            e.Property(x => x.PzhreuIndex).HasMaxLength(16);
+            e.Property(x => x.PzhreuAccount).HasMaxLength(32);
+            e.Property(x => x.Zone).HasMaxLength(80);
+            e.HasIndex(x => new { x.StreetId, x.Number }).IsUnique();
+            e.HasIndex(x => x.PzhreuAccount);
+            e.Ignore(x => x.AddressLine);
+        });
+
+        model.Entity<Subscriber>(e =>
+        {
+            e.Property(x => x.LastName).HasMaxLength(80).IsRequired();
+            e.Property(x => x.FirstName).HasMaxLength(80);
+            e.Property(x => x.Patronymic).HasMaxLength(80);
+            e.Property(x => x.Account).HasMaxLength(32).IsRequired();
+            e.Property(x => x.InnerCode).HasMaxLength(32).IsRequired();
+            e.Property(x => x.Phone).HasMaxLength(40);
+            e.Property(x => x.Apartment).HasMaxLength(16);
+            e.Property(x => x.Section).HasMaxLength(8);
+            e.Property(x => x.PzhreuIndex).HasMaxLength(16);
+            e.Property(x => x.PzhreuAccount).HasMaxLength(40);
+            e.HasIndex(x => x.Account).IsUnique();
+            e.HasIndex(x => x.InnerCode);
+            e.HasIndex(x => x.LastName);
+            e.Ignore(x => x.FullName);
+            e.Ignore(x => x.ShortName);
+        });
+
+        model.Entity<YearPayment>(e =>
+        {
+            e.Property(x => x.Tariff).HasPrecision(12, 2);
+            e.Property(x => x.Amount).HasPrecision(12, 2);
+            e.Property(x => x.Source).HasMaxLength(40);
+            e.HasIndex(x => new { x.SubscriberId, x.Year, x.Month }).IsUnique();
+        });
+
+        model.Entity<WorkTicket>(e =>
+        {
+            e.Property(x => x.Fault).HasMaxLength(500);
+            e.Property(x => x.WorkDone).HasMaxLength(500);
+            e.Property(x => x.Mechanic).HasMaxLength(120);
+            e.HasIndex(x => x.Number).IsUnique();
+            e.HasIndex(x => x.Date);
+            e.Ignore(x => x.StatusLabel);
+        });
+
+        model.Entity<CourtCase>(e =>
+        {
+            e.Property(x => x.Amount).HasPrecision(12, 2);
+            e.Property(x => x.DelaAversId).HasMaxLength(40);
+            e.Property(x => x.OrderNumber).HasMaxLength(40);
+        });
+
+        model.Entity<UnifiedReceipt>(e =>
+        {
+            e.Property(x => x.Amount).HasPrecision(12, 2);
+            e.Property(x => x.Paid).HasPrecision(12, 2);
+            e.Property(x => x.NOs).HasMaxLength(20);
+            e.Property(x => x.NKass).HasMaxLength(10);
+            e.Property(x => x.NOper).HasMaxLength(20);
+            e.Property(x => x.NKvit).HasMaxLength(20);
+        });
+
+        model.Entity<AppUser>(e =>
+        {
+            e.Property(x => x.Login).HasMaxLength(40).IsRequired();
+            e.HasIndex(x => x.Login).IsUnique();
+        });
+
+        model.Entity<Mechanic>().Property(x => x.FullName).HasMaxLength(120).IsRequired();
+        model.Entity<Material>().Property(x => x.Name).HasMaxLength(200).IsRequired();
+    }
+}

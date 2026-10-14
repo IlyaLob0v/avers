@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Avers.Desktop.ViewModels"
+             x:Class="Avers.Desktop.Views.PrintView"
+             x:DataType="vm:MainViewModel">
+  <Border Background="#2F6FB4">
+    <Border Width="400" HorizontalAlignment="Center" VerticalAlignment="Center" Background="White" BorderBrush="#0B4A86" BorderThickness="1">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Text="Квитанция на оплату ТО СКПТ" Background="#0B5CAB" Foreground="White" Padding="12,8" FontWeight="SemiBold" />
+        <StackPanel Margin="16" Spacing="6">
+          <TextBlock HorizontalAlignment="Center" Classes="hint" Text="{Binding HouseCaption}" />
+          <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+            <TextBlock Text="Плательщик" /><TextBlock Grid.Column="1" Text="{Binding SelectedSubscriber.FullName}" />
+            <TextBlock Grid.Row="1" Text="Лиц. счёт" /><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedSubscriber.Account}" />
+            <TextBlock Grid.Row="2" Text="Индекс" /><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedSubscriber.PzhreuIndex}" />
+            <TextBlock Grid.Row="3" Text="Договор" /><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ContractDateText}" />
+            <TextBlock Grid.Row="4" Text="Период" /><TextBlock Grid.Row="4" Grid.Column="1" Text="июль 2026" />
+            <TextBlock Grid.Row="5" Text="Сумма" /><TextBlock Grid.Row="5" Grid.Column="1" Text="95,00 ₽" />
+            <TextBlock Grid.Row="6" Text="Дата оплаты" /><TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding LastPayCell}" />
+          </Grid>
+          <TextBlock Classes="hint" TextWrapping="Wrap" Text="Печать квитанции выбранной квартиры. Лицевой счёт — с датой оплаты или без." />
+          <Button Classes="primary" HorizontalAlignment="Right" Content="Печать" Command="{Binding SavedCommand}" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+  </Border>
+</UserControl>

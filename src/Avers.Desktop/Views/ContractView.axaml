@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Avers.Desktop.ViewModels"
+             xmlns:d="using:Avers.Domain"
+             x:Class="Avers.Desktop.Views.ContractView"
+             x:DataType="vm:MainViewModel">
+  <StackPanel Margin="12">
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <TextBlock Text="Владелец" VerticalAlignment="Center" />
+      <TextBox Width="240" Classes="cell" Text="{Binding SelectedHouse.Organization.Name, Mode=OneWay}" IsReadOnly="True" />
+      <TextBlock Text="Дом" VerticalAlignment="Center" />
+      <TextBox Width="200" Classes="cell" Text="{Binding HouseCaption, Mode=OneWay}" IsReadOnly="True" />
+      <CheckBox Content="Только действующие" IsChecked="{Binding OnlyActiveContracts}" />
+      <TextBlock Text="Дата" VerticalAlignment="Center" />
+      <TextBox Width="100" Classes="cell" Text="{Binding WorkDateText, Mode=OneWay}" IsReadOnly="True" />
+    </StackPanel>
+    <DataGrid Margin="0,10,0,0" Height="320" ItemsSource="{Binding Contracts}" SelectedItem="{Binding SelectedSubscriber}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Секц" Binding="{Binding Section}" Width="60" />
+        <DataGridTextColumn Header="Кв" Binding="{Binding Apartment}" Width="50" />
+        <DataGridTextColumn Header="Фамилия И.О. полностью" Binding="{Binding FullName}" Width="240" />
+        <DataGridTextColumn Header="Заключен" Binding="{Binding ContractDate}" Width="110" />
+        <DataGridTextColumn Header="Расторгнут" Binding="{Binding ContractTerminated}" Width="110" />
+        <DataGridTextColumn Header="Примечания по договору" Binding="{Binding Notes}" Width="280" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+      <Button Content="Новый договор" Command="{Binding SavedCommand}" />
+      <Button Content="Править" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Subscriber}" />
+      <Button Content="Расторгнуть" Command="{Binding SavedCommand}" />
+      <Button Content="Печатать реестр" Command="{Binding SavedCommand}" />
+    </StackPanel>
+  </StackPanel>
+</UserControl>

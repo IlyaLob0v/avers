@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Avers.Desktop.ViewModels"
+             xmlns:d="using:Avers.Domain"
+             x:Class="Avers.Desktop.Views.AntenInfoView"
+             x:DataType="vm:MainViewModel">
+  <StackPanel Margin="12">
+    <Grid ColumnDefinitions="320,*">
+      <Border Classes="card">
+        <StackPanel>
+          <TextBlock Classes="legend" Text="Дом" />
+          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+            <TextBlock Classes="label" Text="Улица" /><TextBox Grid.Column="1" Classes="cell" Text="{Binding SelectedHouse.Street.Name, Mode=OneWay}" IsReadOnly="True"/>
+            <TextBlock Grid.Row="1" Classes="label" Text="Дом" /><TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding SelectedHouse.Number, Mode=OneWay}" IsReadOnly="True"/>
+            <TextBlock Grid.Row="2" Classes="label" Text="Индекс" /><TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding SelectedHouse.PzhreuIndex}"/>
+            <TextBlock Grid.Row="3" Classes="label" Text="Счёт" /><TextBox Grid.Row="3" Grid.Column="1" Classes="cell" Text="{Binding SelectedHouse.PzhreuAccount}"/>
+            <TextBlock Grid.Row="4" Classes="label" Text="Этажей" /><TextBox Grid.Row="4" Grid.Column="1" Classes="cell" Text="{Binding SelectedHouse.Floors, Mode=OneWay}" IsReadOnly="True"/>
+            <TextBlock Grid.Row="5" Classes="label" Text="Подъездов" /><TextBox Grid.Row="5" Grid.Column="1" Classes="cell" Text="{Binding SelectedHouse.Entrances, Mode=OneWay}" IsReadOnly="True"/>
+            <TextBlock Grid.Row="6" Classes="label" Text="Стояков" /><TextBox Grid.Row="6" Grid.Column="1" Classes="cell" Text="{Binding SelectedHouse.Risers, Mode=OneWay}" IsReadOnly="True"/>
+            <TextBlock Grid.Row="7" Classes="label" Text="Квартир" /><TextBox Grid.Row="7" Grid.Column="1" Classes="cell" Text="{Binding SelectedHouse.Apartments, Mode=OneWay}" IsReadOnly="True"/>
+          </Grid>
+        </StackPanel>
+      </Border>
+      <Border Classes="card">
+        <StackPanel>
+          <TextBlock Classes="legend" Text="Оборудование СКПТ" />
+          <TextBox Classes="cell" Height="80" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding SelectedHouse.Antennas}" />
+          <TextBlock Classes="hint" Margin="0,6,0,0" Text="{Binding SelectedHouse.AerialCables}" TextWrapping="Wrap" />
+          <TextBlock Classes="hint" Text="{Binding SelectedHouse.Amplifiers}" TextWrapping="Wrap" />
+          <TextBlock Classes="hint" Text="{Binding SelectedHouse.TechFloorKey}" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+    </Grid>
+    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+      <Button Classes="primary" Content="Открыть паспорт дома" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Anten}" />
+      <Button Content="Схема СКПТ" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Scheme}" />
+    </StackPanel>
+  </StackPanel>
+</UserControl>

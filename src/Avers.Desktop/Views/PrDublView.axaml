@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Avers.Desktop.ViewModels"
+             x:Class="Avers.Desktop.Views.PrDublView"
+             x:DataType="vm:MainViewModel">
+  <StackPanel Margin="12">
+    <Grid ColumnDefinitions="*,*,*,*">
+      <StackPanel><TextBlock Classes="hint" Text="Вн. код"/><TextBox Classes="cell" Text="{Binding SelectedSubscriber.InnerCode, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
+      <StackPanel Grid.Column="1"><TextBlock Classes="hint" Text="Индекс ПЖРУ"/><TextBox Classes="cell" Text="{Binding SelectedSubscriber.PzhreuIndex, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
+      <StackPanel Grid.Column="2"><TextBlock Classes="hint" Text="Лиц. счёт"/><TextBox Classes="cell" Text="{Binding SelectedSubscriber.Account, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
+      <StackPanel Grid.Column="3"><TextBlock Classes="hint" Text="Период"/><TextBox Classes="cell" Text="За июль 2026" IsReadOnly="True"/></StackPanel>
+    </Grid>
+    <DataGrid Margin="0,10,0,0" Height="280" ItemsSource="{Binding Receipts}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Вн. код" Binding="{Binding InnerCode}" Width="90" />
+        <DataGridTextColumn Header="Индекс" Binding="{Binding PzhreuIndex}" Width="80" />
+        <DataGridTextColumn Header="Лиц. счёт" Binding="{Binding Account}" Width="100" />
+        <DataGridTextColumn Header="На момент" Binding="{Binding Moment}" Width="110" />
+        <DataGridTextColumn Header="Сумма" Binding="{Binding Amount}" Width="80" />
+        <DataGridTextColumn Header="Оплачено" Binding="{Binding Paid}" Width="80" />
+        <DataGridTextColumn Header="N_OS" Binding="{Binding NOs}" Width="70" />
+        <DataGridTextColumn Header="N_KASS" Binding="{Binding NKass}" Width="70" />
+        <DataGridTextColumn Header="N_OPER" Binding="{Binding NOper}" Width="80" />
+        <DataGridTextColumn Header="N_КВИТ" Binding="{Binding NKvit}" Width="90" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </StackPanel>
+</UserControl>

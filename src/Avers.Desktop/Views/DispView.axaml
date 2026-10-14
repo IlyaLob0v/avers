@@ -1,0 +1,100 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Avers.Desktop.ViewModels"
+             xmlns:d="using:Avers.Domain"
+             x:Class="Avers.Desktop.Views.DispView"
+             x:DataType="vm:MainViewModel">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Background="#D4EAFB" BorderBrush="#9EC0DE" BorderThickness="0,0,0,1" Padding="8,4">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Text="Рабочая дата" VerticalAlignment="Center" />
+        <TextBox Width="100" Classes="cell" Text="{Binding WorkDateText, Mode=OneWay}" IsReadOnly="True" />
+        <TextBlock Text="Смена" VerticalAlignment="Center" />
+        <TextBox Width="40" Classes="cell" Text="1" IsReadOnly="True" />
+        <TextBlock Text="Оператор" VerticalAlignment="Center" />
+        <TextBox Width="150" Classes="cell" Text="{Binding User.DisplayName, Mode=OneWay}" IsReadOnly="True" />
+        <Button Classes="primary" Content="Новая" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Ticket}" />
+        <Button Content="Изменить" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Ticket}" />
+        <Button Content="Паспорт дома" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Anten}" />
+      </StackPanel>
+    </Border>
+    <ScrollViewer>
+      <StackPanel Margin="10">
+        <Grid ColumnDefinitions="200,*" Height="150" Margin="0,0,0,8">
+          <ListBox Classes="streets" ItemsSource="{Binding Streets}" SelectedItem="{Binding SelectedStreet}">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="d:Street">
+                <TextBlock Text="{Binding Name}" Padding="4,2" />
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <DataGrid Grid.Column="1" Margin="8,0,0,0" ItemsSource="{Binding HousesOnStreet}" SelectedItem="{Binding SelectedHouse}" AutoGenerateColumns="False" IsReadOnly="True">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Дом" Binding="{Binding Number}" Width="70" />
+              <DataGridTextColumn Header="Индекс" Binding="{Binding PzhreuIndex}" Width="80" />
+              <DataGridTextColumn Header="Счёт" Binding="{Binding PzhreuAccount}" Width="100" />
+              <DataGridTextColumn Header="Под." Binding="{Binding Entrances}" Width="50" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </Grid>
+        <Border Classes="warn" IsVisible="{Binding HasFault}">
+          <TextBlock Text="{Binding FaultBanner}" TextWrapping="Wrap" Foreground="#5A3B00" />
+        </Border>
+        <Border Classes="card">
+          <StackPanel>
+            <TextBlock Classes="legend" Text="Текущая заявка" />
+            <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto">
+              <StackPanel><TextBlock Classes="hint" Text="№"/><TextBox Classes="cell" Text="{Binding SelectedTicket.Number, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
+              <StackPanel Grid.Column="1"><TextBlock Classes="hint" Text="Время"/><TextBox Classes="cell" Text="{Binding SelectedTicket.Time, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
+              <StackPanel Grid.Column="2"><TextBlock Classes="hint" Text="Секц / кв"/><TextBox Classes="cell" Text="{Binding HouseAptLine, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
+              <StackPanel Grid.Column="3"><TextBlock Classes="hint" Text="Телефон"/><TextBox Classes="cell" Text="{Binding SelectedSubscriber.Phone}"/></StackPanel>
+              <StackPanel Grid.Row="1"><TextBlock Classes="hint" Text="ФИО"/><TextBox Classes="cell" Text="{Binding SelectedSubscriber.FullName, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
+              <StackPanel Grid.Row="1" Grid.Column="1"><TextBlock Classes="hint" Text="Лиц. счёт"/><TextBox Classes="cell" Text="{Binding SelectedSubscriber.Account}" IsReadOnly="True"/></StackPanel>
+              <StackPanel Grid.Row="1" Grid.Column="2"><TextBlock Classes="hint" Text="Вн. код"/><TextBox Classes="cell" Text="{Binding SelectedSubscriber.InnerCode}" IsReadOnly="True"/></StackPanel>
+              <StackPanel Grid.Row="1" Grid.Column="3"><TextBlock Classes="hint" Text="Тип"/><TextBox Classes="cell" Text="Антенна / СКПТ" IsReadOnly="True"/></StackPanel>
+            </Grid>
+            <TextBlock Classes="hint" Margin="0,6,0,2" Text="Характер неисправности" />
+            <TextBox Classes="cell" Height="48" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding TicketFault}" />
+            <Grid ColumnDefinitions="*,*" Margin="0,6,0,0">
+              <StackPanel><TextBlock Classes="hint" Text="Радиомеханик"/><TextBox Classes="cell" Text="{Binding TicketMechanic}"/></StackPanel>
+              <StackPanel Grid.Column="1"><TextBlock Classes="hint" Text="Вводы / отводы"/><TextBox Classes="cell" Text="{Binding SelectedTicket.RisersNote}"/></StackPanel>
+            </Grid>
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+              <Button Classes="primary" Content="Принять заявку" Command="{Binding AcceptTicketCommand}" />
+              <Button Content="Изменить…" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Ticket}" />
+              <Button Content="Печать наряд-заказа" Command="{Binding SavedCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <Border Classes="card">
+          <StackPanel>
+            <TextBlock Classes="legend" Text="Журнал заявок" />
+            <CheckBox Content="Все заявки (не только текущий дом)" IsChecked="{Binding AllTickets}" />
+            <DataGrid Height="180" ItemsSource="{Binding Tickets}" SelectedItem="{Binding SelectedTicket}" AutoGenerateColumns="False" IsReadOnly="True">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="№" Binding="{Binding Number}" Width="60" />
+                <DataGridTextColumn Header="Время" Binding="{Binding Time}" Width="70" />
+                <DataGridTextColumn Header="Улица" Binding="{Binding House.Street.Name}" Width="120" />
+                <DataGridTextColumn Header="Дом" Binding="{Binding House.Number}" Width="60" />
+                <DataGridTextColumn Header="Кв" Binding="{Binding Apartment}" Width="50" />
+                <DataGridTextColumn Header="ФИО" Binding="{Binding Subscriber.ShortName}" Width="140" />
+                <DataGridTextColumn Header="Неисправность" Binding="{Binding Fault}" Width="260" />
+                <DataGridTextColumn Header="Механик" Binding="{Binding Mechanic}" Width="120" />
+                <DataGridTextColumn Header="Выполн." Binding="{Binding StatusLabel}" Width="80" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </StackPanel>
+        </Border>
+        <Border Classes="card">
+          <StackPanel>
+            <TextBlock Classes="legend" Text="Выгрузка для ОЭК" />
+            <TextBlock Classes="hint" Text="Заявки, отработанные за дату. Если принято больше, чем выполнено — список не выводится." />
+            <Border Classes="warn" Margin="0,6,0,0">
+              <TextBlock Text="{Binding OekWarning}" TextWrapping="Wrap" Foreground="#5A3B00" />
+            </Border>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

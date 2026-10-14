@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Avers.Desktop.ViewModels"
+             xmlns:d="using:Avers.Domain"
+             x:Class="Avers.Desktop.Views.TicketView"
+             x:DataType="vm:MainViewModel">
+  <StackPanel Margin="16" MaxWidth="900">
+    <Border Classes="card">
+      <StackPanel>
+        <Grid ColumnDefinitions="*,*">
+          <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto">
+            <TextBlock Classes="label" Text="Адрес" />
+            <TextBox Grid.Column="1" Classes="cell" Text="{Binding HouseCaption, Mode=OneWay}" IsReadOnly="True" />
+            <TextBlock Grid.Row="1" Classes="label" Text="Заявитель" />
+            <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.FullName, Mode=OneWay}" IsReadOnly="True" />
+            <TextBlock Grid.Row="2" Classes="label" Text="Телефон" />
+            <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.Phone}" />
+          </Grid>
+          <Grid Grid.Column="1" ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto">
+            <TextBlock Classes="label" Text="Исполнитель" />
+            <TextBox Grid.Column="1" Classes="cell" Text="{Binding TicketMechanic}" />
+            <TextBlock Grid.Row="1" Classes="label" Text="Лиц. счёт" />
+            <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.Account, Mode=OneWay}" IsReadOnly="True" />
+            <TextBlock Grid.Row="2" Classes="label" Text="Индекс" />
+            <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.PzhreuIndex, Mode=OneWay}" IsReadOnly="True" />
+          </Grid>
+        </Grid>
+        <TextBlock Classes="hint" Margin="0,8,0,2" Text="Описание неисправности" />
+        <TextBox Classes="cell" Height="64" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding TicketFault}" />
+        <TextBlock Classes="hint" Margin="0,8,0,2" Text="Что произведено (как в наряд-заказе)" />
+        <TextBox Classes="cell" Height="56" TextWrapping="Wrap" AcceptsReturn="True" Watermark="Заполняет диспетчерская служба после отчёта радиомеханика." Text="{Binding TicketWork}" />
+        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+          <Button Classes="primary" Content="Сохранить" Command="{Binding SaveTicketCommand}" />
+          <Button Content="Закрыть" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Disp}" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

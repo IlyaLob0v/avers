@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Avers.Desktop.ViewModels"
+             xmlns:d="using:Avers.Domain"
+             x:Class="Avers.Desktop.Views.ReaderView"
+             x:DataType="vm:MainViewModel">
+  <StackPanel Margin="16">
+    <TextBlock Classes="hint" TextWrapping="Wrap" Text="Радиомеханик входит с правом читателя. Улица и номер дома. Схема на экране, выгрузка файла недоступна." />
+    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10,0,10">
+      <TextBlock Text="Улица" VerticalAlignment="Center" />
+      <ComboBox Width="200" Classes="cell" ItemsSource="{Binding Streets}" SelectedItem="{Binding SelectedStreet}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="d:Street">
+            <TextBlock Text="{Binding Name}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+      <TextBlock Text="Дом" VerticalAlignment="Center" />
+      <ComboBox Width="80" Classes="cell" ItemsSource="{Binding HousesOnStreet}" SelectedItem="{Binding SelectedHouse}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="d:House">
+            <TextBlock Text="{Binding Number}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+    </StackPanel>
+    <Grid ColumnDefinitions="*,*">
+      <Border Classes="card">
+        <StackPanel>
+          <TextBlock Classes="legend" Text="Организация" />
+          <TextBlock Text="{Binding SelectedHouse.Organization.Name}" />
+          <TextBlock Text="{Binding SelectedHouse.Organization.Branch}" />
+          <TextBlock Text="{Binding SelectedHouse.Organization.Address}" />
+          <TextBlock Text="{Binding SelectedHouse.Organization.Phones}" />
+          <TextBlock Text="{Binding SelectedHouse.Organization.HeadName}" />
+        </StackPanel>
+      </Border>
+      <Border Classes="card">
+        <StackPanel>
+          <TextBlock Classes="legend" Text="Техника" />
+          <TextBlock TextWrapping="Wrap" Text="{Binding SelectedHouse.Antennas}" />
+          <TextBlock Margin="0,4,0,0" TextWrapping="Wrap" Text="{Binding SelectedHouse.AerialCables}" />
+          <TextBlock TextWrapping="Wrap" Text="{Binding SelectedHouse.Amplifiers}" />
+          <TextBlock TextWrapping="Wrap" Text="{Binding SelectedHouse.PowerSupplies}" />
+          <TextBlock TextWrapping="Wrap" Text="{Binding SelectedHouse.TechFloorKey}" />
+        </StackPanel>
+      </Border>
+    </Grid>
+    <Button Margin="0,10,0,0" Content="Схема СКПТ (без выгрузки)" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Scheme}" />
+  </StackPanel>
+</UserControl>

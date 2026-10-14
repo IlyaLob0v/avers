@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Avers.Desktop.ViewModels"
+             x:Class="Avers.Desktop.Views.SubscriberView"
+             x:DataType="vm:MainViewModel">
+  <StackPanel Margin="12">
+    <TextBlock FontSize="16" FontWeight="SemiBold" Text="{Binding SelectedSubscriber.FullName}" />
+    <TextBlock Classes="hint" Text="{Binding HouseCaption}" />
+    <Grid ColumnDefinitions="*,*" Margin="0,8,0,0">
+      <Border Classes="card">
+        <StackPanel>
+          <TextBlock Classes="legend" Text="Договор и контакты" />
+          <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+            <TextBlock Classes="label" Text="ФИО полностью" /><TextBox Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.FullName, Mode=OneWay}" IsReadOnly="True"/>
+            <TextBlock Grid.Row="1" Classes="label" Text="Телефон" /><TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.Phone}"/>
+            <TextBlock Grid.Row="2" Classes="label" Text="Дата договора ТО" /><TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding ContractDateText, Mode=OneWay}" IsReadOnly="True"/>
+            <TextBlock Grid.Row="3" Classes="label" Text="Расторгнут" /><TextBox Grid.Row="3" Grid.Column="1" Classes="cell" Text="действует" IsReadOnly="True"/>
+            <TextBlock Grid.Row="4" Classes="label" Text="Лиц. счёт" /><TextBox Grid.Row="4" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.Account}"/>
+            <TextBlock Grid.Row="5" Classes="label" Text="Вн. код" /><TextBox Grid.Row="5" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.InnerCode}"/>
+            <TextBlock Grid.Row="6" Classes="label" Text="Индекс ПЖРУ" /><TextBox Grid.Row="6" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.PzhreuIndex}"/>
+            <TextBlock Grid.Row="7" Classes="label" Text="Льгота" /><TextBox Grid.Row="7" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.Benefit}"/>
+          </Grid>
+          <CheckBox Margin="0,8,0,0" IsChecked="{Binding SelectedSubscriber.PrintAccountWithPayDate}" Content="Печатать лицевой счёт с датой оплаты" />
+        </StackPanel>
+      </Border>
+      <Border Classes="card">
+        <StackPanel>
+          <TextBlock Classes="legend" Text="Заявки абонента" />
+          <DataGrid Height="200" ItemsSource="{Binding SubscriberTickets}" AutoGenerateColumns="False" IsReadOnly="True">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Дата" Binding="{Binding Date}" Width="100" />
+              <DataGridTextColumn Header="Неисправность" Binding="{Binding Fault}" Width="220" />
+              <DataGridTextColumn Header="Радиомеханик" Binding="{Binding Mechanic}" Width="140" />
+              <DataGridTextColumn Header="Работа" Binding="{Binding WorkDone}" Width="160" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </StackPanel>
+</UserControl>

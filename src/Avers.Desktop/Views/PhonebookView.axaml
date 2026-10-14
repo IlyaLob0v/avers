@@ -1,0 +1,60 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Avers.Desktop.ViewModels"
+             xmlns:d="using:Avers.Domain"
+             x:Class="Avers.Desktop.Views.PhonebookView"
+             x:DataType="vm:MainViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="12">
+      <Grid ColumnDefinitions="220,*" Height="200" Margin="0,0,0,10">
+        <Border Classes="card" Margin="0,0,8,0">
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Top" Classes="legend" Text="Улицы" />
+            <ListBox Classes="streets" ItemsSource="{Binding Streets}" SelectedItem="{Binding SelectedStreet}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="d:Street">
+                  <TextBlock Text="{Binding Name}" Padding="4,2" />
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </DockPanel>
+        </Border>
+        <DataGrid ItemsSource="{Binding HousesOnStreet}" SelectedItem="{Binding SelectedHouse}" AutoGenerateColumns="False" IsReadOnly="True">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Дом" Binding="{Binding Number}" Width="70" />
+            <DataGridTextColumn Header="Индекс" Binding="{Binding PzhreuIndex}" Width="80" />
+            <DataGridTextColumn Header="Счёт ПЖРЭУ" Binding="{Binding PzhreuAccount}" Width="110" />
+            <DataGridTextColumn Header="Эт." Binding="{Binding Floors}" Width="50" />
+            <DataGridTextColumn Header="Под." Binding="{Binding Entrances}" Width="50" />
+            <DataGridTextColumn Header="Стояков" Binding="{Binding Risers}" Width="70" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </Grid>
+      <Grid ColumnDefinitions="*,*">
+        <Border Classes="card">
+          <StackPanel>
+            <TextBlock Classes="legend" Text="Материалы" />
+            <DataGrid Height="180" ItemsSource="{Binding Materials}" AutoGenerateColumns="False" IsReadOnly="True">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Наименование" Binding="{Binding Name}" Width="*" />
+                <DataGridTextColumn Header="Ед." Binding="{Binding Unit}" Width="60" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </StackPanel>
+        </Border>
+        <Border Classes="card">
+          <StackPanel>
+            <TextBlock Classes="legend" Text="Радиомеханики" />
+            <DataGrid Height="180" ItemsSource="{Binding Mechanics}" AutoGenerateColumns="False" IsReadOnly="True">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="ФИО" Binding="{Binding FullName}" Width="220" />
+                <DataGridTextColumn Header="Должность" Binding="{Binding Position}" Width="140" />
+                <DataGridTextColumn Header="Телефон" Binding="{Binding Phone}" Width="140" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </StackPanel>
+        </Border>
+      </Grid>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

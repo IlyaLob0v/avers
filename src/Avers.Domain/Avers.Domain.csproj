@@ -1,0 +1,6 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Avers.Domain</RootNamespace>
+    <AssemblyName>Avers.Domain</AssemblyName>
+  </PropertyGroup>
+</Project>

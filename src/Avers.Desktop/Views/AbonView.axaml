@@ -1,0 +1,140 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Avers.Desktop.ViewModels"
+             xmlns:d="using:Avers.Domain"
+             x:Class="Avers.Desktop.Views.AbonView"
+             x:DataType="vm:MainViewModel">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Background="#D4EAFB" BorderBrush="#9EC0DE" BorderThickness="0,0,0,1" Padding="8,4">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Button Content="Улицы…" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Phonebook}" />
+        <Button Content="Данные по дому" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Anten}" />
+        <Button Content="Карточка" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Subscriber}" />
+        <Button Content="Печать л/с" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Print}" />
+        <TextBlock Text="Искать по:" VerticalAlignment="Center" Margin="8,0,0,0" Classes="hint" />
+        <RadioButton Content="Адресу" IsChecked="{Binding SearchByAddress, Mode=OneWay}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Address}" />
+        <RadioButton Content="ПЖРЭУ" IsChecked="{Binding SearchByPzhreu, Mode=OneWay}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Pzhreu}" />
+        <RadioButton Content="Лиц. счёту" IsChecked="{Binding SearchByAccount, Mode=OneWay}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Account}" />
+        <RadioButton Content="Вн. коду" IsChecked="{Binding SearchByInner, Mode=OneWay}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.InnerCode}" />
+        <RadioButton Content="Фамилии" IsChecked="{Binding SearchBySurname, Mode=OneWay}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Surname}" />
+      </StackPanel>
+    </Border>
+    <ScrollViewer>
+      <StackPanel Margin="10">
+        <Grid ColumnDefinitions="320,*">
+          <StackPanel Margin="0,0,8,0">
+            <Border Classes="card">
+              <StackPanel>
+                <TextBlock Classes="legend" Text="Абонент" />
+                <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                  <TextBlock Classes="label" Text="ФИО полностью" />
+                  <TextBox Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.FullName}" IsReadOnly="True" />
+                  <TextBlock Grid.Row="1" Classes="label" Text="Телефон" />
+                  <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.Phone}" />
+                  <TextBlock Grid.Row="2" Classes="label" Text="Улица" />
+                  <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.House.Street.Name}" IsReadOnly="True" />
+                  <TextBlock Grid.Row="3" Classes="label" Text="Дом / секц / кв" />
+                  <TextBox Grid.Row="3" Grid.Column="1" Classes="cell" Text="{Binding HouseAptLine, Mode=OneWay}" IsReadOnly="True" />
+                  <TextBlock Grid.Row="4" Classes="label" Text="Вн. код" />
+                  <TextBox Grid.Row="4" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.InnerCode}" />
+                  <TextBlock Grid.Row="5" Classes="label" Text="Лиц. счёт" />
+                  <TextBox Grid.Row="5" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.Account}" />
+                  <TextBlock Grid.Row="6" Classes="label" Text="Индекс ПЖРУ" />
+                  <TextBox Grid.Row="6" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.PzhreuIndex}" />
+                  <TextBlock Grid.Row="7" Classes="label" Text="Счёт ПЖРЭУ" />
+                  <TextBox Grid.Row="7" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.PzhreuAccount}" />
+                  <TextBlock Grid.Row="8" Classes="label" Text="Договор" />
+                  <TextBox Grid.Row="8" Grid.Column="1" Classes="cell" Text="{Binding ContractDateText}" IsReadOnly="True" />
+                  <TextBlock Grid.Row="9" Classes="label" Text="Льгота" />
+                  <TextBox Grid.Row="9" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.Benefit}" />
+                  <TextBlock Grid.Row="10" Classes="label" Text="Расчёт с" />
+                  <TextBox Grid.Row="10" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.SettlementFrom}" IsReadOnly="True" />
+                </Grid>
+              </StackPanel>
+            </Border>
+            <Border Classes="card">
+              <StackPanel>
+                <TextBlock Classes="legend" Text="Поиск" />
+                <Grid ColumnDefinitions="*,70,50,50">
+                  <TextBox Classes="cell" Text="{Binding FindStreet}" Watermark="Улица" />
+                  <TextBox Grid.Column="1" Classes="cell" Text="{Binding FindHouse}" Watermark="Дом" />
+                  <TextBox Grid.Column="2" Classes="cell" Text="{Binding FindSection}" Watermark="Секц" />
+                  <TextBox Grid.Column="3" Classes="cell" Text="{Binding FindApartment}" Watermark="Кв" />
+                </Grid>
+                <TextBox Classes="cell" Margin="0,4,0,0" Text="{Binding FindQuery}" Watermark="ПЖРЭУ / лиц. счёт / вн. код / фамилия" />
+                <Button Classes="primary" Margin="0,6,0,0" Content="Найти" Command="{Binding FindCommand}" />
+                <TextBlock Classes="hint" Margin="0,4,0,0" Text="Улица · Дом · Секция · Кв. Фамилия — более 4 букв." />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+          <StackPanel>
+            <Border Classes="warn" IsVisible="{Binding HasFault}">
+              <TextBlock Text="{Binding FaultBanner}" TextWrapping="Wrap" Foreground="#5A3B00" />
+            </Border>
+            <Border Classes="card">
+              <StackPanel>
+                <TextBlock Classes="legend" Text="Платежи 2026 · тариф / отв. / сумма / дата опл." />
+                <DataGrid ItemsSource="{Binding PaymentRows}" AutoGenerateColumns="False" Height="140" IsReadOnly="True">
+                  <DataGrid.Columns>
+                    <DataGridTextColumn Header="" Binding="{Binding Title}" Width="80" />
+                    <DataGridTextColumn Header="Янв" Binding="{Binding Jan}" Width="70" />
+                    <DataGridTextColumn Header="Фев" Binding="{Binding Feb}" Width="70" />
+                    <DataGridTextColumn Header="Мар" Binding="{Binding Mar}" Width="70" />
+                    <DataGridTextColumn Header="Апр" Binding="{Binding Apr}" Width="70" />
+                    <DataGridTextColumn Header="Май" Binding="{Binding May}" Width="70" />
+                    <DataGridTextColumn Header="Июн" Binding="{Binding Jun}" Width="70" />
+                    <DataGridTextColumn Header="Июл" Binding="{Binding Jul}" Width="70" />
+                    <DataGridTextColumn Header="Авг" Binding="{Binding Aug}" Width="70" />
+                    <DataGridTextColumn Header="Сен" Binding="{Binding Sep}" Width="70" />
+                    <DataGridTextColumn Header="Окт" Binding="{Binding Oct}" Width="70" />
+                    <DataGridTextColumn Header="Ноя" Binding="{Binding Nov}" Width="70" />
+                    <DataGridTextColumn Header="Дек" Binding="{Binding Dec}" Width="70" />
+                  </DataGrid.Columns>
+                </DataGrid>
+                <Grid ColumnDefinitions="*,*,*,*" Margin="0,8,0,0">
+                  <StackPanel><TextBlock Classes="hint" Text="Всего должен"/><TextBox Classes="cell" Text="{Binding ChargedText}" IsReadOnly="True"/></StackPanel>
+                  <StackPanel Grid.Column="1"><TextBlock Classes="hint" Text="Оплачено"/><TextBox Classes="cell" Text="{Binding PaidText}" IsReadOnly="True"/></StackPanel>
+                  <StackPanel Grid.Column="2"><TextBlock Classes="hint" Text="Долг 26"/><TextBox Classes="cell" Text="{Binding DebtText}" IsReadOnly="True"/></StackPanel>
+                  <StackPanel Grid.Column="3"><TextBlock Classes="hint" Text="К внесению"/><TextBox Classes="cell" Text="{Binding ToPayText}" IsReadOnly="True"/></StackPanel>
+                </Grid>
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                  <Button Classes="primary" Content="Внести оплату" Command="{Binding RecordPaymentCommand}" />
+                  <Button Content="Печать лицевого счёта" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Print}" />
+                  <Button Content="Квитанция" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Print}" />
+                </StackPanel>
+                <TextBlock Classes="hint" Margin="0,6,0,0" TextWrapping="Wrap"
+                           Text="Окно «Подтверждение» не показывается от 1000,00 ₽. ФИО на печати полностью." />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Grid>
+        <Border Classes="card">
+          <StackPanel>
+            <TextBlock Classes="legend" Text="Улицы и дома · индекс ПЖРУ и счета" />
+            <Grid ColumnDefinitions="200,*" Height="200">
+              <ListBox Classes="streets" ItemsSource="{Binding Streets}" SelectedItem="{Binding SelectedStreet}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="d:Street">
+                    <TextBlock Text="{Binding Name}" Padding="4,2" />
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <DataGrid Grid.Column="1" Margin="8,0,0,0" ItemsSource="{Binding HousesOnStreet}"
+                        SelectedItem="{Binding SelectedHouse}" AutoGenerateColumns="False" IsReadOnly="True">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Дом" Binding="{Binding Number}" Width="70" />
+                  <DataGridTextColumn Header="Индекс" Binding="{Binding PzhreuIndex}" Width="80" />
+                  <DataGridTextColumn Header="Счёт ПЖРЭУ" Binding="{Binding PzhreuAccount}" Width="110" />
+                  <DataGridTextColumn Header="Кв." Binding="{Binding Apartments}" Width="50" />
+                  <DataGridTextColumn Header="Эт." Binding="{Binding Floors}" Width="50" />
+                  <DataGridTextColumn Header="Под." Binding="{Binding Entrances}" Width="50" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </Grid>
+            <TextBlock Classes="hint" Margin="0,6,0,0" Text="Выберите улицу слева — справа дома этой улицы, индекс ПЖРУ и счёт." />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

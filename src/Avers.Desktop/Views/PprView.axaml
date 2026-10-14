@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Avers.Desktop.ViewModels"
+             x:Class="Avers.Desktop.Views.PprView"
+             x:DataType="vm:MainViewModel">
+  <StackPanel Margin="12">
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <TextBlock Text="Год" VerticalAlignment="Center" />
+      <TextBox Width="70" Classes="cell" Text="2026" />
+      <TextBlock Text="Зона" VerticalAlignment="Center" />
+      <TextBox Width="120" Classes="cell" Text="все" />
+      <Button Content="Применить" Command="{Binding SavedCommand}" />
+      <Button Content="Копировать план на 2027" Command="{Binding SavedCommand}" />
+    </StackPanel>
+    <DataGrid Margin="0,10,0,0" Height="360" ItemsSource="{Binding PprRows}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Адрес" Binding="{Binding Address}" Width="200" />
+        <DataGridTextColumn Header="Эт." Binding="{Binding Floors}" Width="40" />
+        <DataGridTextColumn Header="П." Binding="{Binding Entrances}" Width="40" />
+        <DataGridTextColumn Header="Янв" Binding="{Binding Jan}" Width="60" />
+        <DataGridTextColumn Header="Фев" Binding="{Binding Feb}" Width="60" />
+        <DataGridTextColumn Header="Мар" Binding="{Binding Mar}" Width="60" />
+        <DataGridTextColumn Header="Апр" Binding="{Binding Apr}" Width="60" />
+        <DataGridTextColumn Header="Май" Binding="{Binding May}" Width="60" />
+        <DataGridTextColumn Header="Июн" Binding="{Binding Jun}" Width="60" />
+        <DataGridTextColumn Header="Июл" Binding="{Binding Jul}" Width="60" />
+        <DataGridTextColumn Header="Авг" Binding="{Binding Aug}" Width="60" />
+        <DataGridTextColumn Header="Сен" Binding="{Binding Sep}" Width="60" />
+        <DataGridTextColumn Header="Окт" Binding="{Binding Oct}" Width="60" />
+        <DataGridTextColumn Header="Ноя" Binding="{Binding Nov}" Width="60" />
+        <DataGridTextColumn Header="Дек" Binding="{Binding Dec}" Width="60" />
+      </DataGrid.Columns>
+    </DataGrid>
+    <TextBlock Classes="hint" Margin="0,8,0,0" Text="Цвет: план / выполнено / просрочено. Дата последнего ППР — в паспорте дома." />
+  </StackPanel>
+</UserControl>

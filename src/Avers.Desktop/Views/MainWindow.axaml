@@ -1,0 +1,119 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Avers.Desktop.ViewModels"
+        xmlns:views="using:Avers.Desktop.Views"
+        xmlns:d="using:Avers.Domain"
+        x:Class="Avers.Desktop.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="{Binding WindowTitle}"
+        Width="1280" Height="840" MinWidth="1000" MinHeight="680"
+        WindowStartupLocation="CenterScreen">
+  <Grid>
+    <Grid IsVisible="{Binding ShowLogin}" Background="#2F6FB4">
+      <Border Width="440" HorizontalAlignment="Center" VerticalAlignment="Center"
+              Background="#F4F9FD" BorderBrush="#0B4A86" BorderThickness="1" CornerRadius="6">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="Аверс — вход в систему" Background="#0B5CAB"
+                     Foreground="White" FontWeight="SemiBold" Padding="12,8" />
+          <StackPanel Margin="16" Spacing="8">
+            <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto">
+              <TextBlock Text="Пользователь" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" Classes="cell" ItemsSource="{Binding Users}" SelectedItem="{Binding LoginUser}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="d:AppUser">
+                    <TextBlock Text="{Binding Login}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <TextBlock Grid.Row="1" Text="Пароль" VerticalAlignment="Center" Margin="0,8,0,0" />
+              <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" PasswordChar="•" Text="{Binding Password}" Margin="0,8,0,0" />
+              <TextBlock Grid.Row="2" Text="Подразделение" VerticalAlignment="Center" Margin="0,8,0,0" />
+              <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" IsReadOnly="True"
+                       Text="{Binding LoginUser.Department}" Margin="0,8,0,0" />
+            </Grid>
+            <Border Classes="card">
+              <StackPanel>
+                <TextBlock Classes="legend" Text="Назначенная роль" />
+                <TextBlock FontSize="13" Text="{Binding LoginUser.DisplayName}" />
+                <TextBlock Margin="0,4,0,0" Text="{Binding LoginRoleTitle}" />
+                <TextBlock Classes="hint" Margin="0,8,0,0" TextWrapping="Wrap"
+                           Text="Права задаются при входе. Редактирование лицевого счёта — отдельное право. Режим администратора не через Alt+Backspace." />
+              </StackPanel>
+            </Border>
+            <TextBlock Foreground="#A33" Text="{Binding LoginError}" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+              <Button Content="Отмена" Command="{Binding LogoutCommand}" />
+              <Button Classes="primary" Content="Войти" Command="{Binding LoginCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </DockPanel>
+      </Border>
+    </Grid>
+
+    <DockPanel IsVisible="{Binding ShowShell}">
+      <Border DockPanel.Dock="Top" Height="32" Background="#0B5CAB">
+        <TextBlock Text="{Binding WindowTitle}" Foreground="White" VerticalAlignment="Center" Margin="12,0" FontWeight="SemiBold" />
+      </Border>
+      <Menu DockPanel.Dock="Top">
+        <MenuItem Header="Файл">
+          <MenuItem Header="Рабочий стол" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Desktop}" />
+          <MenuItem Header="Сменить пользователя" Command="{Binding LogoutCommand}" />
+        </MenuItem>
+        <MenuItem Header="Сервисы">
+          <MenuItem Header="AversAbon" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Abon}" />
+          <MenuItem Header="AversAnten" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Anten}" />
+          <MenuItem Header="AversDisp" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Disp}" />
+          <MenuItem Header="phonebook" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Phonebook}" />
+          <MenuItem Header="PrDublPay" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.PrDubl}" />
+          <MenuItem Header="anteninfo" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.AntenInfo}" />
+          <MenuItem Header="aversContract" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Contract}" />
+          <MenuItem Header="domofo" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Domofo}" />
+        </MenuItem>
+        <MenuItem Header="Словарь">
+          <MenuItem Header="Улицы, дома, материалы" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Phonebook}" />
+        </MenuItem>
+        <MenuItem Header="Сервис">
+          <MenuItem Header="Графики ППР" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Ppr}" />
+          <MenuItem Header="Права доступа" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Access}" />
+          <MenuItem Header="Читатель" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Reader}" />
+        </MenuItem>
+        <MenuItem Header="Отчёты">
+          <MenuItem Header="Конструктор отчётов" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Reports}" />
+          <MenuItem Header="Должники" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Legal}" />
+        </MenuItem>
+        <MenuItem Header="Справка">
+          <MenuItem Header="О программе" Command="{Binding SavedCommand}" />
+        </MenuItem>
+      </Menu>
+      <Border DockPanel.Dock="Bottom" Height="24" Background="#D4EAFB" BorderBrush="#9EC0DE" BorderThickness="0,1,0,0">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{Binding StatusLeft}" VerticalAlignment="Center" Margin="10,0" Foreground="#1F4F80" FontSize="11" />
+          <TextBlock Grid.Column="1" Text="{Binding StatusRight}" VerticalAlignment="Center" Margin="10,0" Foreground="#1F4F80" FontSize="11" />
+        </Grid>
+      </Border>
+      <TextBlock DockPanel.Dock="Bottom" Text="{Binding Status}" Margin="10,4" Classes="hint" />
+
+      <Panel Background="#F4F9FD">
+        <views:DesktopView IsVisible="{Binding ShowDesktop}" />
+        <views:AbonView IsVisible="{Binding ShowAbon}" />
+        <views:DispView IsVisible="{Binding ShowDisp}" />
+        <views:TicketView IsVisible="{Binding ShowTicket}" />
+        <views:AntenView IsVisible="{Binding ShowAnten}" />
+        <views:AntenInfoView IsVisible="{Binding ShowAntenInfo}" />
+        <views:SchemeView IsVisible="{Binding ShowScheme}" />
+        <views:SubscriberView IsVisible="{Binding ShowSubscriber}" />
+        <views:PrDublView IsVisible="{Binding ShowPrDubl}" />
+        <views:ContractView IsVisible="{Binding ShowContract}" />
+        <views:PrintView IsVisible="{Binding ShowPrint}" />
+        <views:PprView IsVisible="{Binding ShowPpr}" />
+        <views:LegalView IsVisible="{Binding ShowLegal}" />
+        <views:ClaimView IsVisible="{Binding ShowClaim}" />
+        <views:ReportsView IsVisible="{Binding ShowReports}" />
+        <views:PhonebookView IsVisible="{Binding ShowPhonebook}" />
+        <views:DomofoView IsVisible="{Binding ShowDomofo}" />
+        <views:ReaderView IsVisible="{Binding ShowReader}" />
+        <views:AccessView IsVisible="{Binding ShowAccess}" />
+      </Panel>
+    </DockPanel>
+  </Grid>
+</Window>
