@@ -1,0 +1,23 @@
+# Локальный стенд разработки: PostgreSQL для новой схемы и Oracle Free для
+# восстановления выгрузки старой схемы JACK (см. docs/04-db-migration-plan.md).
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: avers
+      POSTGRES_USER: avers
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-avers_dev}
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql]
+
+  oracle-legacy:
+    image: gvenzl/oracle-free:23-slim
+    profiles: [legacy]
+    environment:
+      ORACLE_PASSWORD: ${ORA_PASSWORD:-avers_dev}
+    ports: ["1521:1521"]
+    volumes: [oradata:/opt/oracle/oradata, ./legacy/dumps:/dumps]
+
+volumes:
+  pgdata:
+  oradata:

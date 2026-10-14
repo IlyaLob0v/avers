@@ -1,28 +1,44 @@
-##
-# Visual Studio / Rider
-.vs/
-.idea/
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
-
-# Build
+# .NET
 bin/
 obj/
-[Dd]ebug/
-[Rr]elease/
+*.user
+*.suo
+.vs/
+TestResults/
+publish/
 artifacts/
 
-# SQLite (создаётся при первом запуске на компьютере пользователя)
+# Локальные данные и секреты
 *.db
 *.db-shm
 *.db-wal
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+secrets/
+*.pfx
+*.pem
 
-# OS
+# Выгрузки из боевых баз (персональные данные не коммитим)
+db/legacy/dumps/
+db/legacy/data/
+*.dmp
+*.dbf
+*.DBF
+
+# Claude Code: локальные настройки пользователя
+.claude/settings.local.json
+
+# ОС и редакторы
 .DS_Store
 Thumbs.db
 
-# Node leftovers (не используются)
+# Из оболочки (D:\Avers\Source)
+.idea/
+*.userosscache
+*.sln.docstates
+[Dd]ebug/
+[Rr]elease/
 node_modules/
 .next/

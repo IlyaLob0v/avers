@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "agent": "orchestrator",
+  "permissions": {
+    "allow": [
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git branch *)",
+      "Bash(git switch *)",
+      "Bash(git checkout -b *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git stash *)",
+      "Bash(git fetch *)",
+      "Bash(git pull *)",
+      "Bash(dotnet restore *)",
+      "Bash(dotnet build *)",
+      "Bash(dotnet test *)",
+      "Bash(dotnet format *)",
+      "Bash(dotnet run *)",
+      "Bash(dotnet --info)",
+      "Bash(dotnet --list-sdks)",
+      "Bash(dotnet ef migrations list *)",
+      "Bash(dotnet ef migrations script *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(rg *)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Bash(pdftotext *)",
+      "Bash(npx markdownlint-cli2 *)",
+      "Bash(docker compose -f db/docker-compose.yml ps)",
+      "Bash(docker compose -f db/docker-compose.yml logs *)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)",
+      "Bash(dotnet ef database update *)",
+      "Bash(docker compose *)",
+      "Bash(psql *)",
+      "Bash(sqlplus *)",
+      "Bash(sql *)",
+      "Bash(ora2pg *)"
+    ],
+    "deny": [
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean *)",
+      "Bash(rm -rf *)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./db/legacy/dumps/**)",
+      "Read(./db/legacy/data/**)"
+    ]
+  },
+  "env": {
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+    "DOTNET_NOLOGO": "1"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/guard-prod.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}

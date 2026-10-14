@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Restore
+        if: hashFiles('Avers.sln') != ''
+        run: dotnet restore Avers.sln
+      - name: Build
+        if: hashFiles('Avers.sln') != ''
+        run: dotnet build Avers.sln -c Release --no-restore
+      - name: Test
+        if: hashFiles('Avers.sln') != ''
+        run: dotnet test Avers.sln -c Release --no-build
+      - name: Format check
+        if: hashFiles('Avers.sln') != ''
+        run: dotnet format Avers.sln --verify-no-changes
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: "docs/**/*.md"
+        continue-on-error: true
