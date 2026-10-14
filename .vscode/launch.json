@@ -6,7 +6,7 @@
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      "program": "${workspaceFolder}/src/Avers.Desktop/bin/Debug/net10.0/Avers.Desktop.dll",
+      "program": "${workspaceFolder}/src/Avers.Desktop/bin/Debug/net10.0/Avers.dll",
       "cwd": "${workspaceFolder}",
       "console": "internalConsole"
     },

@@ -156,8 +156,10 @@ public static class DemoSeeder
 
         hVol19d.Intercoms.Add(new IntercomPanel
         {
-            Entrance = 2, PanelType = "Vizit БВД-SM101",
-            SwitchBlock = "КМ-100, ниша 1 эт.", Keys = "Dallas, 144 ключа · мастер — АДС яч. 9",
+            Entrance = 2,
+            PanelType = "Vizit БВД-SM101",
+            SwitchBlock = "КМ-100, ниша 1 эт.",
+            Keys = "Dallas, 144 ключа · мастер — АДС яч. 9",
             Power = "Щит под. 2, автомат «домофон»"
         });
         db.IntercomTickets.AddRange(
@@ -177,45 +179,95 @@ public static class DemoSeeder
 
     private static Organization Org(string name, string branch, string address, string phones,
         string head, string headPhone, string eng, string engPhone) => new()
-    {
-        Name = name, Branch = branch, Address = address, Phones = phones,
-        HeadName = head, HeadPhone = headPhone, EngineerName = eng, EngineerPhone = engPhone
-    };
+        {
+            Name = name,
+            Branch = branch,
+            Address = address,
+            Phones = phones,
+            HeadName = head,
+            HeadPhone = headPhone,
+            EngineerName = eng,
+            EngineerPhone = engPhone
+        };
 
     private static House House(Street street, string number, string index, string account,
         int floors, int entrances, int risers, int apts, string zone, Organization org,
         string antennas, string aerial, string amp, string psu, string key, string other,
         DateOnly? lastPpr, string? fault = null, string? reason = null, DateOnly? fix = null) => new()
-    {
-        Street = street, Number = number, PzhreuIndex = index, PzhreuAccount = account,
-        Floors = floors, Entrances = entrances, Risers = risers, Apartments = apts, Zone = zone,
-        Serviced = true, Organization = org, Antennas = antennas, AerialCables = aerial,
-        Amplifiers = amp, PowerSupplies = psu, TechFloorKey = key, OtherNotes = other,
-        LastPpr = lastPpr, OpenFault = fault, OpenFaultReason = reason, OpenFaultPlannedFix = fix
-    };
+        {
+            Street = street,
+            Number = number,
+            PzhreuIndex = index,
+            PzhreuAccount = account,
+            Floors = floors,
+            Entrances = entrances,
+            Risers = risers,
+            Apartments = apts,
+            Zone = zone,
+            Serviced = true,
+            Organization = org,
+            Antennas = antennas,
+            AerialCables = aerial,
+            Amplifiers = amp,
+            PowerSupplies = psu,
+            TechFloorKey = key,
+            OtherNotes = other,
+            LastPpr = lastPpr,
+            OpenFault = fault,
+            OpenFaultReason = reason,
+            OpenFaultPlannedFix = fix
+        };
 
     private static Subscriber Sub(House house, string inner, string account, string last, string first, string pat,
         string phone, string apt, string section, DateOnly contract, string notes, string idx, string pzAcc,
         int from, DateOnly lastPay) => new()
-    {
-        House = house, InnerCode = inner, Account = account, LastName = last, FirstName = first,
-        Patronymic = pat, Phone = phone, Apartment = apt, Section = section, ContractDate = contract,
-        Notes = notes, PzhreuIndex = idx, PzhreuAccount = pzAcc, SettlementFrom = from, LastPaymentDate = lastPay
-    };
+        {
+            House = house,
+            InnerCode = inner,
+            Account = account,
+            LastName = last,
+            FirstName = first,
+            Patronymic = pat,
+            Phone = phone,
+            Apartment = apt,
+            Section = section,
+            ContractDate = contract,
+            Notes = notes,
+            PzhreuIndex = idx,
+            PzhreuAccount = pzAcc,
+            SettlementFrom = from,
+            LastPaymentDate = lastPay
+        };
 
     private static WorkTicket T(int number, DateOnly date, TimeOnly time, House house, Subscriber sub,
         string apt, string section, string phone, TicketKind kind, string fault, string work, string mech,
         TicketStatus status, string accepted, string risers) => new()
-    {
-        Number = number, Date = date, Time = time, House = house, Subscriber = sub,
-        Apartment = apt, Section = section, Phone = phone, Kind = kind, Fault = fault, WorkDone = work,
-        Mechanic = mech, Status = status, AcceptedBy = accepted, RisersNote = risers
-    };
+        {
+            Number = number,
+            Date = date,
+            Time = time,
+            House = house,
+            Subscriber = sub,
+            Apartment = apt,
+            Section = section,
+            Phone = phone,
+            Kind = kind,
+            Fault = fault,
+            WorkDone = work,
+            Mechanic = mech,
+            Status = status,
+            AcceptedBy = accepted,
+            RisersNote = risers
+        };
 
     private static AppUser User(string login, string name, UserRole role, string dept, bool editAccount) => new()
     {
-        Login = login, DisplayName = name, PasswordHash = Password.Hash(login, "avers"),
-        Role = role, Department = dept, CanEditAccount = editAccount
+        Login = login,
+        DisplayName = name,
+        PasswordHash = Password.Hash(login, "avers"),
+        Role = role,
+        Department = dept,
+        CanEditAccount = editAccount
     };
 
     private static void Scheme(House house, string name, string format, DateOnly updated) =>
@@ -229,7 +281,9 @@ public static class DemoSeeder
             var isPaid = map.TryGetValue(m, out var day);
             sub.Payments.Add(new YearPayment
             {
-                Year = 2026, Month = m, Tariff = 95,
+                Year = 2026,
+                Month = m,
+                Tariff = 95,
                 Source = isPaid ? "Касса" : null,
                 Amount = isPaid ? 95 : null,
                 PaidAt = isPaid ? new DateOnly(2026, m, day) : null

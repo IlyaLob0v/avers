@@ -56,12 +56,12 @@
               <StackPanel>
                 <TextBlock Classes="legend" Text="Поиск" />
                 <Grid ColumnDefinitions="*,70,50,50">
-                  <TextBox Classes="cell" Text="{Binding FindStreet}" Watermark="Улица" />
-                  <TextBox Grid.Column="1" Classes="cell" Text="{Binding FindHouse}" Watermark="Дом" />
-                  <TextBox Grid.Column="2" Classes="cell" Text="{Binding FindSection}" Watermark="Секц" />
-                  <TextBox Grid.Column="3" Classes="cell" Text="{Binding FindApartment}" Watermark="Кв" />
+                  <TextBox Classes="cell" Text="{Binding FindStreet}" PlaceholderText="Улица" />
+                  <TextBox Grid.Column="1" Classes="cell" Text="{Binding FindHouse}" PlaceholderText="Дом" />
+                  <TextBox Grid.Column="2" Classes="cell" Text="{Binding FindSection}" PlaceholderText="Секц" />
+                  <TextBox Grid.Column="3" Classes="cell" Text="{Binding FindApartment}" PlaceholderText="Кв" />
                 </Grid>
-                <TextBox Classes="cell" Margin="0,4,0,0" Text="{Binding FindQuery}" Watermark="ПЖРЭУ / лиц. счёт / вн. код / фамилия" />
+                <TextBox Classes="cell" Margin="0,4,0,0" Text="{Binding FindQuery}" PlaceholderText="ПЖРЭУ / лиц. счёт / вн. код / фамилия" />
                 <Button Classes="primary" Margin="0,6,0,0" Content="Найти" Command="{Binding FindCommand}" />
                 <TextBlock Classes="hint" Margin="0,4,0,0" Text="Улица · Дом · Секция · Кв. Фамилия — более 4 букв." />
               </StackPanel>
