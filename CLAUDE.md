@@ -11,8 +11,13 @@
   база Oracle 10.2 (схема `JACK`, сервер `servora`, алиас `avers102`), клиент Oracle 9 на рабочих местах.
 - **Будет:** единое рабочее место (Avalonia 12, .NET 10 LTS) + сервер приложений (ASP.NET Core) +
   PostgreSQL + веб-просмотр для радиомехаников с телефона + обмен с 1С 8.3.
-- **Уже есть:** оболочка интерфейса на .NET 8 / Avalonia 11 / SQLite (сентябрь 2026). Исходники перенесены
-  в репозиторий из `D:\Avers\Source` (ветка `import/shell-net8`), собираются SDK 10 под `net8.0` (см. `src/README.md`).
+- **Уже есть:** оболочка интерфейса (сентябрь 2026), перенесена из `D:\Avers\Source` (исходный вид — ветка
+  `import/shell-net8`) и переведена на .NET 10 / Avalonia 12 / SQLite (PR #1, см. `src/README.md`).
+
+## GitHub
+
+Репозиторий: https://github.com/IlyaLob0v/avers. CI — `.github/workflows/ci.yml` (сборка, тесты, `dotnet format`).
+Claude отвечает на `@claude` в issue и PR — `.github/workflows/claude.yml`, работает по правилам этого файла.
 
 Обзор: `docs/00-index.md`. Архитектура: `docs/03-architecture.md`. Решения: `docs/adr/`.
 
