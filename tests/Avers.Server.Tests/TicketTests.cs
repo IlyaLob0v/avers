@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using Avers.Contracts;
+using Avers.Data;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Avers.Server.Tests;
 
@@ -31,7 +33,7 @@ public class TicketTests
             Assert.Equal("Antenna", t.Kind);
             Assert.InRange(t.Date, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31));
         });
-        Assert.Equal(list!.OrderByDescending(t => t.Date).ThenByDescending(t => t.Time).Select(t => t.Number), list.Select(t => t.Number));
+        Assert.Equal(list!.OrderByDescending(t => t.Date).ThenByDescending(t => t.Time).Select(t => t.Number), list!.Select(t => t.Number));
         Assert.All(list, t => Assert.Equal("ООО «Жилсервис-Центр»", t.Homeowner));
     }
 
@@ -61,6 +63,32 @@ public class TicketTests
         Assert.Equal(12, months!.Count);
         Assert.Equal(all2026!.Count, months.Sum(m => m.Accepted));
         Assert.All(months, m => Assert.Equal(m.Accepted, m.Done + m.Open));
+    }
+
+    [Fact]
+    public async Task Subscriber_WithoutApartment_GetsOnlyOwnTickets()
+    {
+        // Абонент без номера квартиры (частный дом, недозаполненная карточка) не должен получать
+        // все заявки дома, принятые без квартиры.
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("orlov");
+        var found = await client.GetFromJsonAsync<List<SubscriberListItem>>("/api/subscribers?mode=Account&q=1932068");
+        var ivanova = Assert.Single(found!);
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AversDbContext>();
+            db.Subscribers.Single(s => s.Id == ivanova.Id).Apartment = "";
+            db.SaveChanges();
+        }
+        var created = await client.PostAsJsonAsync("/api/tickets",
+            new CreateTicketRequest(ivanova.HouseId, "Нет сигнала в подъезде", "Antenna", Section: "1"));
+        created.EnsureSuccessStatusCode();
+        var houseTicket = await created.Content.ReadFromJsonAsync<TicketDto>();
+
+        var list = await client.GetFromJsonAsync<List<TicketDto>>($"/api/subscribers/{ivanova.Id}/tickets");
+
+        Assert.DoesNotContain(list!, t => t.Id == houseTicket!.Id);
+        Assert.All(list!, t => Assert.Equal(ivanova.Id, t.SubscriberId));
     }
 
     [Fact]
