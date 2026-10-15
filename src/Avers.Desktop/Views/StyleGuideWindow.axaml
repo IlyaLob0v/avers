@@ -1,0 +1,109 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctl="using:Avers.Desktop.Controls"
+        xmlns:v="using:Avers.Desktop.Views"
+        x:Class="Avers.Desktop.Views.StyleGuideWindow"
+        Title="Образцы оформления"
+        Width="1000" Height="760" WindowStartupLocation="CenterOwner">
+  <!-- Живой справочник по Styles/Controls.axaml: как выглядит и как называется каждый общий элемент. -->
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Background="{StaticResource CaptionBar}" Padding="10,5">
+      <TextBlock Text="Образцы оформления Аверса" Foreground="White" FontWeight="Bold" FontSize="13" />
+    </Border>
+    <Border DockPanel.Dock="Top" Classes="toolbar">
+      <StackPanel Orientation="Horizontal">
+        <Button Classes="primary" Content="Главное действие" />
+        <Button Content="Обычная кнопка" />
+        <Button Content="Недоступна" IsEnabled="False" />
+        <TextBlock Classes="hint" VerticalAlignment="Center" Margin="8,0,0,0" Text="Border.toolbar · Button.primary · Button" />
+      </StackPanel>
+    </Border>
+    <Border DockPanel.Dock="Top" Classes="filterbar">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <TextBlock Text="Период с" />
+        <CalendarDatePicker Width="120" />
+        <TextBlock Text="по" />
+        <CalendarDatePicker Width="120" />
+        <TextBlock Text="Дом" Margin="8,0,0,0" />
+        <ComboBox Width="160" PlaceholderText="Все дома" />
+        <CheckBox Content="Только открытые" Margin="8,0,0,0" />
+        <TextBlock Classes="hint" Text="Border.filterbar" Margin="8,0,0,0" />
+      </StackPanel>
+    </Border>
+    <Border DockPanel.Dock="Bottom" Classes="actionbar">
+      <DockPanel>
+        <TextBlock Classes="hint" VerticalAlignment="Center" Text="Border.actionbar — кнопки окна справа внизу" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+          <Button Classes="primary" Content="ОК" MinWidth="80" />
+          <Button Content="Отмена" MinWidth="80" Margin="0" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <ScrollViewer>
+      <StackPanel Margin="10">
+        <TextBlock Classes="h1" Text="TextBlock.h1 — заголовок экрана" Margin="0,0,0,8" />
+        <Grid ColumnDefinitions="*,10,*">
+          <HeaderedContentControl Classes="group" Header="HeaderedContentControl.group — рамка с заголовком">
+            <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto">
+              <TextBlock Classes="label" Text="Домовладелец" />
+              <TextBlock Grid.Column="1" Classes="value" Text="Иванова Мария Петровна" />
+              <TextBlock Grid.Row="1" Classes="label" Text="Лицевой счёт" />
+              <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="1932068" />
+              <TextBlock Grid.Row="2" Classes="label" Text="Только чтение" />
+              <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="поле только для чтения" IsReadOnly="True" />
+              <TextBlock Grid.Row="3" Classes="label" Text="Договор" />
+              <Button Grid.Row="3" Grid.Column="1" Classes="link" Content="№ 1450 от 12.03.2014 — открыть" HorizontalAlignment="Left" />
+            </Grid>
+          </HeaderedContentControl>
+          <Border Grid.Column="2" Classes="card">
+            <StackPanel>
+              <TextBlock Classes="legend" Text="Border.card + TextBlock.legend" />
+              <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
+                <TextBlock Classes="label" Text="Начислено" />
+                <TextBlock Grid.Column="1" Classes="money" Text="1 140,00 ₽" />
+                <TextBlock Grid.Row="1" Classes="label" Text="Долг" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Classes="money" Text="475,00 ₽" FontWeight="Bold" />
+              </Grid>
+              <TextBlock Classes="hint" Margin="0,6,0,0" Text="TextBlock.label · .value · .money · .hint" />
+            </StackPanel>
+          </Border>
+        </Grid>
+
+        <TextBlock Classes="legend" Text="Плашки: Border.warn / .debt / .ok / .info / .off" />
+        <Border Classes="warn"><TextBlock Text="Жёлтый — внимание: с последней оплаты прошло 5 месяцев." /></Border>
+        <Border Classes="debt"><TextBlock Text="Красный — долг 475,00 ₽, дело у юристов." /></Border>
+        <Border Classes="ok"><TextBlock Text="Зелёный — оплачено, заявка выполнена." /></Border>
+        <Border Classes="info"><TextBlock Text="Голубой — в плане, заявка в работе." /></Border>
+        <Border Classes="off"><TextBlock Text="Серый — снят с обслуживания, договор расторгнут." /></Border>
+
+        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
+          <TextBlock Classes="label" Text="Метки Border.badge:" />
+          <Border Classes="badge warn"><TextBlock Text="5 мес." /></Border>
+          <Border Classes="badge debt"><TextBlock Text="долг" /></Border>
+          <Border Classes="badge ok"><TextBlock Text="оплачено" /></Border>
+          <Border Classes="badge info"><TextBlock Text="в работе" /></Border>
+          <Border Classes="badge off"><TextBlock Text="архив" /></Border>
+        </StackPanel>
+
+        <TextBlock Classes="legend" Text="Таблица с цветными строками: ctl:GridTone.Enabled=&quot;True&quot;, строка реализует IRowTone" />
+        <DataGrid x:Name="Samples" ctl:GridTone.Enabled="True" AutoGenerateColumns="False" IsReadOnly="True" Height="170">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Лиц. счёт" Binding="{Binding Account}" Width="90" x:DataType="v:SampleRow" />
+            <DataGridTextColumn Header="Кв." Binding="{Binding Apartment}" Width="50" x:DataType="v:SampleRow" />
+            <DataGridTextColumn Header="Домовладелец" Binding="{Binding Owner}" Width="160" x:DataType="v:SampleRow" />
+            <DataGridTextColumn Header="Последняя оплата" Binding="{Binding LastPayment}" Width="130" x:DataType="v:SampleRow" />
+            <DataGridTextColumn Header="Мес. без оплаты" Binding="{Binding MonthsSince}" Width="120" x:DataType="v:SampleRow" />
+            <DataGridTextColumn Header="Примечание" Binding="{Binding Note}" Width="*" x:DataType="v:SampleRow" />
+          </DataGrid.Columns>
+        </DataGrid>
+
+        <TabControl Margin="0,10,0,0">
+          <TabItem Header="Квартира"><TextBlock Margin="8" Text="TabItem — закладки, как в старых формах." /></TabItem>
+          <TabItem Header="Оплаты" />
+          <TabItem Header="Заявки" />
+          <TabItem Header="Договор" />
+        </TabControl>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</Window>

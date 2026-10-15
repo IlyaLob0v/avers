@@ -2,128 +2,17 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Avers.Desktop.App"
              RequestedThemeVariant="Light">
+  <!-- Вид приложения задают два файла: Styles/Palette.axaml (цвета) и Styles/Controls.axaml (элементы). -->
   <Application.Resources>
-    <SolidColorBrush x:Key="Ink">#0C2A4A</SolidColorBrush>
-    <SolidColorBrush x:Key="Muted">#4A6D8C</SolidColorBrush>
-    <SolidColorBrush x:Key="Line">#9EC0DE</SolidColorBrush>
-    <SolidColorBrush x:Key="Paper">#F4F9FD</SolidColorBrush>
-    <SolidColorBrush x:Key="Panel">#DCEEFB</SolidColorBrush>
-    <SolidColorBrush x:Key="Blue">#0078D4</SolidColorBrush>
-    <SolidColorBrush x:Key="Blue2">#106EBE</SolidColorBrush>
-    <SolidColorBrush x:Key="Title">#0B5CAB</SolidColorBrush>
-    <SolidColorBrush x:Key="Sel">#CCE8FF</SolidColorBrush>
-    <SolidColorBrush x:Key="WarnBg">#FFF6D5</SolidColorBrush>
-    <SolidColorBrush x:Key="WarnBd">#E0B44A</SolidColorBrush>
-    <SolidColorBrush x:Key="DebtBg">#F7CFD6</SolidColorBrush>
-    <SolidColorBrush x:Key="OldBg">#FFE9A8</SolidColorBrush>
-    <SolidColorBrush x:Key="PlanBg">#9FD4F0</SolidColorBrush>
-    <SolidColorBrush x:Key="DoneBg">#8FD4A8</SolidColorBrush>
-    <SolidColorBrush x:Key="LateBg">#F0A0A8</SolidColorBrush>
-    <FontFamily x:Key="UiFont">Inter, Segoe UI, Ubuntu, Noto Sans, sans-serif</FontFamily>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://Avers/Styles/Palette.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
   </Application.Resources>
   <Application.Styles>
-    <FluentTheme />
+    <FluentTheme DensityStyle="Compact" />
     <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
-
-    <Style Selector="Window">
-      <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
-      <Setter Property="FontSize" Value="12.5" />
-      <Setter Property="Foreground" Value="{StaticResource Ink}" />
-      <Setter Property="Background" Value="{StaticResource Paper}" />
-    </Style>
-
-    <Style Selector="TextBox.cell">
-      <Setter Property="MinHeight" Value="26" />
-      <Setter Property="Padding" Value="7,2" />
-      <Setter Property="BorderBrush" Value="#7AA7CC" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="Background" Value="White" />
-    </Style>
-    <Style Selector="ComboBox.cell">
-      <Setter Property="MinHeight" Value="26" />
-      <Setter Property="BorderBrush" Value="#7AA7CC" />
-    </Style>
-    <Style Selector="Button">
-      <Setter Property="Padding" Value="11,4" />
-      <Setter Property="Margin" Value="0,0,6,0" />
-      <Setter Property="Background" Value="#E7F3FC" />
-      <Setter Property="BorderBrush" Value="#6EA0C8" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="3" />
-    </Style>
-    <Style Selector="Button.primary">
-      <Setter Property="Background" Value="#0078D4" />
-      <Setter Property="Foreground" Value="White" />
-      <Setter Property="BorderBrush" Value="#106EBE" />
-    </Style>
-    <Style Selector="Button.icon">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Padding" Value="8" />
-      <Setter Property="Margin" Value="0" />
-    </Style>
-    <Style Selector="Button.icon:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#1560A8" />
-    </Style>
-    <Style Selector="TextBlock.legend">
-      <Setter Property="FontSize" Value="11" />
-      <Setter Property="FontWeight" Value="Bold" />
-      <Setter Property="Foreground" Value="{StaticResource Title}" />
-      <Setter Property="Margin" Value="0,0,0,6" />
-    </Style>
-    <Style Selector="TextBlock.hint">
-      <Setter Property="FontSize" Value="11" />
-      <Setter Property="Foreground" Value="{StaticResource Muted}" />
-    </Style>
-    <Style Selector="TextBlock.label">
-      <Setter Property="VerticalAlignment" Value="Center" />
-      <Setter Property="Foreground" Value="{StaticResource Ink}" />
-    </Style>
-    <Style Selector="Border.card">
-      <Setter Property="BorderBrush" Value="{StaticResource Line}" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="Background" Value="#F7FBFE" />
-      <Setter Property="Padding" Value="8" />
-      <Setter Property="Margin" Value="0,0,0,8" />
-      <Setter Property="CornerRadius" Value="2" />
-    </Style>
-    <Style Selector="Border.warn">
-      <Setter Property="BorderBrush" Value="{StaticResource WarnBd}" />
-      <Setter Property="Background" Value="{StaticResource WarnBg}" />
-      <Setter Property="Padding" Value="8" />
-      <Setter Property="Margin" Value="0,0,0,8" />
-    </Style>
-    <Style Selector="Border.desk">
-      <Setter Property="Background" Value="#2E7BC4" />
-    </Style>
-    <Style Selector="Menu">
-      <Setter Property="Background" Value="#E7F3FC" />
-      <Setter Property="Height" Value="28" />
-    </Style>
-    <Style Selector="DataGrid">
-      <Setter Property="FontSize" Value="12" />
-      <Setter Property="GridLinesVisibility" Value="All" />
-      <Setter Property="HeadersVisibility" Value="Column" />
-      <Setter Property="CanUserResizeColumns" Value="True" />
-      <Setter Property="BorderBrush" Value="#B7D2EA" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="Background" Value="White" />
-    </Style>
-    <Style Selector="DataGridColumnHeader">
-      <Setter Property="Background" Value="#CFE6F8" />
-      <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="{StaticResource Ink}" />
-    </Style>
-    <Style Selector="ListBox.streets">
-      <Setter Property="BorderBrush" Value="#7AA7CC" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="Background" Value="White" />
-    </Style>
-    <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
-      <Setter Property="Background" Value="#0078D4" />
-    </Style>
-    <Style Selector="ListBoxItem:selected TextBlock">
-      <Setter Property="Foreground" Value="White" />
-    </Style>
+    <StyleInclude Source="avares://Avers/Styles/Controls.axaml" />
   </Application.Styles>
 </Application>

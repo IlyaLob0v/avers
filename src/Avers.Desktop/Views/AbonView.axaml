@@ -5,7 +5,7 @@
              x:Class="Avers.Desktop.Views.AbonView"
              x:DataType="vm:MainViewModel">
   <DockPanel>
-    <Border DockPanel.Dock="Top" Background="#D4EAFB" BorderBrush="#9EC0DE" BorderThickness="0,0,0,1" Padding="8,4">
+    <Border DockPanel.Dock="Top" Classes="toolbar">
       <StackPanel Orientation="Horizontal" Spacing="6">
         <Button Content="Улицы…" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Phonebook}" />
         <Button Content="Данные по дому" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Anten}" />
@@ -67,9 +67,9 @@
               </StackPanel>
             </Border>
           </StackPanel>
-          <StackPanel>
+          <StackPanel Grid.Column="1">
             <Border Classes="warn" IsVisible="{Binding HasFault}">
-              <TextBlock Text="{Binding FaultBanner}" TextWrapping="Wrap" Foreground="#5A3B00" />
+              <TextBlock Text="{Binding FaultBanner}" TextWrapping="Wrap" />
             </Border>
             <Border Classes="card">
               <StackPanel>

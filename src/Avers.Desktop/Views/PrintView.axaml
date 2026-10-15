@@ -3,10 +3,10 @@
              xmlns:vm="using:Avers.Desktop.ViewModels"
              x:Class="Avers.Desktop.Views.PrintView"
              x:DataType="vm:MainViewModel">
-  <Border Background="#2F6FB4">
-    <Border Width="400" HorizontalAlignment="Center" VerticalAlignment="Center" Background="White" BorderBrush="#0B4A86" BorderThickness="1">
+  <Border Classes="desk">
+    <Border Width="400" HorizontalAlignment="Center" VerticalAlignment="Center" Background="White" BorderBrush="{StaticResource AccentDark}" BorderThickness="1">
       <DockPanel>
-        <TextBlock DockPanel.Dock="Top" Text="Квитанция на оплату ТО СКПТ" Background="#0B5CAB" Foreground="White" Padding="12,8" FontWeight="SemiBold" />
+        <TextBlock DockPanel.Dock="Top" Text="Квитанция на оплату ТО СКПТ" Background="{StaticResource CaptionBar}" Foreground="White" Padding="10,6" FontWeight="Bold" />
         <StackPanel Margin="16" Spacing="6">
           <TextBlock HorizontalAlignment="Center" Classes="hint" Text="{Binding HouseCaption}" />
           <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
