@@ -85,7 +85,7 @@
               <TextBox Grid.Row="3" Grid.Column="1" Classes="cell" Text="{Binding EditContractHolder}" PlaceholderText="пусто — с самим абонентом" IsReadOnly="{Binding !CanEditCard}" />
             </Grid>
             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-              <Button Content="Открыть договор" Command="{Binding OpenContractCommand}" />
+              <Button Classes="link" Content="Открыть договор →" Command="{Binding OpenContractCommand}" />
               <Button Classes="primary" Content="Сохранить" Command="{Binding SaveCardCommand}" IsVisible="{Binding CanEditCard}" />
             </StackPanel>
           </StackPanel>

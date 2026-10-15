@@ -44,7 +44,7 @@
                   <TextBlock Grid.Row="7" Classes="label" Text="Счёт ПЖРЭУ" />
                   <TextBox Grid.Row="7" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.PzhreuAccount}" />
                   <TextBlock Grid.Row="8" Classes="label" Text="Договор" />
-                  <Button Grid.Row="8" Grid.Column="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  <Button Grid.Row="8" Grid.Column="1" Classes="link" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                           Content="{Binding CardContractShort}" Command="{Binding OpenContractCommand}"
                           ToolTip.Tip="Открыть договор" />
                   <TextBlock Grid.Row="9" Classes="label" Text="Льгота" />

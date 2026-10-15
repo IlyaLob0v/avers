@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using Avers.Data;
+using Avers.Desktop.Controls;
 using Avers.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -267,8 +268,8 @@ public sealed partial class MainViewModel
 
 public sealed record YearOption(int? Year, string Title);
 
-/// <summary>Строка реестра договоров по дому.</summary>
-public sealed class ContractRow(Subscriber s, DateOnly today, int warningMonths)
+/// <summary>Строка реестра договоров по дому: жёлтая — давно не было оплаты, серая — договор расторгнут.</summary>
+public sealed class ContractRow(Subscriber s, DateOnly today, int warningMonths) : IRowTone
 {
     public Subscriber Subscriber { get; } = s;
     public string Section => Subscriber.Section;
@@ -283,6 +284,7 @@ public sealed class ContractRow(Subscriber s, DateOnly today, int warningMonths)
     public string LastPay => Subscriber.LastPaymentDate?.ToString("dd.MM.yyyy") ?? "нет";
     public string MonthsWithoutPay => PaymentAge.MonthsSince(Subscriber.LastPaymentDate, today)?.ToString(CultureInfo.InvariantCulture) ?? "—";
     public bool IsLate { get; } = PaymentAge.IsLate(s.LastPaymentDate, today, warningMonths);
+    public RowTone Tone => Subscriber.ContractTerminated is not null ? RowTone.Off : IsLate ? RowTone.Warn : RowTone.None;
 }
 
 /// <summary>Месяц в таблице оплат карточки: кто внёс и кто оплатил.</summary>

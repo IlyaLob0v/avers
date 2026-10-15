@@ -1,13 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Avers.Desktop.ViewModels"
+             xmlns:ctl="using:Avers.Desktop.Controls"
              x:Class="Avers.Desktop.Views.ContractView"
              x:DataType="vm:MainViewModel">
-  <UserControl.Styles>
-    <Style Selector="DataGridRow.late">
-      <Setter Property="Background" Value="{StaticResource WarnBg}" />
-    </Style>
-  </UserControl.Styles>
   <DockPanel Margin="12">
     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8">
       <TextBlock Text="Организация" VerticalAlignment="Center" />
@@ -40,7 +36,7 @@
     <TextBlock DockPanel.Dock="Bottom" Classes="hint" Margin="0,6,0,0"
                Text="Двойной щелчок по строке — карточка квартиры. Жёлтым — давно не было оплаты." />
 
-    <DataGrid x:Name="Registry" Margin="0,10,0,0" MinHeight="240" ItemsSource="{Binding ContractRows}" SelectedItem="{Binding SelectedContractRow}"
+    <DataGrid x:Name="Registry" ctl:GridTone.Enabled="True" Margin="0,10,0,0" MinHeight="240" ItemsSource="{Binding ContractRows}" SelectedItem="{Binding SelectedContractRow}"
               AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Секц" Binding="{Binding Section}" Width="60" />
