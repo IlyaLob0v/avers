@@ -30,9 +30,18 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public void MockupButton_SaysItIsNotReady()
+    {
+        using var app = new DesktopApp();
+
+        app.Vm.NotReadyCommand.Execute("Печать");
+
+        Assert.Equal("«Печать» пока не работает: функция в разработке.", app.Vm.Status);
+    }
+
+    [AvaloniaFact]
     public void Journal_SelectingAnotherHouse_KeepsIt()
     {
-        // Раньше любой пересчёт экранов очищал список домов, и таблица сбрасывала выбор: дом «пропадал».
         using var app = new DesktopApp("orlov");
         app.Go(AppModule.Disp);
         var other = app.Vm.HousesOnStreet.First(h => h.Id != app.Vm.SelectedHouse!.Id);
@@ -50,7 +59,6 @@ public class ShellTests
     [InlineData("engineer", false)] // главный инженер только смотрит
     public void Journal_AcceptButton_EnabledRightAfterLogin(string login, bool enabled)
     {
-        // Кнопка «Принять заявку» должна быть доступна сразу после входа, без лишних щелчков.
         using var app = new DesktopApp(login);
         app.Go(AppModule.Disp);
 
@@ -92,7 +100,6 @@ public class ShellTests
     [AvaloniaFact]
     public void Debtors_AreColored()
     {
-        // Подсказка над таблицей обещает красные и жёлтые строки — строки должны знать свой цвет.
         using var app = new DesktopApp("lawyer");
 
         Assert.NotEmpty(app.Vm.Debtors);

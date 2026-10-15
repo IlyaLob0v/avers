@@ -21,8 +21,8 @@
       <Setter Property="HorizontalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.month.selected">
-      <Setter Property="Background" Value="{StaticResource Sel}" />
-      <Setter Property="BorderBrush" Value="{StaticResource Blue}" />
+      <Setter Property="Background" Value="{StaticResource AccentSoft}" />
+      <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
       <Setter Property="BorderThickness" Value="2" />
     </Style>
     <Style Selector="Button.month.open TextBlock.counts">
@@ -41,7 +41,7 @@
         <Button Classes="primary" Content="Принять заявку" Command="{Binding AcceptTicketCommand}" IsEnabled="{Binding CanAcceptTickets}" />
         <Button Content="Изменить заявку" Command="{Binding EditTicketCommand}" IsEnabled="{Binding CanEditSelectedTicket}" />
         <Button Content="Паспорт дома" Command="{Binding OpenTicketHouseCommand}" />
-        <Button Content="Печать наряд-заказа" Command="{Binding SavedCommand}" />
+        <Button Content="Печать наряд-заказа" Command="{Binding NotReadyCommand}" CommandParameter="Печать наряд-заказа" />
       </StackPanel>
     </Border>
 

@@ -6,7 +6,7 @@
              x:DataType="vm:MainViewModel">
   <UserControl.Styles>
     <Style Selector="Border.head">
-      <Setter Property="BorderBrush" Value="{StaticResource Line}" />
+      <Setter Property="BorderBrush" Value="{StaticResource Edge}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="Background" Value="#F7FBFE" />
       <Setter Property="Padding" Value="12,10" />
@@ -19,7 +19,7 @@
     <Style Selector="TextBlock.acc">
       <Setter Property="FontSize" Value="20" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="{StaticResource Title}" />
+      <Setter Property="Foreground" Value="{StaticResource Caption}" />
     </Style>
     <Style Selector="Grid.form > TextBlock">
       <Setter Property="VerticalAlignment" Value="Center" />

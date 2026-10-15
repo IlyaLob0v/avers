@@ -68,8 +68,6 @@ public class TicketTests
     [Fact]
     public async Task Subscriber_WithoutApartment_GetsOnlyOwnTickets()
     {
-        // Абонент без номера квартиры (частный дом, недозаполненная карточка) не должен получать
-        // все заявки дома, принятые без квартиры.
         await using var app = new AversApp();
         var client = await app.LoginAsync("orlov");
         var found = await client.GetFromJsonAsync<List<SubscriberListItem>>("/api/subscribers?mode=Account&q=1932068");

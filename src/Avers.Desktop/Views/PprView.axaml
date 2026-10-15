@@ -9,8 +9,8 @@
       <TextBox Width="70" Classes="cell" Text="2026" />
       <TextBlock Text="Зона" VerticalAlignment="Center" />
       <TextBox Width="120" Classes="cell" Text="все" />
-      <Button Content="Применить" Command="{Binding SavedCommand}" />
-      <Button Content="Копировать план на 2027" Command="{Binding SavedCommand}" />
+      <Button Content="Применить" Command="{Binding NotReadyCommand}" CommandParameter="Применить" />
+      <Button Content="Копировать план на 2027" Command="{Binding NotReadyCommand}" CommandParameter="Копировать план на 2027" />
     </StackPanel>
     <DataGrid Margin="0,10,0,0" Height="360" ItemsSource="{Binding PprRows}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>

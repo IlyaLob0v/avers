@@ -16,7 +16,7 @@
         <TextBlock Classes="hint" Margin="0,8,0,0" Text="Формат" />
         <TextBox Classes="cell" Text="XLSX" />
         <TextBlock Classes="hint" Margin="0,6,0,0" TextWrapping="Wrap" Text="Метрики включаются и выключаются. XPS заменён на XLSX/PDF." />
-        <Button Classes="primary" Margin="0,10,0,0" Content="Сформировать" Command="{Binding SavedCommand}" />
+        <Button Classes="primary" Margin="0,10,0,0" Content="Сформировать" Command="{Binding NotReadyCommand}" CommandParameter="Сформировать" />
       </StackPanel>
     </Border>
     <DataGrid ItemsSource="{Binding ReportMetrics}" AutoGenerateColumns="False">

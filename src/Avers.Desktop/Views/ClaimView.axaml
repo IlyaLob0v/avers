@@ -8,7 +8,7 @@
       <StackPanel>
         <TextBlock Classes="legend" Text="Досудебное уведомление" />
         <TextBox Height="220" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding ClaimText}" />
-        <Button Classes="primary" Margin="0,8,0,0" Content="Печать" Command="{Binding SavedCommand}" />
+        <Button Classes="primary" Margin="0,8,0,0" Content="Печать" Command="{Binding NotReadyCommand}" CommandParameter="Печать" />
         <TextBlock Classes="hint" Margin="0,6,0,0" Text="Система отбирает абонентов с долгом более 3 месяцев и готовит текст." />
       </StackPanel>
     </Border>
@@ -20,7 +20,7 @@
         <CheckBox IsChecked="True" Content="Справка о задолженности" />
         <CheckBox IsChecked="True" Content="История платежей" />
         <CheckBox IsChecked="True" Content="Копия договора" />
-        <Button Classes="primary" Margin="0,10,0,0" Content="Выгрузить пакет" Command="{Binding SavedCommand}" />
+        <Button Classes="primary" Margin="0,10,0,0" Content="Выгрузить пакет" Command="{Binding NotReadyCommand}" CommandParameter="Выгрузить пакет" />
       </StackPanel>
     </Border>
   </Grid>

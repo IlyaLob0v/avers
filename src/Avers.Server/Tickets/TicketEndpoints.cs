@@ -80,9 +80,7 @@ public static class TicketEndpoints
         if (subscriber is null)
             return TypedResults.NotFound();
 
-        // По квартире, а не только по лицевому счёту: заявки, принятые без абонента, тоже относятся к ней
-        // (то же правило, что ApartmentTickets.For в оболочке). Без номера квартиры — только по лицевому счёту,
-        // иначе в карточку попали бы все заявки дома, принятые без квартиры.
+        // Правило ApartmentTickets.For: свои заявки и принятые по адресу квартиры без абонента.
         var apartment = subscriber.Apartment.Trim();
         var tickets = await Query(db)
             .Where(t => t.SubscriberId == subscriberId
@@ -107,7 +105,6 @@ public static class TicketEndpoints
         if (y is < 2000 or > 2100)
             return Invalid("year", "Год вне допустимого диапазона.");
 
-        // Для сводки нужны только дата и состояние — не тянем из базы тексты заявок.
         var tickets = await db.Tickets.AsNoTracking()
             .Apply(TicketFilter.ForYear(y) with { HouseId = houseId, Kind = kind })
             .Select(t => new WorkTicket { Date = t.Date, Status = t.Status })

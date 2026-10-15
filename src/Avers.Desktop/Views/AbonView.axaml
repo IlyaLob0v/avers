@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Avers.Desktop.ViewModels"
              xmlns:d="using:Avers.Domain"
+             xmlns:ctl="using:Avers.Desktop.Controls"
              x:Class="Avers.Desktop.Views.AbonView"
              x:DataType="vm:MainViewModel">
   <DockPanel>
@@ -12,11 +13,11 @@
         <Button Content="Карточка" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Subscriber}" />
         <Button Content="Печать л/с" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Print}" />
         <TextBlock Text="Искать по:" VerticalAlignment="Center" Margin="8,0,0,0" Classes="hint" />
-        <RadioButton Content="Адресу" IsChecked="{Binding SearchByAddress, Mode=OneWay}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Address}" />
-        <RadioButton Content="ПЖРЭУ" IsChecked="{Binding SearchByPzhreu, Mode=OneWay}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Pzhreu}" />
-        <RadioButton Content="Лиц. счёту" IsChecked="{Binding SearchByAccount, Mode=OneWay}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Account}" />
-        <RadioButton Content="Вн. коду" IsChecked="{Binding SearchByInner, Mode=OneWay}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.InnerCode}" />
-        <RadioButton Content="Фамилии" IsChecked="{Binding SearchBySurname, Mode=OneWay}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Surname}" />
+        <RadioButton Content="Адресу" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.Address}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Address}" />
+        <RadioButton Content="ПЖРЭУ" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.Pzhreu}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Pzhreu}" />
+        <RadioButton Content="Лиц. счёту" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.Account}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Account}" />
+        <RadioButton Content="Вн. коду" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.InnerCode}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.InnerCode}" />
+        <RadioButton Content="Фамилии" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.Surname}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Surname}" />
       </StackPanel>
     </Border>
     <ScrollViewer>
@@ -81,7 +82,7 @@
             </Border>
             <Border Classes="card">
               <StackPanel>
-                <TextBlock Classes="legend" Text="Платежи 2026 · тариф / отв. / сумма / дата опл." />
+                <TextBlock Classes="legend" Text="{Binding PaymentsCaption}" />
                 <DataGrid ItemsSource="{Binding PaymentRows}" AutoGenerateColumns="False" Height="168" IsReadOnly="True">
                   <DataGrid.Columns>
                     <DataGridTextColumn Header="" Binding="{Binding Title}" Width="80" />

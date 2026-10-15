@@ -30,8 +30,8 @@
           </DataGrid.Columns>
         </DataGrid>
         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-          <Button Classes="primary" Content="Принять заявку" Command="{Binding SavedCommand}" />
-          <Button Content="Печать" Command="{Binding SavedCommand}" />
+          <Button Classes="primary" Content="Принять заявку" Command="{Binding NotReadyCommand}" CommandParameter="Принять заявку" />
+          <Button Content="Печать" Command="{Binding NotReadyCommand}" CommandParameter="Печать" />
         </StackPanel>
       </StackPanel>
     </Border>

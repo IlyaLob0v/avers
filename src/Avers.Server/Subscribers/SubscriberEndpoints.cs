@@ -82,7 +82,6 @@ public static class SubscriberEndpoints
                 break;
         }
 
-        // Долг считает база (две суммы), а не перенос в память всех месяцев оплат каждого абонента.
         var found = await query
             .OrderBy(s => s.LastName).ThenBy(s => s.Id)
             .Take(MaxResults)
@@ -96,7 +95,7 @@ public static class SubscriberEndpoints
             })
             .ToListAsync(ct);
 
-        // В проекции без отслеживания EF не связывает дом с улицей сам, а адрес строится по улице.
+        // Проекция не связывает дом с улицей, а адрес строится по улице.
         foreach (var x in found)
             x.House.Street = x.Street;
         return TypedResults.Ok(found.Select(x => new SubscriberListItem(

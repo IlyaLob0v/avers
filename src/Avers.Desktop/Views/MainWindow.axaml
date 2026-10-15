@@ -3,6 +3,7 @@
         xmlns:vm="using:Avers.Desktop.ViewModels"
         xmlns:views="using:Avers.Desktop.Views"
         xmlns:d="using:Avers.Domain"
+        xmlns:ctl="using:Avers.Desktop.Controls"
         x:Class="Avers.Desktop.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="{Binding WindowTitle}"
@@ -76,7 +77,7 @@
         </MenuItem>
         <MenuItem Header="_Справка">
           <MenuItem Header="Образцы оформления" Click="OnStyleGuideClick" />
-          <MenuItem Header="О программе" Command="{Binding SavedCommand}" />
+          <MenuItem Header="О программе" Command="{Binding AboutCommand}" />
         </MenuItem>
       </Menu>
 
@@ -137,25 +138,25 @@
       </Border>
 
       <Panel Background="{StaticResource Face}">
-        <views:DesktopView IsVisible="{Binding ShowDesktop}" />
-        <views:AbonView IsVisible="{Binding ShowAbon}" />
-        <views:DispView IsVisible="{Binding ShowDisp}" />
-        <views:TicketView IsVisible="{Binding ShowTicket}" />
-        <views:AntenView IsVisible="{Binding ShowAnten}" />
-        <views:AntenInfoView IsVisible="{Binding ShowAntenInfo}" />
-        <views:SchemeView IsVisible="{Binding ShowScheme}" />
-        <views:SubscriberView IsVisible="{Binding ShowSubscriber}" />
-        <views:PrDublView IsVisible="{Binding ShowPrDubl}" />
-        <views:ContractView IsVisible="{Binding ShowContract}" />
-        <views:PrintView IsVisible="{Binding ShowPrint}" />
-        <views:PprView IsVisible="{Binding ShowPpr}" />
-        <views:LegalView IsVisible="{Binding ShowLegal}" />
-        <views:ClaimView IsVisible="{Binding ShowClaim}" />
-        <views:ReportsView IsVisible="{Binding ShowReports}" />
-        <views:PhonebookView IsVisible="{Binding ShowPhonebook}" />
-        <views:DomofoView IsVisible="{Binding ShowDomofo}" />
-        <views:ReaderView IsVisible="{Binding ShowReader}" />
-        <views:AccessView IsVisible="{Binding ShowAccess}" />
+        <views:DesktopView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Desktop}}" />
+        <views:AbonView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Abon}}" />
+        <views:DispView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Disp}}" />
+        <views:TicketView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Ticket}}" />
+        <views:AntenView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Anten}}" />
+        <views:AntenInfoView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.AntenInfo}}" />
+        <views:SchemeView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Scheme}}" />
+        <views:SubscriberView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Subscriber}}" />
+        <views:PrDublView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.PrDubl}}" />
+        <views:ContractView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Contract}}" />
+        <views:PrintView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Print}}" />
+        <views:PprView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Ppr}}" />
+        <views:LegalView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Legal}}" />
+        <views:ClaimView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Claim}}" />
+        <views:ReportsView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Reports}}" />
+        <views:PhonebookView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Phonebook}}" />
+        <views:DomofoView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Domofo}}" />
+        <views:ReaderView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Reader}}" />
+        <views:AccessView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Access}}" />
       </Panel>
     </DockPanel>
   </Grid>

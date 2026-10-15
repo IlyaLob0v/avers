@@ -19,7 +19,7 @@
     </DataGrid>
     <StackPanel Orientation="Horizontal" Margin="0,8,0,8">
       <Button Classes="primary" Content="Сформировать претензии (долг ≥ 3 мес.)" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Claim}" />
-      <Button Content="Отчёт по должникам" Command="{Binding SavedCommand}" />
+      <Button Content="Отчёт по должникам" Command="{Binding NotReadyCommand}" CommandParameter="Отчёт по должникам" />
       <Button Content="Пакет документов для суда" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Claim}" />
     </StackPanel>
     <Border Classes="card">

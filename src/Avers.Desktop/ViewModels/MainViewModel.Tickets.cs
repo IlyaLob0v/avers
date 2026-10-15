@@ -89,7 +89,6 @@ public sealed partial class MainViewModel
             SetPeriod(new DateOnly(value, 1, 1), new DateOnly(value, 12, 31));
     }
 
-    // ---- что показывает журнал ----
 
     public string TicketCountText
     {
@@ -115,7 +114,6 @@ public sealed partial class MainViewModel
         _ => $"Заявки за {TicketYear} год · все дома"
     };
 
-    // ---- выбранная заявка: дом, квартира, договор ----
 
     public House? TicketHouse => SelectedTicket is null ? null : _houses.FirstOrDefault(h => h.Id == SelectedTicket.HouseId);
     public Subscriber? TicketSubscriber => SelectedTicket?.SubscriberId is { } id ? _subscribers.FirstOrDefault(s => s.Id == id) : null;
@@ -166,7 +164,6 @@ public sealed partial class MainViewModel
 
     public bool HasTicketRightsHint => TicketRightsHint.Length > 0;
 
-    // ---- данные по дому от антенной службы ----
 
     public string HouseHomeowner => SelectedHouse?.Organization is { } o ? $"{o.Name}, {o.Branch}" : "не указан";
     public string HouseHomeownerPhones => SelectedHouse?.Organization?.Phones ?? "";
@@ -177,7 +174,6 @@ public sealed partial class MainViewModel
         ? SelectedSubscriber.Apartment
         : FindApartment.Trim();
 
-    // ---- обновление ----
 
     private void LoadTicketYears()
     {
@@ -293,7 +289,6 @@ public sealed partial class MainViewModel
         RefreshTickets();
     }
 
-    // ---- команды ----
 
     [RelayCommand]
     private void PeriodToday() => SetPeriod(_today, _today);
