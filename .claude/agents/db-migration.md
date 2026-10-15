@@ -6,6 +6,7 @@ model: inherit
 skills:
   - data:sql-queries
   - data:validate-data
+  - avers-open-question
 color: green
 ---
 

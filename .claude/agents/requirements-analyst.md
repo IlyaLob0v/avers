@@ -3,6 +3,8 @@ name: requirements-analyst
 description: Аналитик требований Аверса. Используй для разбора требований сотрудников (АДС, главный инженер, радиомеханики, юристы, бухгалтерия), фото ТЗ и сверок, составления пользовательских историй, критериев приёмки и списков вопросов к заказчику.
 tools: Read, Grep, Glob, Write, Edit, WebSearch, WebFetch
 model: inherit
+skills:
+  - avers-open-question
 color: blue
 ---
 

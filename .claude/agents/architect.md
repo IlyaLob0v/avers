@@ -6,6 +6,8 @@ model: inherit
 skills:
   - engineering:architecture
   - engineering:system-design
+  - avers-adr
+  - avers-open-question
 color: orange
 ---
 
