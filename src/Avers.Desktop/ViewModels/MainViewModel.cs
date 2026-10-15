@@ -200,6 +200,9 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowShell));
         OnPropertyChanged(nameof(CanEditCard));
         OnPropertyChanged(nameof(CanEditSettings));
+        // Права на заявки зависят от вошедшего: без этого «Принять заявку» оставалась серой до первого щелчка.
+        NotifyTicketPanel();
+        BindTicket();
         NotifyModule();
     }
 
