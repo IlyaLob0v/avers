@@ -46,8 +46,17 @@ public class AuthTests
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    [Fact]
+    public async Task SubscriberCard_DispatcherSeesApartmentData()
+    {
+        // Пользователь АДС видит данные квартиры (л/с, ФИО, договор) при приёме заявки — правки АДС, октябрь 2026.
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("sokolova");
+
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/subscribers/1")).StatusCode);
+    }
+
     [Theory]
-    [InlineData("sokolova")] // диспетчер: карточки абонентов не видит, как в оболочке (вопрос к АДС открыт)
     [InlineData("novikov")]  // читатель (радиомеханик)
     public async Task SubscriberCard_ForbiddenWithoutAbonModule(string login)
     {

@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using Avers.Server.Auth;
 using Avers.Server.Hosting;
 using Avers.Server.Subscribers;
+using Avers.Server.Tickets;
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Authorization;
 
@@ -42,6 +43,7 @@ if (app.Environment.IsDevelopment())
 app.MapHealthChecks("/health").AllowAnonymous();
 app.MapAuth();
 app.MapSubscribers();
+app.MapTickets();
 
 await app.InitializeDatabaseAsync();
 await app.RunAsync();

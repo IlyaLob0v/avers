@@ -139,7 +139,22 @@ public static class DemoSeeder
             T(980, new(2026, 8, 18), new(9, 10), hLen44, gromova, "7", "1", "8-951-333-0190", TicketKind.Antenna,
                 "Слабый сигнал на 1 канале", "Подтяжка F-разъёма на чердаке, уровень восстановлен", "Малышев Роман Алексеевич", TicketStatus.Done, "Соколова Н.В.", ""),
             T(971, new(2026, 8, 12), new(13, 48), hVol19d, ivanova, "68", "2", "8-983-623-3122", TicketKind.Cable,
-                "Искрит розетка ТВ", "Заменена абонентская розетка", "Новиков Дмитрий Сергеевич", TicketStatus.Done, "Орлова Т.И.", ""));
+                "Искрит розетка ТВ", "Заменена абонентская розетка", "Новиков Дмитрий Сергеевич", TicketStatus.Done, "Орлова Т.И.", ""),
+            // Заявки за прошлые месяцы и прошлый год — чтобы было что смотреть по году и по периоду.
+            T(952, new(2026, 7, 21), new(10, 3), hVol19d, belousov, "41", "2", "8-913-441-8807", TicketKind.Antenna,
+                "Рябь на 3–5 каналах", "Заменён делитель на техэтаже", "Малышев Р.А.", TicketStatus.Done, "Соколова Н.В.", "стояк 3"),
+            T(931, new(2026, 6, 9), new(15, 30), hAv12, kozlov, "3", "1", "8-3812-55-19-02", TicketKind.Antenna,
+                "Нет сигнала после грозы", "Заменён блок питания усилителя, сигнал в норме", "Новиков Д.С.", TicketStatus.Done, "Орлова Т.И.", ""),
+            T(918, new(2026, 5, 27), new(9, 45), hBr18, chernova, "15", "1", "8-904-329-6610", TicketKind.Cable,
+                "Повреждён кабель в подъезде", "", "Малышев Р.А.", TicketStatus.Deferred, "Соколова Н.В.", "под. 1"),
+            T(890, new(2026, 3, 16), new(12, 10), hVol19d, ivanova, "68", "2", "8-983-623-3122", TicketKind.Antenna,
+                "Плохое изображение на всех каналах", "Настроена антенна на кровле под. 2", "Новиков Д.С.", TicketStatus.Done, "Соколова Н.В.", ""),
+            T(861, new(2026, 1, 19), new(11, 0), hLen44, gromova, "7", "1", "8-951-333-0190", TicketKind.Amplifier,
+                "Пропал сигнал во всём подъезде", "Заменён магистральный усилитель на чердаке", "Малышев Р.А.", TicketStatus.Done, "Орлова Т.И.", ""),
+            T(842, new(2025, 11, 25), new(14, 20), hVol19d, ivanova, "68", "2", "8-983-623-3122", TicketKind.Antenna,
+                "Снег на изображении", "Подтянуты разъёмы на отводе 9 этажа", "Малышев Р.А.", TicketStatus.Done, "Соколова Н.В.", ""),
+            T(815, new(2025, 9, 8), new(10, 40), hBr18, saveliev, "90", "3", "8-913-200-7744", TicketKind.Antenna,
+                "Не показывает часть каналов", "Замена отвода", "Новиков Д.С.", TicketStatus.Done, "Орлова Т.И.", ""));
 
         db.Mechanics.AddRange(
             new Mechanic { FullName = "Малышев Роман Алексеевич", Position = "Радиомеханик 5 р.", Phone = "8-913-777-1020", Address = "г. Омск, ул. Серова, 9-21" },
@@ -171,9 +186,21 @@ public static class DemoSeeder
             User("engineer", "Иванов П.С.", UserRole.ChiefEngineer, "Главный инженер", false),
             User("sokolova", "Соколова Н.В.", UserRole.Dispatcher, "АДС, диспетчерская", false),
             User("orlov", "Орлов С.А.", UserRole.AdsHead, "АДС", true),
+            User("orlova", "Орлова Т.И.", UserRole.Dispatcher, "АДС, диспетчерская", false),
             User("lawyer", "Кравцова И.М.", UserRole.Lawyer, "Юридический отдел", false),
             User("novikov", "Новиков Д.С.", UserRole.Reader, "Радиомеханик", false));
 
+        db.SaveChanges();
+
+        // Кто принял заявку: учебные заявки записаны с ФИО диспетчера, связываем их с пользователями.
+        var users = db.Users.ToDictionary(u => u.DisplayName);
+        foreach (var ticket in db.Tickets.ToList())
+        {
+            if (users.TryGetValue(ticket.AcceptedBy, out var user))
+                ticket.AcceptedByUserId = user.Id;
+            if (ticket.Status == TicketStatus.Done)
+                ticket.DoneDate ??= ticket.Date;
+        }
         db.SaveChanges();
     }
 

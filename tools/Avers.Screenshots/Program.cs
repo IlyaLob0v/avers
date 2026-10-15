@@ -54,6 +54,7 @@ guide.Show();
 Save("99-obraztsy", guide);
 
 File.Delete(dbPath);
+File.Delete(dbPath + ".schema");
 return;
 
 void Save(string name, Avalonia.Controls.Window? target = null)

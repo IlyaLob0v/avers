@@ -7,30 +7,34 @@
   <StackPanel Margin="16" MaxWidth="900">
     <Border Classes="card">
       <StackPanel>
+        <TextBlock Classes="legend" Text="{Binding TicketHeader}" />
         <Grid ColumnDefinitions="*,*">
           <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto">
             <TextBlock Classes="label" Text="Адрес" />
-            <TextBox Grid.Column="1" Classes="cell" Text="{Binding HouseCaption, Mode=OneWay}" IsReadOnly="True" />
+            <TextBox Grid.Column="1" Classes="cell" Text="{Binding TicketAddress, Mode=OneWay}" IsReadOnly="True" />
             <TextBlock Grid.Row="1" Classes="label" Text="Заявитель" />
-            <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.FullName, Mode=OneWay}" IsReadOnly="True" />
+            <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding TicketSubscriberName, Mode=OneWay}" IsReadOnly="True" />
             <TextBlock Grid.Row="2" Classes="label" Text="Телефон" />
-            <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.Phone}" />
+            <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding SelectedTicket.Phone, Mode=OneWay}" IsReadOnly="True" />
           </Grid>
           <Grid Grid.Column="1" ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto">
             <TextBlock Classes="label" Text="Исполнитель" />
             <TextBox Grid.Column="1" Classes="cell" Text="{Binding TicketMechanic}" />
             <TextBlock Grid.Row="1" Classes="label" Text="Лиц. счёт" />
-            <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.Account, Mode=OneWay}" IsReadOnly="True" />
+            <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding TicketAccount, Mode=OneWay}" IsReadOnly="True" />
             <TextBlock Grid.Row="2" Classes="label" Text="Индекс" />
-            <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.PzhreuIndex, Mode=OneWay}" IsReadOnly="True" />
+            <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding TicketSubscriber.PzhreuIndex, Mode=OneWay}" IsReadOnly="True" />
           </Grid>
         </Grid>
         <TextBlock Classes="hint" Margin="0,8,0,2" Text="Описание неисправности" />
         <TextBox Classes="cell" Height="64" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding TicketFault}" />
         <TextBlock Classes="hint" Margin="0,8,0,2" Text="Что произведено (как в наряд-заказе)" />
         <TextBox Classes="cell" Height="56" TextWrapping="Wrap" AcceptsReturn="True" PlaceholderText="Заполняет диспетчерская служба после отчёта радиомеханика." Text="{Binding TicketWork}" />
+        <Border Classes="warn" Margin="0,8,0,0" IsVisible="{Binding HasTicketRightsHint}">
+          <TextBlock Text="{Binding TicketRightsHint}" TextWrapping="Wrap" Foreground="#5A3B00" />
+        </Border>
         <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-          <Button Classes="primary" Content="Сохранить" Command="{Binding SaveTicketCommand}" />
+          <Button Classes="primary" Content="Сохранить" Command="{Binding SaveTicketCommand}" IsEnabled="{Binding CanEditSelectedTicket}" />
           <Button Content="Закрыть" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Disp}" />
         </StackPanel>
       </StackPanel>
