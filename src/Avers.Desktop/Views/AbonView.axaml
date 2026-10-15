@@ -44,7 +44,9 @@
                   <TextBlock Grid.Row="7" Classes="label" Text="Счёт ПЖРЭУ" />
                   <TextBox Grid.Row="7" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.PzhreuAccount}" />
                   <TextBlock Grid.Row="8" Classes="label" Text="Договор" />
-                  <TextBox Grid.Row="8" Grid.Column="1" Classes="cell" Text="{Binding ContractDateText}" IsReadOnly="True" />
+                  <Button Grid.Row="8" Grid.Column="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                          Content="{Binding CardContractShort}" Command="{Binding OpenContractCommand}"
+                          ToolTip.Tip="Открыть договор" />
                   <TextBlock Grid.Row="9" Classes="label" Text="Льгота" />
                   <TextBox Grid.Row="9" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.Benefit}" />
                   <TextBlock Grid.Row="10" Classes="label" Text="Расчёт с" />
@@ -71,10 +73,16 @@
             <Border Classes="warn" IsVisible="{Binding HasFault}">
               <TextBlock Text="{Binding FaultBanner}" TextWrapping="Wrap" />
             </Border>
+            <Border Classes.card="{Binding !IsPaymentLate}" Classes.warn="{Binding IsPaymentLate}">
+              <StackPanel>
+                <TextBlock FontWeight="SemiBold" TextWrapping="Wrap" Text="{Binding LastPaymentLine}" />
+                <TextBlock Classes="hint" Text="{Binding LastPaymentAgo}" />
+              </StackPanel>
+            </Border>
             <Border Classes="card">
               <StackPanel>
                 <TextBlock Classes="legend" Text="Платежи 2026 · тариф / отв. / сумма / дата опл." />
-                <DataGrid ItemsSource="{Binding PaymentRows}" AutoGenerateColumns="False" Height="140" IsReadOnly="True">
+                <DataGrid ItemsSource="{Binding PaymentRows}" AutoGenerateColumns="False" Height="168" IsReadOnly="True">
                   <DataGrid.Columns>
                     <DataGridTextColumn Header="" Binding="{Binding Title}" Width="80" />
                     <DataGridTextColumn Header="Янв" Binding="{Binding Jan}" Width="70" />

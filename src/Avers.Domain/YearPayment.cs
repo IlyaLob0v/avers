@@ -11,4 +11,10 @@ public sealed class YearPayment
     public string? Source { get; set; }
     public decimal? Amount { get; set; }
     public DateOnly? PaidAt { get; set; }
+
+    /// <summary>Сотрудник, который внёс оплату в программу.</summary>
+    public string? RecordedBy { get; set; }
+
+    /// <summary>Кто оплатил, если не сам абонент (например, родственник по квитанции).</summary>
+    public string? PayerName { get; set; }
 }

@@ -15,6 +15,10 @@ public sealed class Subscriber
     public string Section { get; set; } = "";
     public DateOnly? ContractDate { get; set; }
     public DateOnly? ContractTerminated { get; set; }
+    public string ContractNumber { get; set; } = "";
+
+    /// <summary>С кем заключён договор, если не с самим абонентом (ФИО полностью).</summary>
+    public string ContractHolder { get; set; } = "";
     public string Notes { get; set; } = "";
     public string PzhreuIndex { get; set; } = "";
     public string PzhreuAccount { get; set; } = "";
@@ -27,6 +31,9 @@ public sealed class Subscriber
     public ICollection<WorkTicket> Tickets { get; set; } = new List<WorkTicket>();
     public ICollection<CourtCase> CourtCases { get; set; } = new List<CourtCase>();
     public ICollection<UnifiedReceipt> Receipts { get; set; } = new List<UnifiedReceipt>();
+
+    /// <summary>С кем заключён договор: указанное лицо или сам абонент.</summary>
+    public string ContractParty => string.IsNullOrWhiteSpace(ContractHolder) ? FullName : ContractHolder.Trim();
 
     public string FullName => string.Join(" ", new[] { LastName, FirstName, Patronymic }.Where(x => !string.IsNullOrWhiteSpace(x)));
     public string ShortName

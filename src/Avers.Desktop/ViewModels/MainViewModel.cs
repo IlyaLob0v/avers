@@ -162,7 +162,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     public void Load()
     {
+        var keepSubscriberId = SelectedSubscriber?.Id;
         using var db = _db.CreateDbContext();
+        PaymentWarningMonths = Settings.PaymentWarningMonths(db);
         Users.Clear();
         foreach (var u in db.Users.AsNoTracking().OrderBy(x => x.Login))
             Users.Add(u);
@@ -186,10 +188,14 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var (role, title) in RoleCatalog.All)
             AccessRows.Add(AccessRow.From(role, title));
 
-        SelectedStreet = Streets.FirstOrDefault(s => s.Name == "Волочаевская") ?? Streets.FirstOrDefault();
+        // После записи (оплата, договор) остаёмся на той же квартире, а не прыгаем на учебную по умолчанию.
+        var keep = _subscribers.FirstOrDefault(s => s.Id == keepSubscriberId);
+        SelectedStreet = Streets.FirstOrDefault(s => s.Id == keep?.House.StreetId)
+                         ?? Streets.FirstOrDefault(s => s.Name == "Волочаевская") ?? Streets.FirstOrDefault();
         RefreshDerived();
-        SelectedHouse = HousesOnStreet.FirstOrDefault(h => h.Number == "19Д") ?? HousesOnStreet.FirstOrDefault();
-        SelectedSubscriber = _subscribers.FirstOrDefault(s => s.Account == "1932068");
+        SelectedHouse = HousesOnStreet.FirstOrDefault(h => h.Id == keep?.HouseId)
+                        ?? HousesOnStreet.FirstOrDefault(h => h.Number == "19Д") ?? HousesOnStreet.FirstOrDefault();
+        SelectedSubscriber = keep ?? _subscribers.FirstOrDefault(s => s.Account == "1932068");
         SelectedTicket = _tickets.FirstOrDefault(t => t.Number == 1001);
         BindTicket();
         RefreshDerived();
@@ -202,6 +208,8 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowLogin));
         OnPropertyChanged(nameof(ShowShell));
         OnPropertyChanged(nameof(StatusRight));
+        OnPropertyChanged(nameof(CanEditCard));
+        OnPropertyChanged(nameof(CanEditSettings));
         NotifyModule();
     }
 
@@ -340,6 +348,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(Intercom));
         OnPropertyChanged(nameof(HouseAptLine));
         NotifyTicketPanel();
+        RefreshCard();
         BuildClaim();
     }
 
@@ -351,6 +360,7 @@ public sealed partial class MainViewModel : ObservableObject
         PaymentRows.Add(new PaymentGridRow("Отв.", pays.Select(p => p.Source ?? "").ToArray()));
         PaymentRows.Add(new PaymentGridRow("Сумма", pays.Select(p => p.Amount is null ? "" : p.Amount.Value.ToString("N2")).ToArray()));
         PaymentRows.Add(new PaymentGridRow("Дата опл.", pays.Select(p => p.PaidAt is null ? "" : p.PaidAt.Value.ToString("dd.MM")).ToArray()));
+        PaymentRows.Add(new PaymentGridRow("Внёс", pays.Select(p => p.RecordedBy ?? "").ToArray()));
     }
 
     private void BuildClaim()
@@ -457,6 +467,9 @@ public sealed partial class MainViewModel : ObservableObject
         next.Amount = next.Tariff;
         next.Source = "Касса";
         next.PaidAt = _today;
+        next.RecordedBy = User?.DisplayName;
+        if (SelectedSubscriber.LastPaymentDate is null || SelectedSubscriber.LastPaymentDate < _today)
+            db.Subscribers.First(s => s.Id == SelectedSubscriber.Id).LastPaymentDate = _today;
         db.SaveChanges();
         Load();
         Status = $"Внесена оплата {next.Tariff:N2} ₽ за {Months[next.Month - 1]} 2026. Окно подтверждения от 1000 ₽ не показывается.";

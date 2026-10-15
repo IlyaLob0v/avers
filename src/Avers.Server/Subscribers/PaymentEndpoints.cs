@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Avers.Contracts;
 using Avers.Data;
 using Avers.Domain;
@@ -12,7 +13,7 @@ public static class PaymentEndpoints
     public const string DefaultSource = "Касса";
 
     public static PaymentDto ToDto(YearPayment p) =>
-        new(p.Id, p.Year, p.Month, p.Tariff, p.Amount, p.PaidAt, p.Source, p.Amount is not null);
+        new(p.Id, p.Year, p.Month, p.Tariff, p.Amount, p.PaidAt, p.Source, p.Amount is not null, p.RecordedBy, p.PayerName);
 
     /// <summary>
     /// Вносит оплату за месяц, как кнопка «Внести оплату» в оболочке. Оплаченным месяц считается,
@@ -20,7 +21,7 @@ public static class PaymentEndpoints
     /// docs/07-open-questions.md).
     /// </summary>
     public static async Task<Results<Ok<PaymentDto>, NotFound, ValidationProblem, ProblemHttpResult>> Record(
-        int id, RecordPaymentRequest request, AversDbContext db, TimeProvider time, CancellationToken ct)
+        int id, RecordPaymentRequest request, ClaimsPrincipal user, AversDbContext db, TimeProvider time, CancellationToken ct)
     {
         var errors = new Dictionary<string, string[]>();
         if (request.Year is < 2000 or > 2100)
@@ -33,6 +34,8 @@ public static class PaymentEndpoints
             errors["amount"] = ["Сумма — не больше двух знаков после запятой."];
         if (request.Source is { Length: > 40 })
             errors["source"] = ["Источник — не длиннее 40 символов."];
+        if (request.PayerName is { Length: > 250 })
+            errors["payerName"] = ["Плательщик — не длиннее 250 символов."];
         if (errors.Count > 0)
             return TypedResults.ValidationProblem(errors);
 
@@ -55,6 +58,10 @@ public static class PaymentEndpoints
         var amount = request.Amount ?? target.Tariff;
         var paidAt = request.PaidAt ?? time.Today();
         var source = string.IsNullOrWhiteSpace(request.Source) ? DefaultSource : request.Source.Trim();
+        var payer = string.IsNullOrWhiteSpace(request.PayerName) ? null : request.PayerName.Trim();
+        var login = user.Identity?.Name;
+        var recordedBy = await db.Users.AsNoTracking().Where(u => u.Login == login)
+            .Select(u => u.DisplayName).FirstOrDefaultAsync(ct) ?? login;
 
         // Условие Amount == null в самом UPDATE: если два кассира внесут один месяц одновременно,
         // пройдёт только первый.
@@ -64,7 +71,9 @@ public static class PaymentEndpoints
             .ExecuteUpdateAsync(u => u
                 .SetProperty(p => p.Amount, amount)
                 .SetProperty(p => p.PaidAt, paidAt)
-                .SetProperty(p => p.Source, source), ct);
+                .SetProperty(p => p.Source, source)
+                .SetProperty(p => p.RecordedBy, recordedBy)
+                .SetProperty(p => p.PayerName, payer), ct);
         if (updated == 0)
             return Conflict($"Месяц {target.Month:00}.{target.Year} уже оплачен.");
 
@@ -78,6 +87,8 @@ public static class PaymentEndpoints
         target.Amount = amount;
         target.PaidAt = paidAt;
         target.Source = source;
+        target.RecordedBy = recordedBy;
+        target.PayerName = payer;
         return TypedResults.Ok(ToDto(target));
     }
 

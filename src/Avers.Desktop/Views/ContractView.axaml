@@ -1,12 +1,16 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Avers.Desktop.ViewModels"
-             xmlns:d="using:Avers.Domain"
              x:Class="Avers.Desktop.Views.ContractView"
              x:DataType="vm:MainViewModel">
-  <StackPanel Margin="12">
-    <StackPanel Orientation="Horizontal" Spacing="8">
-      <TextBlock Text="Владелец" VerticalAlignment="Center" />
+  <UserControl.Styles>
+    <Style Selector="DataGridRow.late">
+      <Setter Property="Background" Value="{StaticResource WarnBg}" />
+    </Style>
+  </UserControl.Styles>
+  <DockPanel Margin="12">
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8">
+      <TextBlock Text="Организация" VerticalAlignment="Center" />
       <TextBox Width="240" Classes="cell" Text="{Binding SelectedHouse.Organization.Name, Mode=OneWay}" IsReadOnly="True" />
       <TextBlock Text="Дом" VerticalAlignment="Center" />
       <TextBox Width="200" Classes="cell" Text="{Binding HouseCaption, Mode=OneWay}" IsReadOnly="True" />
@@ -14,21 +18,43 @@
       <TextBlock Text="Дата" VerticalAlignment="Center" />
       <TextBox Width="100" Classes="cell" Text="{Binding WorkDateText, Mode=OneWay}" IsReadOnly="True" />
     </StackPanel>
-    <DataGrid Margin="0,10,0,0" Height="320" ItemsSource="{Binding Contracts}" SelectedItem="{Binding SelectedSubscriber}" AutoGenerateColumns="False" IsReadOnly="True">
+
+    <!-- Выбранный договор: всё, что нужно, чтобы «провалиться» в него -->
+    <Border DockPanel.Dock="Bottom" Margin="0,8,0,0" Classes.card="{Binding !IsPaymentLate}" Classes.warn="{Binding IsPaymentLate}">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel>
+          <TextBlock FontSize="15" FontWeight="Bold" Text="{Binding CardContractLine}" TextWrapping="Wrap" />
+          <TextBlock Margin="0,2,0,0" Text="{Binding CardAddress}" />
+          <TextBlock Text="{Binding CardAccount, StringFormat='Лицевой счёт {0}'}" />
+          <TextBlock Text="{Binding CardOrganization, StringFormat='Обслуживающая организация: {0}'}" />
+          <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding LastPaymentLine}" TextWrapping="Wrap" />
+          <TextBlock Classes="hint" Text="{Binding LastPaymentAgo}" />
+          <TextBlock Classes="hint" Text="{Binding SelectedSubscriber.Notes, StringFormat='Примечание: {0}'}" TextWrapping="Wrap" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" VerticalAlignment="Top">
+          <Button Classes="primary" Content="Карточка квартиры" Command="{Binding OpenCardCommand}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <TextBlock DockPanel.Dock="Bottom" Classes="hint" Margin="0,6,0,0"
+               Text="Двойной щелчок по строке — карточка квартиры. Жёлтым — давно не было оплаты." />
+
+    <DataGrid x:Name="Registry" Margin="0,10,0,0" MinHeight="240" ItemsSource="{Binding ContractRows}" SelectedItem="{Binding SelectedContractRow}"
+              AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Секц" Binding="{Binding Section}" Width="60" />
-        <DataGridTextColumn Header="Кв" Binding="{Binding Apartment}" Width="50" />
-        <DataGridTextColumn Header="Фамилия И.О. полностью" Binding="{Binding FullName}" Width="240" />
-        <DataGridTextColumn Header="Заключен" Binding="{Binding ContractDate}" Width="110" />
-        <DataGridTextColumn Header="Расторгнут" Binding="{Binding ContractTerminated}" Width="110" />
-        <DataGridTextColumn Header="Примечания по договору" Binding="{Binding Notes}" Width="280" />
+        <DataGridTextColumn Header="Кв" Binding="{Binding Apartment}" Width="55" />
+        <DataGridTextColumn Header="Лиц. счёт" Binding="{Binding Account}" Width="100" />
+        <DataGridTextColumn Header="Фамилия И.О. полностью" Binding="{Binding FullName}" Width="230" />
+        <DataGridTextColumn Header="№ договора" Binding="{Binding Number}" Width="150" />
+        <DataGridTextColumn Header="С кем заключён" Binding="{Binding Party}" Width="230" />
+        <DataGridTextColumn Header="Заключён" Binding="{Binding Signed}" Width="110" />
+        <DataGridTextColumn Header="Расторгнут" Binding="{Binding Terminated}" Width="110" />
+        <DataGridTextColumn Header="Посл. оплата" Binding="{Binding LastPay}" Width="120" />
+        <DataGridTextColumn Header="Мес. без опл." Binding="{Binding MonthsWithoutPay}" Width="110" />
+        <DataGridTextColumn Header="Примечания" Binding="{Binding Notes}" Width="*" />
       </DataGrid.Columns>
     </DataGrid>
-    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-      <Button Content="Новый договор" Command="{Binding SavedCommand}" />
-      <Button Content="Править" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Subscriber}" />
-      <Button Content="Расторгнуть" Command="{Binding SavedCommand}" />
-      <Button Content="Печатать реестр" Command="{Binding SavedCommand}" />
-    </StackPanel>
-  </StackPanel>
+  </DockPanel>
 </UserControl>

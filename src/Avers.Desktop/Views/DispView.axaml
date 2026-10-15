@@ -216,7 +216,9 @@
                 <TextBlock Grid.Row="3" Classes="k" Text="Договор" />
                 <TextBlock Grid.Row="3" Grid.Column="1" Classes="v" Text="{Binding TicketContract}" />
                 <TextBlock Grid.Row="4" Classes="k" Text="Последняя оплата" />
-                <TextBlock Grid.Row="4" Grid.Column="1" Classes="v" Text="{Binding TicketLastPayment}" />
+                <Border Grid.Row="4" Grid.Column="1" Classes.warn="{Binding IsTicketPaymentLate}" Padding="2,0" Margin="0">
+                  <TextBlock Classes="v" Text="{Binding TicketLastPayment}" />
+                </Border>
                 <TextBlock Grid.Row="5" Classes="k" Text="Примечание" />
                 <TextBlock Grid.Row="5" Grid.Column="1" Classes="v" Text="{Binding TicketNotes}" />
               </Grid>

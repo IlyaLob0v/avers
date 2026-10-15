@@ -143,10 +143,15 @@ public sealed partial class MainViewModel
     {
         null => "—",
         { ContractDate: null } => "договора нет",
-        { ContractTerminated: { } end } s => $"от {s.ContractDate:dd.MM.yyyy} с {s.FullName}, расторгнут {end:dd.MM.yyyy}",
-        var s => $"от {s.ContractDate:dd.MM.yyyy} с {s.FullName}"
+        { ContractTerminated: { } end } s => $"{ContractNo(s)}от {s.ContractDate:dd.MM.yyyy} с {s.ContractParty}, расторгнут {end:dd.MM.yyyy}",
+        var s => $"{ContractNo(s)}от {s.ContractDate:dd.MM.yyyy} с {s.ContractParty}"
     };
-    public string TicketLastPayment => TicketSubscriber?.LastPaymentDate is { } d ? d.ToString("dd.MM.yyyy") : "нет";
+    public string TicketLastPayment => TicketSubscriber?.LastPaymentDate is { } d
+        ? $"{d:dd.MM.yyyy} ({PaymentAge.AgoText(d, _today)})"
+        : "нет";
+    public bool IsTicketPaymentLate => TicketSubscriber is { } s && PaymentAge.IsLate(s.LastPaymentDate, _today, PaymentWarningMonths);
+
+    private static string ContractNo(Subscriber s) => string.IsNullOrWhiteSpace(s.ContractNumber) ? "" : $"№ {s.ContractNumber} ";
     public string TicketNotes => TicketSubscriber?.Notes is { Length: > 0 } n ? n : "—";
 
     public bool CanAcceptTickets => User is not null && RoleCatalog.Can(User.Role, AppModule.Disp, out var level) && level == RoleCatalog.AccessLevel.Edit;
@@ -275,6 +280,7 @@ public sealed partial class MainViewModel
         OnPropertyChanged(nameof(TicketAccount));
         OnPropertyChanged(nameof(TicketContract));
         OnPropertyChanged(nameof(TicketLastPayment));
+        OnPropertyChanged(nameof(IsTicketPaymentLate));
         OnPropertyChanged(nameof(TicketNotes));
         OnPropertyChanged(nameof(CanEditSelectedTicket));
         OnPropertyChanged(nameof(CanAcceptTickets));
@@ -327,7 +333,7 @@ public sealed partial class MainViewModel
     {
         if (TicketSubscriber is not { } s) { Status = "У заявки нет лицевого счёта, договора не найти."; return; }
         SelectSubscriberOf(s);
-        Go(AppModule.Contract);
+        OpenContract();
     }
 
     [RelayCommand]
