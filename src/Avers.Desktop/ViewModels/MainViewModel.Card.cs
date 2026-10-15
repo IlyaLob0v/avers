@@ -59,7 +59,6 @@ public sealed partial class MainViewModel
     public string CardContractShort => SelectedSubscriber is not { } s ? "" :
         $"{(string.IsNullOrWhiteSpace(s.ContractNumber) ? "б/н" : s.ContractNumber)}{(s.ContractDate is { } d ? $" от {d:dd.MM.yyyy}" : "")} →";
 
-    public int? MonthsSinceLastPayment => SelectedSubscriber is null ? null : PaymentAge.MonthsSince(SelectedSubscriber.LastPaymentDate, _today);
     public bool IsPaymentLate => SelectedSubscriber is not null && PaymentAge.IsLate(SelectedSubscriber, _today, PaymentWarningMonths);
     public string LastPaymentAgo => SelectedSubscriber is null ? "" : PaymentAge.AgoText(SelectedSubscriber.LastPaymentDate, _today);
 
@@ -114,7 +113,7 @@ public sealed partial class MainViewModel
         var list = _subscribers.AsEnumerable();
         if (SelectedHouse is not null) list = list.Where(s => s.HouseId == SelectedHouse.Id);
         if (OnlyActiveContracts) list = list.Where(s => s.ContractTerminated is null);
-        foreach (var s in list.OrderBy(s => s.Section).ThenBy(s => s.Apartment, ApartmentOrder.Instance))
+        foreach (var s in list.OrderBy(s => s.Section).ThenBy(s => s.Apartment, NaturalOrder.Instance))
             ContractRows.Add(new ContractRow(s, _today, PaymentWarningMonths));
         SelectedContractRow = ContractRows.FirstOrDefault(r => r.Subscriber.Id == SelectedSubscriber?.Id);
 
@@ -148,7 +147,6 @@ public sealed partial class MainViewModel
         OnPropertyChanged(nameof(CardOrganizationPhones));
         OnPropertyChanged(nameof(CardContractLine));
         OnPropertyChanged(nameof(CardContractShort));
-        OnPropertyChanged(nameof(MonthsSinceLastPayment));
         OnPropertyChanged(nameof(IsPaymentLate));
         OnPropertyChanged(nameof(LastPaymentAgo));
         OnPropertyChanged(nameof(LastPaymentLine));
@@ -298,26 +296,4 @@ public sealed class CardPaymentRow(YearPayment p, string monthName)
     public string Source { get; } = p.Source ?? "";
     public string RecordedBy { get; } = p.RecordedBy ?? "";
     public string PayerName { get; } = p.PayerName ?? "";
-    public bool IsPaid { get; } = p.Amount is not null;
-}
-
-/// <summary>Квартиры по-человечески: 2, 9, 10, 10а.</summary>
-internal sealed class ApartmentOrder : IComparer<string>
-{
-    public static readonly ApartmentOrder Instance = new();
-
-    public int Compare(string? x, string? y)
-    {
-        var (nx, rx) = Split(x ?? "");
-        var (ny, ry) = Split(y ?? "");
-        var byNumber = nx.CompareTo(ny);
-        return byNumber != 0 ? byNumber : string.Compare(rx, ry, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static (int Number, string Suffix) Split(string s)
-    {
-        var digits = s.TakeWhile(char.IsDigit).Count();
-        var number = digits > 0 && int.TryParse(s.AsSpan(0, Math.Min(digits, 9)), out var n) ? n : int.MaxValue;
-        return (number, s[digits..]);
-    }
 }

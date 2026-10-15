@@ -10,7 +10,8 @@ fi
 
 cd "${CLAUDE_PROJECT_DIR:-$(pwd)}"
 
-export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+# AVALONIA_TELEMETRY_OPTOUT: сборка Avalonia иначе стучится на свой сервер телеметрии, в облаке он закрыт.
+export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 AVALONIA_TELEMETRY_OPTOUT=1
 
 has_sdk10() { command -v dotnet >/dev/null 2>&1 && dotnet --list-sdks 2>/dev/null | grep -q '^10\.'; }
 
@@ -34,5 +35,5 @@ if [ -f Avers.sln ]; then
   dotnet restore Avers.sln --nologo -v q >&2 || echo "dotnet restore завершился с ошибкой" >&2
 fi
 
-echo "export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1" >> "${CLAUDE_ENV_FILE:-/dev/null}"
+echo "export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 AVALONIA_TELEMETRY_OPTOUT=1" >> "${CLAUDE_ENV_FILE:-/dev/null}"
 echo ".NET готов: $(dotnet --version)" >&2

@@ -2,11 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Avers.Desktop.ViewModels"
              xmlns:d="using:Avers.Domain"
+             xmlns:ctl="using:Avers.Desktop.Controls"
              x:Class="Avers.Desktop.Views.LegalView"
              x:DataType="vm:MainViewModel">
   <StackPanel Margin="12">
     <TextBlock Classes="hint" Text="Красная строка — задолженность 450 ₽ и более. Жёлтая — последняя оплата 3 года и более назад." />
-    <DataGrid Margin="0,8,0,0" Height="240" ItemsSource="{Binding Debtors}" SelectedItem="{Binding SelectedDebtor}" AutoGenerateColumns="False" IsReadOnly="True">
+    <DataGrid ctl:GridTone.Enabled="True" Margin="0,8,0,0" Height="240" ItemsSource="{Binding Debtors}" SelectedItem="{Binding SelectedDebtor}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
         <DataGridTextColumn Header="ФИО полностью" Binding="{Binding FullName}" Width="240" />
         <DataGridTextColumn Header="Адрес" Binding="{Binding Address}" Width="240" />

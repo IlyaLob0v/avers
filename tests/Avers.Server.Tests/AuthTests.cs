@@ -24,6 +24,19 @@ public class AuthTests
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData("{\"login\":null,\"password\":\"avers\"}")]
+    [InlineData("{\"login\":\"admin\",\"password\":null}")]
+    [InlineData("{\"login\":\"  \",\"password\":\"avers\"}")]
+    public async Task Login_EmptyFields_Returns401NotServerError(string body)
+    {
+        await using var app = new AversApp();
+        var response = await app.CreateClient().PostAsync("/api/auth/login",
+            new StringContent(body, System.Text.Encoding.UTF8, "application/json"));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     [Fact]
     public async Task Me_ReturnsRoleAndPaymentRight()
     {
