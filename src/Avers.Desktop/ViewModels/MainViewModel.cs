@@ -54,7 +54,6 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _findApartment = "68";
     [ObservableProperty] private string _findQuery = "";
     [ObservableProperty] private string _status = "Готово.";
-    [ObservableProperty] private bool _allTickets = true;
     [ObservableProperty] private bool _onlyActiveContracts = true;
     [ObservableProperty] private string _ticketFault = "";
     [ObservableProperty] private string _ticketWork = "";
@@ -176,6 +175,7 @@ public sealed partial class MainViewModel : ObservableObject
         _houses = db.Houses.AsNoTracking().Include(h => h.Street).Include(h => h.Organization).Include(h => h.Schemes).Include(h => h.Ppr).Include(h => h.Intercoms).ToList();
         _subscribers = db.Subscribers.AsNoTracking().Include(s => s.House).ThenInclude(h => h.Street).Include(s => s.Payments).Include(s => s.CourtCases).Include(s => s.Receipts).ToList();
         _tickets = db.Tickets.AsNoTracking().Include(t => t.House).ThenInclude(h => h.Street).Include(t => t.Subscriber).ToList();
+        LoadTicketYears();
 
         Mechanics.Clear();
         foreach (var m in db.Mechanics.AsNoTracking().OrderBy(x => x.FullName)) Mechanics.Add(m);
@@ -240,7 +240,6 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(SearchByInner));
         OnPropertyChanged(nameof(SearchBySurname));
     }
-    partial void OnAllTicketsChanged(bool value) => RefreshTickets();
     partial void OnOnlyActiveContractsChanged(bool value) => RefreshDerived();
 
     private void NotifyModule()
@@ -274,26 +273,6 @@ public sealed partial class MainViewModel : ObservableObject
         if (SelectedStreet is null) return;
         foreach (var h in _houses.Where(x => x.StreetId == SelectedStreet.Id).OrderBy(x => x.Number, StringComparer.Create(CultureInfo.GetCultureInfo("ru-RU"), false)))
             HousesOnStreet.Add(h);
-    }
-
-    private void RefreshTickets()
-    {
-        Tickets.Clear();
-        var q = _tickets.AsEnumerable();
-        if (!AllTickets && SelectedHouse is not null)
-            q = q.Where(t => t.HouseId == SelectedHouse.Id);
-        foreach (var t in q.OrderByDescending(t => t.Date).ThenByDescending(t => t.Time))
-            Tickets.Add(t);
-
-        HouseTickets.Clear();
-        if (SelectedHouse is not null)
-            foreach (var t in _tickets.Where(t => t.HouseId == SelectedHouse.Id).OrderByDescending(t => t.Date))
-                HouseTickets.Add(t);
-
-        SubscriberTickets.Clear();
-        if (SelectedSubscriber is not null)
-            foreach (var t in _tickets.Where(t => t.SubscriberId == SelectedSubscriber.Id).OrderByDescending(t => t.Date))
-                SubscriberTickets.Add(t);
     }
 
     private void RefreshDerived()
@@ -360,6 +339,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(LastPprText));
         OnPropertyChanged(nameof(Intercom));
         OnPropertyChanged(nameof(HouseAptLine));
+        NotifyTicketPanel();
         BuildClaim();
     }
 
@@ -371,13 +351,6 @@ public sealed partial class MainViewModel : ObservableObject
         PaymentRows.Add(new PaymentGridRow("Отв.", pays.Select(p => p.Source ?? "").ToArray()));
         PaymentRows.Add(new PaymentGridRow("Сумма", pays.Select(p => p.Amount is null ? "" : p.Amount.Value.ToString("N2")).ToArray()));
         PaymentRows.Add(new PaymentGridRow("Дата опл.", pays.Select(p => p.PaidAt is null ? "" : p.PaidAt.Value.ToString("dd.MM")).ToArray()));
-    }
-
-    private void BindTicket()
-    {
-        TicketFault = SelectedTicket?.Fault ?? "";
-        TicketWork = SelectedTicket?.WorkDone ?? "";
-        TicketMechanic = SelectedTicket?.Mechanic ?? "";
     }
 
     private void BuildClaim()
@@ -487,51 +460,6 @@ public sealed partial class MainViewModel : ObservableObject
         db.SaveChanges();
         Load();
         Status = $"Внесена оплата {next.Tariff:N2} ₽ за {Months[next.Month - 1]} 2026. Окно подтверждения от 1000 ₽ не показывается.";
-    }
-
-    [RelayCommand]
-    private void AcceptTicket()
-    {
-        if (SelectedHouse is null) return;
-        using var db = _db.CreateDbContext();
-        var num = db.Tickets.Max(t => t.Number) + 1;
-        db.Tickets.Add(new WorkTicket
-        {
-            Number = num,
-            Date = _today,
-            Time = TimeOnly.FromDateTime(DateTime.Now),
-            HouseId = SelectedHouse.Id,
-            SubscriberId = SelectedSubscriber?.Id,
-            Apartment = SelectedSubscriber?.Apartment ?? FindApartment,
-            Section = SelectedSubscriber?.Section ?? FindSection,
-            Phone = SelectedSubscriber?.Phone ?? "",
-            Kind = TicketKind.Antenna,
-            Fault = string.IsNullOrWhiteSpace(TicketFault) ? "Принята с рабочего места диспетчера" : TicketFault,
-            Status = TicketStatus.Accepted,
-            AcceptedBy = User?.DisplayName ?? "",
-            RisersNote = ""
-        });
-        db.SaveChanges();
-        Load();
-        Status = $"Принята заявка № {num}.";
-        Module = AppModule.Disp;
-    }
-
-    [RelayCommand]
-    private void SaveTicket()
-    {
-        if (SelectedTicket is null) return;
-        using var db = _db.CreateDbContext();
-        var t = db.Tickets.First(x => x.Id == SelectedTicket.Id);
-        t.Fault = TicketFault;
-        t.WorkDone = TicketWork;
-        t.Mechanic = TicketMechanic;
-        if (!string.IsNullOrWhiteSpace(TicketWork) && t.Status != TicketStatus.Done)
-            t.Status = TicketStatus.Done;
-        db.SaveChanges();
-        Load();
-        Status = "Заявка записана.";
-        Module = AppModule.Disp;
     }
 
     [RelayCommand]

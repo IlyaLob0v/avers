@@ -8,7 +8,7 @@ public static class RoleCatalog
         (UserRole.ChiefEngineer, "Главный инженер"),
         (UserRole.AntennaServiceHead, "Начальник антенной службы"),
         (UserRole.AdsHead, "Начальник АДС"),
-        (UserRole.Dispatcher, "Диспетчер"),
+        (UserRole.Dispatcher, "Пользователь АДС (диспетчер)"),
         (UserRole.Lawyer, "Юрист"),
         (UserRole.Reader, "Читатель (радиомеханик)")
     ];
@@ -20,6 +20,20 @@ public static class RoleCatalog
         level = Matrix.TryGetValue((role, module), out var found) ? found : AccessLevel.None;
         return level != AccessLevel.None;
     }
+
+    /// <summary>
+    /// Править любую заявку может начальник АДС и администратор. Пользователь АДС (диспетчер)
+    /// правит только заявки, которые принял сам; чужие он видит, но не меняет.
+    /// </summary>
+    public static bool CanEditTicket(UserRole role, int userId, WorkTicket ticket) => role switch
+    {
+        UserRole.Administrator or UserRole.AdsHead => true,
+        UserRole.Dispatcher => ticket.AcceptedByUserId == userId,
+        _ => false
+    };
+
+    /// <summary>Видит все заявки и правит любые: начальник АДС или администратор.</summary>
+    public static bool IsTicketSupervisor(UserRole role) => role is UserRole.Administrator or UserRole.AdsHead;
 
     public enum AccessLevel { None, View, Edit, ScreenOnly }
 
@@ -49,6 +63,7 @@ public static class RoleCatalog
         { (UserRole.AdsHead, AppModule.Scheme), AccessLevel.View },
         { (UserRole.AdsHead, AppModule.Legal), AccessLevel.View },
         { (UserRole.AdsHead, AppModule.Phonebook), AccessLevel.View },
+        { (UserRole.Dispatcher, AppModule.Abon), AccessLevel.View },
         { (UserRole.Dispatcher, AppModule.Disp), AccessLevel.Edit },
         { (UserRole.Dispatcher, AppModule.Anten), AccessLevel.View },
         { (UserRole.Dispatcher, AppModule.Scheme), AccessLevel.View },

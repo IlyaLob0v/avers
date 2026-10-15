@@ -23,7 +23,7 @@ public partial class App : Application
         var factory = provider.GetRequiredService<IDbContextFactory<AversDbContext>>();
         using (var db = factory.CreateDbContext())
         {
-            db.Database.EnsureCreated();
+            DemoDatabase.EnsureCurrent(db, AversPaths.DatabaseFile);
             DemoSeeder.EnsureSeeded(db);
         }
 
