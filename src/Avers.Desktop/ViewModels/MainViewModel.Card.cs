@@ -60,7 +60,7 @@ public sealed partial class MainViewModel
         $"{(string.IsNullOrWhiteSpace(s.ContractNumber) ? "б/н" : s.ContractNumber)}{(s.ContractDate is { } d ? $" от {d:dd.MM.yyyy}" : "")} →";
 
     public int? MonthsSinceLastPayment => SelectedSubscriber is null ? null : PaymentAge.MonthsSince(SelectedSubscriber.LastPaymentDate, _today);
-    public bool IsPaymentLate => SelectedSubscriber is not null && PaymentAge.IsLate(SelectedSubscriber.LastPaymentDate, _today, PaymentWarningMonths);
+    public bool IsPaymentLate => SelectedSubscriber is not null && PaymentAge.IsLate(SelectedSubscriber, _today, PaymentWarningMonths);
     public string LastPaymentAgo => SelectedSubscriber is null ? "" : PaymentAge.AgoText(SelectedSubscriber.LastPaymentDate, _today);
 
     /// <summary>«Последняя оплата 09.07.2026 · 95,00 ₽ за июль 2026 · ОЭК · внёс: … · оплатил: …».</summary>
@@ -87,7 +87,8 @@ public sealed partial class MainViewModel
     }
 
     public string PaymentWarningHint =>
-        $"Жёлтым подсвечивается, если без оплаты {PaymentAge.MonthsText(PaymentWarningMonths)} и больше.";
+        $"Жёлтым подсвечивается, если без оплаты {PaymentAge.MonthsText(PaymentWarningMonths)} и больше " +
+        "(если оплат не было — считается от даты договора).";
 
     public bool CanEditCard => User is { } u && (u.CanEditAccount || u.Role is UserRole.Administrator or UserRole.AdsHead);
     public bool CanEditSettings => User?.Role is UserRole.Administrator or UserRole.AdsHead;
@@ -283,7 +284,7 @@ public sealed class ContractRow(Subscriber s, DateOnly today, int warningMonths)
     public string Notes => Subscriber.Notes;
     public string LastPay => Subscriber.LastPaymentDate?.ToString("dd.MM.yyyy") ?? "нет";
     public string MonthsWithoutPay => PaymentAge.MonthsSince(Subscriber.LastPaymentDate, today)?.ToString(CultureInfo.InvariantCulture) ?? "—";
-    public bool IsLate { get; } = PaymentAge.IsLate(s.LastPaymentDate, today, warningMonths);
+    public bool IsLate { get; } = PaymentAge.IsLate(s, today, warningMonths);
     public RowTone Tone => Subscriber.ContractTerminated is not null ? RowTone.Off : IsLate ? RowTone.Warn : RowTone.None;
 }
 

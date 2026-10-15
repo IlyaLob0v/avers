@@ -149,7 +149,7 @@ public sealed partial class MainViewModel
     public string TicketLastPayment => TicketSubscriber?.LastPaymentDate is { } d
         ? $"{d:dd.MM.yyyy} ({PaymentAge.AgoText(d, _today)})"
         : "нет";
-    public bool IsTicketPaymentLate => TicketSubscriber is { } s && PaymentAge.IsLate(s.LastPaymentDate, _today, PaymentWarningMonths);
+    public bool IsTicketPaymentLate => TicketSubscriber is { } s && PaymentAge.IsLate(s, _today, PaymentWarningMonths);
 
     private static string ContractNo(Subscriber s) => string.IsNullOrWhiteSpace(s.ContractNumber) ? "" : $"№ {s.ContractNumber} ";
     public string TicketNotes => TicketSubscriber?.Notes is { Length: > 0 } n ? n : "—";

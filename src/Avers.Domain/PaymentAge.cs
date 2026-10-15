@@ -32,6 +32,13 @@ public static class PaymentAge
     public static bool IsLate(DateOnly? lastPayment, DateOnly today, int warningMonths = DefaultWarningMonths) =>
         MonthsSince(lastPayment, today) is not { } months || months >= warningMonths;
 
+    /// <summary>
+    /// Подсвечивать ли абонента. Оплат не было — срок считаем от даты договора: новый договор не горит,
+    /// договор двухмесячной давности без единой оплаты — горит. Нет ни оплат, ни даты договора — горит.
+    /// </summary>
+    public static bool IsLate(Subscriber s, DateOnly today, int warningMonths = DefaultWarningMonths) =>
+        IsLate(s.LastPaymentDate ?? s.ContractDate, today, warningMonths);
+
     public static bool IsValidThreshold(int months) => months is >= MinWarningMonths and <= MaxWarningMonths;
 
     /// <summary>«1 месяц», «2 месяца», «5 месяцев» — для подписи в карточке.</summary>

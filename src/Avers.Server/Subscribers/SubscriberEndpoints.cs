@@ -124,7 +124,7 @@ public static class SubscriberEndpoints
             s.ContractNumber, s.ContractParty, ServiceOrganizations.Title(s.House.Organization),
             last is null ? null : PaymentEndpoints.ToDto(last),
             PaymentAge.MonthsSince(s.LastPaymentDate, today),
-            PaymentAge.IsLate(s.LastPaymentDate, today, warning),
+            PaymentAge.IsLate(s, today, warning),
             warning));
     }
 

@@ -57,7 +57,23 @@ public class PaymentAgeTests
     [Fact]
     public void IsLate_NeverPaid_IsLate()
     {
-        Assert.True(PaymentAge.IsLate(null, Today));
+        Assert.True(PaymentAge.IsLate((DateOnly?)null, Today));
+    }
+
+    [Fact]
+    public void IsLate_NeverPaid_CountsFromContractDate()
+    {
+        Assert.False(PaymentAge.IsLate(new Subscriber { ContractDate = new(2026, 8, 1) }, Today));
+        Assert.True(PaymentAge.IsLate(new Subscriber { ContractDate = new(2026, 6, 30) }, Today));
+        Assert.True(PaymentAge.IsLate(new Subscriber(), Today));
+    }
+
+    [Fact]
+    public void IsLate_PaymentWinsOverContractDate()
+    {
+        var s = new Subscriber { ContractDate = new(2010, 1, 1), LastPaymentDate = new(2026, 8, 3) };
+
+        Assert.False(PaymentAge.IsLate(s, Today));
     }
 
     [Theory]
