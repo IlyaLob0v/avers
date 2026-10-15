@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Avers.Contracts</RootNamespace>
+    <AssemblyName>Avers.Contracts</AssemblyName>
+  </PropertyGroup>
+</Project>
