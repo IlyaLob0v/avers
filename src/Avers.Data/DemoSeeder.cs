@@ -113,6 +113,14 @@ public static class DemoSeeder
             new(1998, 10, 1), "Последняя оплата более трёх лет назад.", "0402", "0402-1200003", 1996, new(2022, 6, 14));
         db.Subscribers.AddRange(ivanova, belousov, petrov, gromova, saveliev, chernova, kozlov);
 
+        Contract(ivanova, "ТО-2014/1932068");
+        Contract(belousov, "ТО-2009/1932041", "Белоусова Галина Ивановна");
+        Contract(petrov, "ТО-2018/1200112");
+        Contract(gromova, "ТО-2003/440007");
+        Contract(saveliev, "ТО-2011/180090");
+        Contract(chernova, "ТО-2001/180015", "Чернов Александр Петрович");
+        Contract(kozlov, "ТО-1998/1200003");
+
         PayYear(ivanova, (1, 14), (2, 11), (3, 10), (4, 9), (5, 13), (6, 10), (7, 9));
         PayYear(belousov, (1, 20), (2, 18), (3, 19), (4, 17), (5, 16), (6, 18), (7, 15), (8, 3));
         PayYear(petrov, (1, 21), (2, 20), (3, 21), (4, 22), (5, 22));
@@ -120,6 +128,11 @@ public static class DemoSeeder
         PayYear(saveliev, (1, 27), (2, 26), (3, 28));
         PayYear(chernova);
         PayYear(kozlov);
+
+        var julyIvanova = ivanova.Payments.First(p => p.Month == 7);
+        julyIvanova.Source = "ОЭК";
+        julyIvanova.RecordedBy = "Импорт реестра ОЭК";
+        julyIvanova.PayerName = "Иванов Павел Сергеевич";
 
         chernova.CourtCases.Add(new CourtCase { DelaAversId = "ДА-88421", OrderNumber = "2-1140/2026", OrderDate = new(2026, 5, 21), Court = "Мировой судья с/у № 47", Amount = 1140, Status = "Выдан, направлен приставам" });
         kozlov.CourtCases.Add(new CourtCase { DelaAversId = "ДА-77109", OrderNumber = "2-0881/2025", OrderDate = new(2025, 11, 3), Court = "Мировой судья с/у № 12", Amount = 3420, Status = "В производстве" });
@@ -155,6 +168,25 @@ public static class DemoSeeder
                 "Снег на изображении", "Подтянуты разъёмы на отводе 9 этажа", "Малышев Р.А.", TicketStatus.Done, "Соколова Н.В.", ""),
             T(815, new(2025, 9, 8), new(10, 40), hBr18, saveliev, "90", "3", "8-913-200-7744", TicketKind.Antenna,
                 "Не показывает часть каналов", "Замена отвода", "Новиков Д.С.", TicketStatus.Done, "Орлова Т.И.", ""));
+
+        // Заявка прошлого года, принятая по адресу без привязки к абоненту: карточка квартиры её тоже показывает.
+        db.Tickets.Add(new WorkTicket
+        {
+            Number = 812,
+            Date = new(2025, 11, 17),
+            Time = new(10, 5),
+            House = hVol19d,
+            Apartment = "68",
+            Section = "2",
+            Phone = "8-983-623-3122",
+            Kind = TicketKind.Antenna,
+            Fault = "Рябь на всех каналах",
+            WorkDone = "Заменён абонентский кабель до розетки",
+            Mechanic = "Малышев Р.А.",
+            Status = TicketStatus.Done,
+            AcceptedBy = "Соколова Н.В.",
+            RisersNote = ""
+        });
 
         db.Mechanics.AddRange(
             new Mechanic { FullName = "Малышев Роман Алексеевич", Position = "Радиомеханик 5 р.", Phone = "8-913-777-1020", Address = "г. Омск, ул. Серова, 9-21" },
@@ -266,6 +298,12 @@ public static class DemoSeeder
             LastPaymentDate = lastPay
         };
 
+    private static void Contract(Subscriber sub, string number, string holder = "")
+    {
+        sub.ContractNumber = number;
+        sub.ContractHolder = holder;
+    }
+
     private static WorkTicket T(int number, DateOnly date, TimeOnly time, House house, Subscriber sub,
         string apt, string section, string phone, TicketKind kind, string fault, string work, string mech,
         TicketStatus status, string accepted, string risers) => new()
@@ -312,6 +350,7 @@ public static class DemoSeeder
                 Month = m,
                 Tariff = 95,
                 Source = isPaid ? "Касса" : null,
+                RecordedBy = isPaid ? "Орлов С.А." : null,
                 Amount = isPaid ? 95 : null,
                 PaidAt = isPaid ? new DateOnly(2026, m, day) : null
             });

@@ -22,6 +22,7 @@ public sealed class AversDbContext : DbContext
     public DbSet<IntercomPanel> IntercomPanels => Set<IntercomPanel>();
     public DbSet<IntercomTicket> IntercomTickets => Set<IntercomTicket>();
     public DbSet<AppUser> Users => Set<AppUser>();
+    public DbSet<AppSetting> Settings => Set<AppSetting>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -62,11 +63,14 @@ public sealed class AversDbContext : DbContext
             e.Property(x => x.Section).HasMaxLength(8);
             e.Property(x => x.PzhreuIndex).HasMaxLength(16);
             e.Property(x => x.PzhreuAccount).HasMaxLength(40);
+            e.Property(x => x.ContractNumber).HasMaxLength(40);
+            e.Property(x => x.ContractHolder).HasMaxLength(250);
             e.HasIndex(x => x.Account).IsUnique();
             e.HasIndex(x => x.InnerCode);
             e.HasIndex(x => x.LastName);
             e.Ignore(x => x.FullName);
             e.Ignore(x => x.ShortName);
+            e.Ignore(x => x.ContractParty);
         });
 
         model.Entity<YearPayment>(e =>
@@ -74,6 +78,8 @@ public sealed class AversDbContext : DbContext
             e.Property(x => x.Tariff).HasPrecision(12, 2);
             e.Property(x => x.Amount).HasPrecision(12, 2);
             e.Property(x => x.Source).HasMaxLength(40);
+            e.Property(x => x.RecordedBy).HasMaxLength(120);
+            e.Property(x => x.PayerName).HasMaxLength(250);
             e.HasIndex(x => new { x.SubscriberId, x.Year, x.Month }).IsUnique();
         });
 
@@ -111,6 +117,13 @@ public sealed class AversDbContext : DbContext
         {
             e.Property(x => x.Login).HasMaxLength(40).IsRequired();
             e.HasIndex(x => x.Login).IsUnique();
+        });
+
+        model.Entity<AppSetting>(e =>
+        {
+            e.HasKey(x => x.Key);
+            e.Property(x => x.Key).HasMaxLength(80);
+            e.Property(x => x.Value).HasMaxLength(400).IsRequired();
         });
 
         model.Entity<Mechanic>().Property(x => x.FullName).HasMaxLength(120).IsRequired();

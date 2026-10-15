@@ -22,6 +22,9 @@ public static class SubscriberEndpoints
         api.MapGet("/subscribers/{id:int}", Card);
         api.MapGet("/subscribers/{id:int}/payments", Payments);
         api.MapPost("/subscribers/{id:int}/payments", PaymentEndpoints.Record).RequireAuthorization(Policies.PaymentsCreate);
+        api.MapPut("/subscribers/{id:int}/contract", ApartmentEndpoints.UpdateContract).RequireAuthorization(Policies.SubscribersEdit);
+        api.MapGet("/settings/payment-warning", ApartmentEndpoints.GetPaymentWarning);
+        api.MapPut("/settings/payment-warning", ApartmentEndpoints.SetPaymentWarning).RequireAuthorization(Policies.SettingsEdit);
     }
 
     private static async Task<Ok<List<StreetDto>>> Streets(AversDbContext db, CancellationToken ct) =>
@@ -100,6 +103,7 @@ public static class SubscriberEndpoints
     {
         var s = await db.Subscribers.AsNoTracking()
             .Include(x => x.House).ThenInclude(h => h.Street)
+            .Include(x => x.House).ThenInclude(h => h.Organization)
             .Include(x => x.Payments)
             .AsSplitQuery()
             .FirstOrDefaultAsync(x => x.Id == id, ct);
@@ -107,13 +111,21 @@ public static class SubscriberEndpoints
             return TypedResults.NotFound();
 
         var debt = Billing.Debt(s.Payments);
+        var today = time.Today();
+        var warning = Settings.PaymentWarningMonths(db);
+        var last = PaymentAge.LastPayment(s.Payments);
         return TypedResults.Ok(new SubscriberCard(
             s.Id, s.Account, s.InnerCode, s.LastName, s.FirstName, s.Patronymic, s.FullName, s.Phone,
             s.HouseId, s.House.AddressLine, s.Apartment, s.Section,
             s.ContractDate, s.ContractTerminated, s.Notes, s.PzhreuIndex, s.PzhreuAccount, s.Benefit,
             s.LastPaymentDate,
             Billing.Charged(s.Payments), Billing.Paid(s.Payments), debt, Billing.UnpaidMonths(s.Payments),
-            debt >= Billing.DebtHighlight, Billing.IsOldPayer(s.LastPaymentDate, time.Today())));
+            debt >= Billing.DebtHighlight, Billing.IsOldPayer(s.LastPaymentDate, today),
+            s.ContractNumber, s.ContractParty, ServiceOrganizations.Title(s.House.Organization),
+            last is null ? null : PaymentEndpoints.ToDto(last),
+            PaymentAge.MonthsSince(s.LastPaymentDate, today),
+            PaymentAge.IsLate(s, today, warning),
+            warning));
     }
 
     private static async Task<Results<Ok<List<PaymentDto>>, NotFound>> Payments(
