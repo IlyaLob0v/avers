@@ -84,7 +84,10 @@ public sealed class AversDbContext : DbContext
             e.Property(x => x.Mechanic).HasMaxLength(120);
             e.HasIndex(x => x.Number).IsUnique();
             e.HasIndex(x => x.Date);
+            e.HasIndex(x => new { x.HouseId, x.Date });
+            e.HasOne<AppUser>().WithMany().HasForeignKey(x => x.AcceptedByUserId).OnDelete(DeleteBehavior.SetNull);
             e.Ignore(x => x.StatusLabel);
+            e.Ignore(x => x.KindLabel);
         });
 
         model.Entity<CourtCase>(e =>

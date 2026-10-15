@@ -14,6 +14,9 @@ public static class AversClaims
     public static UserRole? Role(this ClaimsPrincipal user) =>
         Enum.TryParse<UserRole>(user.FindFirstValue(ClaimTypes.Role), out var role) ? role : null;
 
+    public static int AppUserId(this ClaimsPrincipal user) =>
+        int.TryParse(user.FindFirstValue(UserId), System.Globalization.CultureInfo.InvariantCulture, out var id) ? id : 0;
+
     public static bool CanEditAccountFlag(this ClaimsPrincipal user) =>
         user.FindFirstValue(CanEditAccount) == "true";
 }
@@ -26,6 +29,8 @@ public static class Policies
 {
     public const string SubscribersView = "subscribers.view";
     public const string PaymentsCreate = "payments.create";
+    public const string TicketsView = "tickets.view";
+    public const string TicketsCreate = "tickets.create";
 
     public static void Add(AuthorizationOptions options)
     {
@@ -33,6 +38,10 @@ public static class Policies
             .AddRequirements(new ModuleAccessRequirement(AppModule.Abon, AccessLevel.View)));
         options.AddPolicy(PaymentsCreate, p => p.RequireAuthenticatedUser()
             .AddRequirements(new ModuleAccessRequirement(AppModule.Abon, AccessLevel.View), new RecordPaymentRequirement()));
+        options.AddPolicy(TicketsView, p => p.RequireAuthenticatedUser()
+            .AddRequirements(new ModuleAccessRequirement(AppModule.Disp, AccessLevel.View)));
+        options.AddPolicy(TicketsCreate, p => p.RequireAuthenticatedUser()
+            .AddRequirements(new ModuleAccessRequirement(AppModule.Disp, AccessLevel.Edit)));
     }
 
     /// <summary>

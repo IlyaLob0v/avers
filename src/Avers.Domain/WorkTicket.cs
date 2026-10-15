@@ -19,6 +19,14 @@ public sealed class WorkTicket
     public string Mechanic { get; set; } = "";
     public TicketStatus Status { get; set; }
     public string AcceptedBy { get; set; } = "";
+
+    /// <summary>Кто принял заявку. По нему пользователь АДС видит, какие заявки он может править.</summary>
+    public int? AcceptedByUserId { get; set; }
+
+    /// <summary>Дата выполнения: ставится, когда заявка переходит в «выполнена».</summary>
+    public DateOnly? DoneDate { get; set; }
+
     public string RisersNote { get; set; } = "";
     public string StatusLabel => Billing.StatusTitle(Status);
+    public string KindLabel => Billing.KindTitle(Kind);
 }
