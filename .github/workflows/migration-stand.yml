@@ -1,0 +1,25 @@
+name: Migration stand
+
+# Полная репетиция стенда переноса (Oracle Free 23 → Ora2Pg → PostgreSQL → сверка) на синтетической схеме.
+# Тяжёлая (скачивает Oracle Free), поэтому только при изменениях в db/ и вручную.
+on:
+  pull_request:
+    paths:
+      - "db/**"
+      - ".github/workflows/migration-stand.yml"
+  workflow_dispatch:
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+      - name: Stand selftest
+        run: bash db/stand/stand.sh selftest
+      - name: Stand logs
+        if: failure()
+        run: docker compose -f db/docker-compose.yml --profile legacy logs --tail 200
+      - name: Stop stand
+        if: always()
+        run: docker compose -f db/docker-compose.yml --profile legacy down -v

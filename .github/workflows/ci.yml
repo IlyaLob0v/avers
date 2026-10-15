@@ -26,6 +26,34 @@ jobs:
         if: hashFiles('Avers.sln') != ''
         run: dotnet format Avers.sln --verify-no-changes
 
+  migration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: avers
+          POSTGRES_PASSWORD: avers_ci
+          POSTGRES_DB: avers
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U avers -d avers"
+          --health-interval 5s
+          --health-retries 20
+    env:
+      PGHOST: localhost
+      PGUSER: avers
+      PGPASSWORD: avers_ci
+      PGDATABASE: avers
+    steps:
+      - uses: actions/checkout@v6
+      - name: Shellcheck
+        run: shellcheck db/stand/stand.sh db/migration/reconcile/test/run-tests.sh
+      - name: Docker Compose config
+        run: docker compose -f db/docker-compose.yml --profile legacy config -q
+      - name: Reconcile tests
+        run: bash db/migration/reconcile/test/run-tests.sh
+
   docs:
     runs-on: ubuntu-latest
     steps:

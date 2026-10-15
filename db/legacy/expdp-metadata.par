@@ -1,0 +1,10 @@
+# Data Pump: выгрузка ТОЛЬКО СТРУКТУРЫ схемы JACK (без строк таблиц).
+# Только чтение для схемы. Запуск на сервере Oracle:
+#   expdp system parfile=expdp-metadata.par
+# Файлы появятся в каталоге DATA_PUMP_DIR (select directory_path from dba_directories
+# where directory_name = 'DATA_PUMP_DIR').
+SCHEMAS=JACK
+CONTENT=METADATA_ONLY
+DIRECTORY=DATA_PUMP_DIR
+DUMPFILE=jack_metadata.dmp
+LOGFILE=jack_metadata.log
