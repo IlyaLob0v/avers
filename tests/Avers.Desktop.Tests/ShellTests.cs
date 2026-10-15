@@ -1,5 +1,7 @@
+using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.VisualTree;
 using Avers.Data;
 using Avers.Desktop.Controls;
 using Avers.Domain;
@@ -40,6 +42,21 @@ public class ShellTests
 
         Assert.Same(other, app.Vm.SelectedHouse);
         Assert.Contains(app.Vm.HousesOnStreet, h => h.Id == other.Id);
+    }
+
+    [AvaloniaTheory]
+    [InlineData("orlov", true)]     // начальник АДС
+    [InlineData("sokolova", true)]  // пользователь АДС
+    [InlineData("engineer", false)] // главный инженер только смотрит
+    public void Journal_AcceptButton_EnabledRightAfterLogin(string login, bool enabled)
+    {
+        // Кнопка «Принять заявку» должна быть доступна сразу после входа, без лишних щелчков.
+        using var app = new DesktopApp(login);
+        app.Go(AppModule.Disp);
+
+        var accept = app.Window.GetVisualDescendants().OfType<Button>()
+            .Single(b => b.IsEffectivelyVisible && Equals(b.Content, "Принять заявку"));
+        Assert.Equal(enabled, accept.IsEnabled);
     }
 
     [AvaloniaFact]

@@ -34,7 +34,7 @@ public class TicketTests
             Assert.InRange(t.Date, new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31));
         });
         Assert.Equal(list!.OrderByDescending(t => t.Date).ThenByDescending(t => t.Time).Select(t => t.Number), list!.Select(t => t.Number));
-        Assert.All(list, t => Assert.Equal("ООО «Жилсервис-Центр»", t.Homeowner));
+        Assert.All(list!, t => Assert.Equal("ООО «Жилсервис-Центр»", t.Homeowner));
     }
 
     [Fact]
