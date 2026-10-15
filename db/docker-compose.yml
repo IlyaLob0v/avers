@@ -1,5 +1,11 @@
 # Локальный стенд разработки: PostgreSQL для новой схемы и Oracle Free для
 # восстановления выгрузки старой схемы JACK (см. docs/04-db-migration-plan.md).
+#
+# Обычная разработка:   docker compose -f db/docker-compose.yml up -d
+# Стенд миграции:       bash db/stand/stand.sh help   (профиль legacy: Oracle Free + Ora2Pg)
+#
+# Порты открыты только на этом компьютере (127.0.0.1): на стенде будут персональные данные из JACK.
+# Если базу нужно открыть по сети, задайте в .env PG_BIND=0.0.0.0 — осознанно и только внутри сети предприятия.
 services:
   postgres:
     image: postgres:18
@@ -7,16 +13,51 @@ services:
       POSTGRES_DB: avers
       POSTGRES_USER: avers
       POSTGRES_PASSWORD: ${PG_PASSWORD:-avers_dev}
-    ports: ["5432:5432"]
-    volumes: [pgdata:/var/lib/postgresql]
+    ports: ["${PG_BIND:-127.0.0.1}:5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./legacy/dumps:/dumps
+      - ./migration:/migration:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U avers -d avers"]
+      interval: 5s
+      retries: 30
 
   oracle-legacy:
     image: gvenzl/oracle-free:23-slim
     profiles: [legacy]
     environment:
       ORACLE_PASSWORD: ${ORA_PASSWORD:-avers_dev}
-    ports: ["1521:1521"]
-    volumes: [oradata:/opt/oracle/oradata, ./legacy/dumps:/dumps]
+    ports: ["127.0.0.1:1521:1521"]
+    volumes:
+      - oradata:/opt/oracle/oradata
+      - ./legacy/dumps:/dumps
+      - ./stand/oracle:/stand/oracle:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 10s
+      retries: 60
+      start_period: 60s
+
+  # Инструменты переноса: Ora2Pg 25 + sqlplus + psql. Запускается разово из db/stand/stand.sh.
+  ora2pg:
+    image: georgmoser/ora2pg:25.0
+    profiles: [legacy]
+    entrypoint: ["/bin/bash", "-c"]
+    environment:
+      ORA_PASSWORD: ${ORA_PASSWORD:-avers_dev}
+      PGPASSWORD: ${PG_PASSWORD:-avers_dev}
+      PGHOST: postgres
+      PGUSER: avers
+      PGDATABASE: avers
+    volumes:
+      - ./legacy/dumps:/dumps
+      - ./stand:/stand:ro
+      - ./migration:/migration:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+      oracle-legacy: { condition: service_healthy }
 
 volumes:
   pgdata:

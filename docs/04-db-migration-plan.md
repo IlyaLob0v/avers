@@ -17,15 +17,21 @@
 |---|---|
 | Версия и кодировка | `select * from v$version; select * from nls_database_parameters;` |
 | Список объектов JACK | `db/legacy/01-inventory.sql` |
-| Объёмы таблиц | `db/legacy/01-inventory.sql` (num_rows, сегменты) |
-| DDL всей схемы | `expdp ... SCHEMAS=JACK CONTENT=METADATA_ONLY` или `exp ... ROWS=N` |
-| Код PL/SQL | `db/legacy/02-plsql-source.sql` (user_source) |
+| Объёмы таблиц | `db/legacy/01-inventory.sql` (num_rows, сегменты); точные числа — `04-row-counts.sql` |
+| DDL всей схемы | `db/legacy/03-ddl.sql` (dbms_metadata) и `expdp parfile=db/legacy/expdp-metadata.par` |
+| Код PL/SQL | `db/legacy/02-plsql-source.sql` (dba_source) |
 | Полная копия данных | `expdp ... SCHEMAS=JACK` в нерабочее время |
+
+Всё, кроме полной копии, запускается одной командой `@00-run-all.sql`; инструкция для администратора —
+`db/legacy/README.md`.
 
 Почему так: в документе «существующие решения» таблицы восстановлены по скриншотам и не совпадают с реальными
 (`PHYSPERS`, `BUILDING`, `CONNLIST`, `ALL_DEMANDS` …).
 
 ## 2. Стенд
+
+Реализован в `db/stand/` (`stand.sh`, описание — `db/stand/README.md`); `stand.sh selftest` прогоняет весь путь
+на синтетической схеме.
 
 1. Восстановить выгрузку JACK в Oracle Database Free 23 (контейнер `oracle-legacy` из `db/docker-compose.yml`) —
    `impdp` принимает выгрузки старых версий. Ограничение Oracle Free — 12 ГБ данных; если JACK больше — восстановить на
@@ -86,6 +92,10 @@ SQL-скрипты `legacy → avers` по сущностям, в порядке
 | Бухгалтерия | Отчёты за август 2026 из новой БД против бумажной сверки (ОЭК 4 914 739,57; физлица 5 447 224,99; итого 5 669 697,49) |
 | Выборочно | 50 случайных абонентов: карточка в старом Аверсе vs новая система (с сотрудником АДС) |
 | Кириллица | Нет `?`/кракозябр в ФИО и адресах |
+
+Первые две строки и кириллица автоматизированы (`db/migration/reconcile/`, запуск — `stand.sh reconcile`):
+число строк, число непустых значений, суммы числовых столбцов, диапазоны дат и длины строк по каждой таблице
+legacy против Oracle. Эталоны бухгалтерии заведены в `recon.business_check`, запросы к ним — после разбора DDL.
 
 Результат — акт сверки (XLSX), подписывается бухгалтерией.
 
