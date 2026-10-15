@@ -19,7 +19,7 @@
             <TextBlock Grid.Row="6" Text="Дата оплаты" /><TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding LastPayCell}" />
           </Grid>
           <TextBlock Classes="hint" TextWrapping="Wrap" Text="Печать квитанции выбранной квартиры. Лицевой счёт — с датой оплаты или без." />
-          <Button Classes="primary" HorizontalAlignment="Right" Content="Печать" Command="{Binding SavedCommand}" />
+          <Button Classes="primary" HorizontalAlignment="Right" Content="Печать" Command="{Binding NotReadyCommand}" CommandParameter="Печать" />
         </StackPanel>
       </DockPanel>
     </Border>

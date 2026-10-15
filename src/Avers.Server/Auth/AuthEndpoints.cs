@@ -24,7 +24,6 @@ public static class AuthEndpoints
     private static async Task<Results<SignInHttpResult, UnauthorizedHttpResult>> Login(
         LoginRequest request, AversDbContext db, CancellationToken ct)
     {
-        // Пустой логин или пароль ({"login": null}) — обычный отказ, а не ошибка сервера.
         var login = request.Login?.Trim() ?? "";
         if (login.Length == 0 || string.IsNullOrEmpty(request.Password))
             return TypedResults.Unauthorized();

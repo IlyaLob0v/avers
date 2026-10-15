@@ -65,19 +65,6 @@
   <SolidColorBrush x:Key="OffBg">#EDEDED</SolidColorBrush>         <!-- серый: снят, расторгнут, архив -->
   <SolidColorBrush x:Key="OffInk">#7A7A7A</SolidColorBrush>
 
-  <!-- Прежние ключи оболочки, чтобы экраны, которые на них ссылаются, не ломались -->
-  <StaticResource x:Key="Line" ResourceKey="Edge" />
-  <StaticResource x:Key="Paper" ResourceKey="Face" />
-  <StaticResource x:Key="Panel" ResourceKey="FaceDark" />
-  <StaticResource x:Key="Blue" ResourceKey="Accent" />
-  <StaticResource x:Key="Blue2" ResourceKey="AccentDark" />
-  <StaticResource x:Key="Title" ResourceKey="Caption" />
-  <StaticResource x:Key="Sel" ResourceKey="AccentSoft" />
-  <StaticResource x:Key="OldBg" ResourceKey="WarnBg" />
-  <StaticResource x:Key="PlanBg" ResourceKey="InfoBg" />
-  <StaticResource x:Key="DoneBg" ResourceKey="OkBg" />
-  <StaticResource x:Key="LateBg" ResourceKey="DebtBg" />
-
   <FontFamily x:Key="UiFont">Tahoma, Segoe UI, avares://Avalonia.Fonts.Inter/Assets#Inter</FontFamily>
 
   <!-- Переопределения Fluent: острые углы и синий XP вместо акцента Windows 11 -->

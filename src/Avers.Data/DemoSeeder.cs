@@ -1,21 +1,7 @@
-using System.Security.Cryptography;
-using System.Text;
 using Avers.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace Avers.Data;
-
-public static class Password
-{
-    public static string Hash(string login, string password)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes($"{login.ToLowerInvariant()}:{password}:avers"));
-        return Convert.ToHexString(bytes);
-    }
-
-    public static bool Verify(AppUser user, string password) =>
-        string.Equals(user.PasswordHash, Hash(user.Login, password), StringComparison.Ordinal);
-}
 
 /// <summary>
 /// Учебные данные Омска, чтобы оболочка была живой до подключения настоящей базы.
@@ -24,6 +10,15 @@ public static class Password
 public static class DemoSeeder
 {
     public static readonly DateOnly WorkDate = new(2026, 8, 31);
+
+    /// <summary>С чего открывается учебная база: пользователь, адрес, лицевой счёт и заявка.</summary>
+    public const string StartLogin = "sokolova";
+    public const string StartStreet = "Волочаевская";
+    public const string StartHouse = "19Д";
+    public const string StartSection = "2";
+    public const string StartApartment = "68";
+    public const string StartAccount = "1932068";
+    public const int StartTicket = 1001;
 
     public static void EnsureSeeded(AversDbContext db)
     {

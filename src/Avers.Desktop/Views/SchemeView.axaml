@@ -41,8 +41,8 @@
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
-        <Button Classes="primary" Margin="0,8,0,0" Content="Заменить файл" Command="{Binding SavedCommand}" />
-        <Button Content="Добавить схему" Command="{Binding SavedCommand}" />
+        <Button Classes="primary" Margin="0,8,0,0" Content="Заменить файл" Command="{Binding NotReadyCommand}" CommandParameter="Заменить файл" />
+        <Button Content="Добавить схему" Command="{Binding NotReadyCommand}" CommandParameter="Добавить схему" />
       </StackPanel>
     </Border>
   </Grid>

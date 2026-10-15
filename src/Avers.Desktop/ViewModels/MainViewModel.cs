@@ -47,10 +47,10 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private WorkTicket? _selectedTicket;
     [ObservableProperty] private DebtorRow? _selectedDebtor;
     [ObservableProperty] private SearchMode _searchMode = SearchMode.Address;
-    [ObservableProperty] private string _findStreet = "Волочаевская";
-    [ObservableProperty] private string _findHouse = "19Д";
-    [ObservableProperty] private string _findSection = "2";
-    [ObservableProperty] private string _findApartment = "68";
+    [ObservableProperty] private string _findStreet = DemoSeeder.StartStreet;
+    [ObservableProperty] private string _findHouse = DemoSeeder.StartHouse;
+    [ObservableProperty] private string _findSection = DemoSeeder.StartSection;
+    [ObservableProperty] private string _findApartment = DemoSeeder.StartApartment;
     [ObservableProperty] private string _findQuery = "";
     [ObservableProperty] private string _status = "Готово.";
     [ObservableProperty] private bool _onlyActiveContracts = true;
@@ -58,37 +58,13 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _ticketWork = "";
     [ObservableProperty] private string _ticketMechanic = "";
     [ObservableProperty] private string _claimText = "";
-    [ObservableProperty] private DateOnly _reportFrom = new(2026, 1, 1);
+    [ObservableProperty] private DateOnly _reportFrom = new(DemoSeeder.WorkDate.Year, 1, 1);
     [ObservableProperty] private DateOnly _reportTo = DemoSeeder.WorkDate;
     [ObservableProperty] private IntercomPanel? _intercom;
 
     public string LoginRoleTitle => LoginUser is null ? "" : RoleCatalog.Title(LoginUser.Role);
     public bool ShowLogin => User is null;
     public bool ShowShell => User is not null;
-    public bool ShowDesktop => Module == AppModule.Desktop;
-    public bool ShowAbon => Module == AppModule.Abon;
-    public bool ShowDisp => Module == AppModule.Disp;
-    public bool ShowTicket => Module == AppModule.Ticket;
-    public bool ShowAnten => Module == AppModule.Anten;
-    public bool ShowAntenInfo => Module == AppModule.AntenInfo;
-    public bool ShowScheme => Module == AppModule.Scheme;
-    public bool ShowSubscriber => Module == AppModule.Subscriber;
-    public bool ShowPrDubl => Module == AppModule.PrDubl;
-    public bool ShowContract => Module == AppModule.Contract;
-    public bool ShowPrint => Module == AppModule.Print;
-    public bool ShowPpr => Module == AppModule.Ppr;
-    public bool ShowLegal => Module == AppModule.Legal;
-    public bool ShowClaim => Module == AppModule.Claim;
-    public bool ShowReports => Module == AppModule.Reports;
-    public bool ShowPhonebook => Module == AppModule.Phonebook;
-    public bool ShowDomofo => Module == AppModule.Domofo;
-    public bool ShowReader => Module == AppModule.Reader;
-    public bool ShowAccess => Module == AppModule.Access;
-    public bool SearchByAddress => SearchMode == SearchMode.Address;
-    public bool SearchByPzhreu => SearchMode == SearchMode.Pzhreu;
-    public bool SearchByAccount => SearchMode == SearchMode.Account;
-    public bool SearchByInner => SearchMode == SearchMode.InnerCode;
-    public bool SearchBySurname => SearchMode == SearchMode.Surname;
 
     public string WindowTitle => Module switch
     {
@@ -121,7 +97,10 @@ public sealed partial class MainViewModel : ObservableObject
     public string ChargedText => Money(SelectedSubscriber is null ? 0 : Billing.Charged(SelectedSubscriber.Payments));
     public string PaidText => Money(SelectedSubscriber is null ? 0 : Billing.Paid(SelectedSubscriber.Payments));
     public string DebtText => Money(SelectedSubscriber is null ? 0 : Billing.Debt(SelectedSubscriber.Payments));
-    public string ToPayText => SelectedSubscriber is null ? "" : Money(95);
+    public string ToPayText => SelectedSubscriber?.Payments.FirstOrDefault(p => p.Year == _today.Year && p.Month == _today.Month) is { } p
+        ? Money(p.Tariff)
+        : "";
+    public string PaymentsCaption => $"Платежи {_today.Year} · тариф / отв. / сумма / дата опл.";
     public string OekWarning
     {
         get
@@ -153,7 +132,7 @@ public sealed partial class MainViewModel : ObservableObject
         Users.Clear();
         foreach (var u in db.Users.AsNoTracking().OrderBy(x => x.Login))
             Users.Add(u);
-        LoginUser = Users.FirstOrDefault(x => x.Login == "sokolova") ?? Users.FirstOrDefault();
+        LoginUser = Users.FirstOrDefault(x => x.Login == DemoSeeder.StartLogin) ?? Users.FirstOrDefault();
 
         Streets.Clear();
         foreach (var s in db.Streets.AsNoTracking().OrderBy(x => x.Name))
@@ -175,17 +154,16 @@ public sealed partial class MainViewModel : ObservableObject
 
         RefreshTotals();
 
-        // После записи (оплата, договор) остаёмся на той же квартире, а не прыгаем на учебную по умолчанию.
-        // Пока раскладываем выбор, экраны не пересчитываем: один пересчёт в конце вместо десятка.
+        // После записи остаёмся на той же квартире; экраны пересчитываем один раз, в конце.
         var keep = _subscribers.FirstOrDefault(s => s.Id == keepSubscriberId);
         _holdRefresh = true;
         SelectedStreet = Streets.FirstOrDefault(s => s.Id == keep?.House.StreetId)
-                         ?? Streets.FirstOrDefault(s => s.Name == "Волочаевская") ?? Streets.FirstOrDefault();
+                         ?? Streets.FirstOrDefault(s => s.Name == DemoSeeder.StartStreet) ?? Streets.FirstOrDefault();
         RefreshHouses();
         SelectedHouse = HousesOnStreet.FirstOrDefault(h => h.Id == keep?.HouseId)
-                        ?? HousesOnStreet.FirstOrDefault(h => h.Number == "19Д") ?? HousesOnStreet.FirstOrDefault();
-        SelectedSubscriber = keep ?? _subscribers.FirstOrDefault(s => s.Account == "1932068");
-        SelectedTicket = _tickets.FirstOrDefault(t => t.Number == 1001);
+                        ?? HousesOnStreet.FirstOrDefault(h => h.Number == DemoSeeder.StartHouse) ?? HousesOnStreet.FirstOrDefault();
+        SelectedSubscriber = keep ?? _subscribers.FirstOrDefault(s => s.Account == DemoSeeder.StartAccount);
+        SelectedTicket = _tickets.FirstOrDefault(t => t.Number == DemoSeeder.StartTicket);
         _holdRefresh = false;
         _intercomHouseId = null;
         BindTicket();
@@ -200,13 +178,21 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowShell));
         OnPropertyChanged(nameof(CanEditCard));
         OnPropertyChanged(nameof(CanEditSettings));
-        // Права на заявки зависят от вошедшего: без этого «Принять заявку» оставалась серой до первого щелчка.
         NotifyTicketPanel();
         BindTicket();
-        NotifyModule();
+        RebuildNavigation();
+        OnPropertyChanged(nameof(UserLine));
+        OnPropertyChanged(nameof(WindowTitle));
     }
 
-    partial void OnModuleChanged(AppModule value) => NotifyModule();
+    partial void OnModuleChanged(AppModule value)
+    {
+        MarkCurrent();
+        OnPropertyChanged(nameof(WindowTitle));
+        OnPropertyChanged(nameof(ModuleTitle));
+        OnPropertyChanged(nameof(ModuleLegacyName));
+        OnPropertyChanged(nameof(IsOnDesktop));
+    }
 
     partial void OnSelectedStreetChanged(Street? value)
     {
@@ -229,39 +215,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnSelectedTicketChanged(WorkTicket? value) => BindTicket();
     partial void OnSelectedDebtorChanged(DebtorRow? value) => BuildClaim();
-    partial void OnSearchModeChanged(SearchMode value)
-    {
-        OnPropertyChanged(nameof(SearchByAddress));
-        OnPropertyChanged(nameof(SearchByPzhreu));
-        OnPropertyChanged(nameof(SearchByAccount));
-        OnPropertyChanged(nameof(SearchByInner));
-        OnPropertyChanged(nameof(SearchBySurname));
-    }
     partial void OnOnlyActiveContractsChanged(bool value) => RefreshDerived();
-
-    private void NotifyModule()
-    {
-        OnPropertyChanged(nameof(ShowDesktop));
-        OnPropertyChanged(nameof(ShowAbon));
-        OnPropertyChanged(nameof(ShowDisp));
-        OnPropertyChanged(nameof(ShowTicket));
-        OnPropertyChanged(nameof(ShowAnten));
-        OnPropertyChanged(nameof(ShowAntenInfo));
-        OnPropertyChanged(nameof(ShowScheme));
-        OnPropertyChanged(nameof(ShowSubscriber));
-        OnPropertyChanged(nameof(ShowPrDubl));
-        OnPropertyChanged(nameof(ShowContract));
-        OnPropertyChanged(nameof(ShowPrint));
-        OnPropertyChanged(nameof(ShowPpr));
-        OnPropertyChanged(nameof(ShowLegal));
-        OnPropertyChanged(nameof(ShowClaim));
-        OnPropertyChanged(nameof(ShowReports));
-        OnPropertyChanged(nameof(ShowPhonebook));
-        OnPropertyChanged(nameof(ShowDomofo));
-        OnPropertyChanged(nameof(ShowReader));
-        OnPropertyChanged(nameof(ShowAccess));
-        OnPropertyChanged(nameof(WindowTitle));
-    }
 
     private void RefreshHouses()
     {
@@ -482,8 +436,13 @@ public sealed partial class MainViewModel : ObservableObject
         Status = "Паспорт дома сохранён в локальную базу.";
     }
 
+    /// <summary>Кнопка экрана-макета: действие ещё не реализовано, говорим об этом прямо.</summary>
     [RelayCommand]
-    private void Saved() => Status = "Сохранено в локальную базу Аверса (файл avers.db). Печать и выгрузка будут подключены вместе с настоящей СУБД.";
+    private void NotReady(string? action) => Status = $"«{action}» пока не работает: функция в разработке.";
+
+    [RelayCommand]
+    private void About() =>
+        Status = $"Аверс {typeof(MainViewModel).Assembly.GetName().Version?.ToString(3)} · учёт антенной службы, АДС и абонентов.";
 
     private static string Money(decimal value) => value.ToString("N2") + " ₽";
 }
