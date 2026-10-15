@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
 using Avers.Data;
+using Avers.Desktop.Controls;
 using Avers.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -15,6 +15,8 @@ public sealed partial class MainViewModel : ObservableObject
     private List<House> _houses = [];
     private List<Subscriber> _subscribers = [];
     private List<WorkTicket> _tickets = [];
+    private bool _holdRefresh;
+    private int? _intercomHouseId;
 
     public MainViewModel(IDbContextFactory<AversDbContext> db) => _db = db;
 
@@ -23,11 +25,9 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<House> HousesOnStreet { get; } = [];
     public ObservableCollection<WorkTicket> Tickets { get; } = [];
     public ObservableCollection<WorkTicket> HouseTickets { get; } = [];
-    public ObservableCollection<WorkTicket> SubscriberTickets { get; } = [];
     public ObservableCollection<Mechanic> Mechanics { get; } = [];
     public ObservableCollection<Material> Materials { get; } = [];
     public ObservableCollection<UnifiedReceipt> Receipts { get; } = [];
-    public ObservableCollection<Subscriber> Contracts { get; } = [];
     public ObservableCollection<DebtorRow> Debtors { get; } = [];
     public ObservableCollection<PprRow> PprRows { get; } = [];
     public ObservableCollection<AccessRow> AccessRows { get; } = [];
@@ -35,7 +35,6 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<HouseScheme> Schemes { get; } = [];
     public ObservableCollection<IntercomTicket> IntercomTickets { get; } = [];
     public ObservableCollection<PaymentGridRow> PaymentRows { get; } = [];
-    public IReadOnlyList<(UserRole Role, string Title)> Roles { get; } = RoleCatalog.All;
 
     [ObservableProperty] private AppUser? _loginUser;
     [ObservableProperty] private string _password = "";
@@ -114,20 +113,6 @@ public sealed partial class MainViewModel : ObservableObject
         _ => "Аверс"
     };
 
-    public string StatusLeft => Module switch
-    {
-        AppModule.Abon => "AversAbon · платежи",
-        AppModule.Disp => "AversDisp",
-        AppModule.Anten => "AversAnten",
-        AppModule.Domofo => "domofo",
-        AppModule.Phonebook => "phonebook",
-        AppModule.PrDubl => "PrDublPay",
-        AppModule.Contract => "aversContract",
-        AppModule.AntenInfo => "anteninfo",
-        _ => "Аверс"
-    };
-
-    public string StatusRight => User is null ? "" : $"{User.DisplayName} · {RoleCatalog.Title(User.Role)} · {_today:dd.MM.yyyy}";
     public string WorkDateText => _today.ToString("dd.MM.yyyy");
     public string FaultBanner => SelectedHouse is { OpenFault: not null } h
         ? $"Неустранённая неисправность СКПТ: {h.OpenFault}. Причина: {h.OpenFaultReason}. План устранения: {h.OpenFaultPlannedFix:dd.MM.yyyy}."
@@ -188,15 +173,21 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var (role, title) in RoleCatalog.All)
             AccessRows.Add(AccessRow.From(role, title));
 
+        RefreshTotals();
+
         // После записи (оплата, договор) остаёмся на той же квартире, а не прыгаем на учебную по умолчанию.
+        // Пока раскладываем выбор, экраны не пересчитываем: один пересчёт в конце вместо десятка.
         var keep = _subscribers.FirstOrDefault(s => s.Id == keepSubscriberId);
+        _holdRefresh = true;
         SelectedStreet = Streets.FirstOrDefault(s => s.Id == keep?.House.StreetId)
                          ?? Streets.FirstOrDefault(s => s.Name == "Волочаевская") ?? Streets.FirstOrDefault();
-        RefreshDerived();
+        RefreshHouses();
         SelectedHouse = HousesOnStreet.FirstOrDefault(h => h.Id == keep?.HouseId)
                         ?? HousesOnStreet.FirstOrDefault(h => h.Number == "19Д") ?? HousesOnStreet.FirstOrDefault();
         SelectedSubscriber = keep ?? _subscribers.FirstOrDefault(s => s.Account == "1932068");
         SelectedTicket = _tickets.FirstOrDefault(t => t.Number == 1001);
+        _holdRefresh = false;
+        _intercomHouseId = null;
         BindTicket();
         RefreshDerived();
     }
@@ -207,7 +198,6 @@ public sealed partial class MainViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(ShowLogin));
         OnPropertyChanged(nameof(ShowShell));
-        OnPropertyChanged(nameof(StatusRight));
         OnPropertyChanged(nameof(CanEditCard));
         OnPropertyChanged(nameof(CanEditSettings));
         NotifyModule();
@@ -232,11 +222,7 @@ public sealed partial class MainViewModel : ObservableObject
         RefreshDerived();
     }
 
-    partial void OnSelectedSubscriberChanged(Subscriber? value)
-    {
-        RebuildPayments();
-        RefreshDerived();
-    }
+    partial void OnSelectedSubscriberChanged(Subscriber? value) => RefreshDerived();
 
     partial void OnSelectedTicketChanged(WorkTicket? value) => BindTicket();
     partial void OnSelectedDebtorChanged(DebtorRow? value) => BuildClaim();
@@ -272,32 +258,20 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowReader));
         OnPropertyChanged(nameof(ShowAccess));
         OnPropertyChanged(nameof(WindowTitle));
-        OnPropertyChanged(nameof(StatusLeft));
     }
 
     private void RefreshHouses()
     {
         HousesOnStreet.Clear();
         if (SelectedStreet is null) return;
-        foreach (var h in _houses.Where(x => x.StreetId == SelectedStreet.Id).OrderBy(x => x.Number, StringComparer.Create(CultureInfo.GetCultureInfo("ru-RU"), false)))
+        foreach (var h in _houses.Where(x => x.StreetId == SelectedStreet.Id).OrderBy(x => x.Number, NaturalOrder.Instance))
             HousesOnStreet.Add(h);
     }
 
-    private void RefreshDerived()
+    /// <summary>Сводки по всей базе (должники, ППР, отчёт): меняются только после записи, считаем их в <see cref="Load"/>.</summary>
+    private void RefreshTotals()
     {
-        RefreshHouses();
-        RefreshTickets();
-        RebuildPayments();
-        Receipts.Clear();
-        if (SelectedSubscriber is not null)
-            foreach (var r in SelectedSubscriber.Receipts.OrderByDescending(x => x.Moment)) Receipts.Add(r);
-
-        Contracts.Clear();
-        var list = _subscribers.AsEnumerable();
-        if (SelectedHouse is not null) list = list.Where(s => s.HouseId == SelectedHouse.Id);
-        if (OnlyActiveContracts) list = list.Where(s => s.ContractTerminated is null);
-        foreach (var s in list.OrderBy(s => s.Section).ThenBy(s => s.Apartment)) Contracts.Add(s);
-
+        var keepDebtor = SelectedDebtor?.Subscriber.Id;
         Debtors.Clear();
         foreach (var s in _subscribers)
         {
@@ -307,31 +281,45 @@ public sealed partial class MainViewModel : ObservableObject
             if (debt >= Billing.DebtHighlight || old)
                 Debtors.Add(new DebtorRow(s, debt, unpaid, old));
         }
-        SelectedDebtor ??= Debtors.FirstOrDefault();
+        SelectedDebtor = Debtors.FirstOrDefault(d => d.Subscriber.Id == keepDebtor) ?? Debtors.FirstOrDefault();
 
         PprRows.Clear();
-        foreach (var h in _houses.OrderBy(h => h.Street.Name).ThenBy(h => h.Number))
+        foreach (var h in _houses.OrderBy(h => h.Street.Name).ThenBy(h => h.Number, NaturalOrder.Instance))
             PprRows.Add(new PprRow(h));
 
-        Schemes.Clear();
-        if (SelectedHouse is not null)
-            foreach (var s in SelectedHouse.Schemes) Schemes.Add(s);
-
-        Intercom = SelectedHouse?.Intercoms.FirstOrDefault();
-        IntercomTickets.Clear();
-        if (SelectedHouse is not null)
-        {
-            using var db = _db.CreateDbContext();
-            foreach (var t in db.IntercomTickets.AsNoTracking().Where(x => x.HouseId == SelectedHouse.Id).OrderByDescending(x => x.Date))
-                IntercomTickets.Add(t);
-        }
-
+        var inPeriod = _tickets.Where(t => t.Date >= ReportFrom && t.Date <= ReportTo).ToList();
         ReportMetrics.Clear();
-        ReportMetrics.Add(new("Принято заявок", _tickets.Count(t => t.Date >= ReportFrom && t.Date <= ReportTo).ToString(), true));
-        ReportMetrics.Add(new("Выполнено заявок", _tickets.Count(t => t.Status == TicketStatus.Done).ToString(), true));
+        ReportMetrics.Add(new("Принято заявок", inPeriod.Count.ToString(), true));
+        ReportMetrics.Add(new("Выполнено заявок", inPeriod.Count(t => t.Status == TicketStatus.Done).ToString(), true));
         ReportMetrics.Add(new("Неустранённые неисправности СКПТ", _houses.Count(h => h.OpenFault != null).ToString(), true));
         ReportMetrics.Add(new("Сумма дебиторской задолженности", Money(_subscribers.Sum(s => Billing.Debt(s.Payments))), true));
         ReportMetrics.Add(new("Нагрузка на радиомехаников", "—", false));
+    }
+
+    /// <summary>Всё, что зависит от выбранного дома и квартиры.</summary>
+    private void RefreshDerived()
+    {
+        if (_holdRefresh) return;
+        RefreshTickets();
+        RebuildPayments();
+        Receipts.Clear();
+        if (SelectedSubscriber is not null)
+            foreach (var r in SelectedSubscriber.Receipts.OrderByDescending(x => x.Moment)) Receipts.Add(r);
+
+        if (_intercomHouseId != SelectedHouse?.Id)
+        {
+            _intercomHouseId = SelectedHouse?.Id;
+            Schemes.Clear();
+            IntercomTickets.Clear();
+            if (SelectedHouse is not null)
+            {
+                foreach (var s in SelectedHouse.Schemes) Schemes.Add(s);
+                using var db = _db.CreateDbContext();
+                foreach (var t in db.IntercomTickets.AsNoTracking().Where(x => x.HouseId == SelectedHouse.Id).OrderByDescending(x => x.Date))
+                    IntercomTickets.Add(t);
+            }
+        }
+        Intercom = SelectedHouse?.Intercoms.FirstOrDefault();
 
         OnPropertyChanged(nameof(FaultBanner));
         OnPropertyChanged(nameof(HasFault));
@@ -355,7 +343,7 @@ public sealed partial class MainViewModel : ObservableObject
     private void RebuildPayments()
     {
         PaymentRows.Clear();
-        var pays = SelectedSubscriber?.Payments.Where(p => p.Year == 2026).OrderBy(p => p.Month).ToList() ?? [];
+        var pays = SelectedSubscriber?.Payments.Where(p => p.Year == _today.Year).OrderBy(p => p.Month).ToList() ?? [];
         PaymentRows.Add(new PaymentGridRow("Тариф", pays.Select(p => p.Tariff.ToString("N2")).ToArray()));
         PaymentRows.Add(new PaymentGridRow("Отв.", pays.Select(p => p.Source ?? "").ToArray()));
         PaymentRows.Add(new PaymentGridRow("Сумма", pays.Select(p => p.Amount is null ? "" : p.Amount.Value.ToString("N2")).ToArray()));
@@ -461,9 +449,9 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         }
         using var db = _db.CreateDbContext();
-        var next = db.Payments.Where(p => p.SubscriberId == SelectedSubscriber.Id && p.Year == 2026 && p.Amount == null)
+        var next = db.Payments.Where(p => p.SubscriberId == SelectedSubscriber.Id && p.Year == _today.Year && p.Amount == null)
             .OrderBy(p => p.Month).FirstOrDefault();
-        if (next is null) { Status = "Все месяцы 2026 уже оплачены."; return; }
+        if (next is null) { Status = $"Все месяцы {_today.Year} уже оплачены."; return; }
         next.Amount = next.Tariff;
         next.Source = "Касса";
         next.PaidAt = _today;
@@ -472,7 +460,7 @@ public sealed partial class MainViewModel : ObservableObject
             db.Subscribers.First(s => s.Id == SelectedSubscriber.Id).LastPaymentDate = _today;
         db.SaveChanges();
         Load();
-        Status = $"Внесена оплата {next.Tariff:N2} ₽ за {Months[next.Month - 1]} 2026. Окно подтверждения от 1000 ₽ не показывается.";
+        Status = $"Внесена оплата {next.Tariff:N2} ₽ за {Months[next.Month - 1]} {next.Year}.";
     }
 
     [RelayCommand]
@@ -521,7 +509,8 @@ public sealed class PaymentGridRow
     public string Dec { get; }
 }
 
-public sealed class DebtorRow
+/// <summary>Строка списка должников: красная — долг от <see cref="Billing.DebtHighlight"/> ₽, жёлтая — давно не платил.</summary>
+public sealed class DebtorRow : IRowTone
 {
     public DebtorRow(Subscriber s, decimal debt, int unpaid, bool old)
     {
@@ -546,6 +535,7 @@ public sealed class DebtorRow
     public string Case { get; }
     public bool IsDebt { get; }
     public bool IsOld { get; }
+    public RowTone Tone => IsDebt ? RowTone.Debt : IsOld ? RowTone.Warn : RowTone.None;
 }
 
 public sealed class PprRow

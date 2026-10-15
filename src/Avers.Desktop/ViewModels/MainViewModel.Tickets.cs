@@ -224,12 +224,6 @@ public sealed partial class MainViewModel
             foreach (var t in _tickets.Where(t => t.HouseId == SelectedHouse.Id).Newest())
                 HouseTickets.Add(t);
 
-        // Заявки квартиры: по лицевому счёту и по адресу — заявку могли принять без абонента.
-        SubscriberTickets.Clear();
-        if (SelectedSubscriber is { } s)
-            foreach (var t in _tickets.Where(t => t.SubscriberId == s.Id || (t.HouseId == s.HouseId && t.Apartment == s.Apartment)).Newest())
-                SubscriberTickets.Add(t);
-
         RefreshTicketMonths();
         OnPropertyChanged(nameof(TicketCountText));
         OnPropertyChanged(nameof(TicketPeriodText));

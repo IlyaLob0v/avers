@@ -35,7 +35,7 @@ public static class SubscriberEndpoints
     {
         var houses = await db.Houses.AsNoTracking().Include(h => h.Street)
             .Where(h => h.StreetId == streetId).ToListAsync(ct);
-        return TypedResults.Ok(houses.OrderBy(h => h.Number, HouseNumberComparer.Instance)
+        return TypedResults.Ok(houses.OrderBy(h => h.Number, NaturalOrder.Instance)
             .Select(h => new HouseDto(h.Id, h.StreetId, h.Number, h.AddressLine)).ToList());
     }
 
@@ -82,17 +82,26 @@ public static class SubscriberEndpoints
                 break;
         }
 
+        // Долг считает база (две суммы), а не перенос в память всех месяцев оплат каждого абонента.
         var found = await query
-            .Include(s => s.House).ThenInclude(h => h.Street)
-            .Include(s => s.Payments)
             .OrderBy(s => s.LastName).ThenBy(s => s.Id)
             .Take(MaxResults)
-            .AsSplitQuery()
+            .Select(s => new
+            {
+                Subscriber = s,
+                s.House,
+                Street = s.House.Street,
+                Charged = s.Payments.Sum(p => p.Tariff),
+                Paid = s.Payments.Sum(p => p.Amount ?? 0)
+            })
             .ToListAsync(ct);
 
-        return TypedResults.Ok(found.Select(s => new SubscriberListItem(
-            s.Id, s.Account, s.InnerCode, s.FullName, s.HouseId, s.House.AddressLine, s.Apartment,
-            Billing.Debt(s.Payments))).ToList());
+        // В проекции без отслеживания EF не связывает дом с улицей сам, а адрес строится по улице.
+        foreach (var x in found)
+            x.House.Street = x.Street;
+        return TypedResults.Ok(found.Select(x => new SubscriberListItem(
+            x.Subscriber.Id, x.Subscriber.Account, x.Subscriber.InnerCode, x.Subscriber.FullName, x.Subscriber.HouseId,
+            x.House.AddressLine, x.Subscriber.Apartment, Math.Max(0, x.Charged - x.Paid))).ToList());
 
         static ValidationProblem Invalid(string field, string message) =>
             TypedResults.ValidationProblem(new Dictionary<string, string[]> { [field] = [message] });
@@ -139,26 +148,5 @@ public static class SubscriberEndpoints
             query = query.Where(p => p.Year == year);
         var list = await query.OrderBy(p => p.Year).ThenBy(p => p.Month).ToListAsync(ct);
         return TypedResults.Ok(list.Select(PaymentEndpoints.ToDto).ToList());
-    }
-}
-
-/// <summary>Номера домов по-человечески: 2, 9, 10, 10а, 12/1.</summary>
-internal sealed class HouseNumberComparer : IComparer<string>
-{
-    public static readonly HouseNumberComparer Instance = new();
-
-    public int Compare(string? x, string? y)
-    {
-        var (nx, rx) = Split(x ?? "");
-        var (ny, ry) = Split(y ?? "");
-        var byNumber = nx.CompareTo(ny);
-        return byNumber != 0 ? byNumber : string.Compare(rx, ry, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static (int Number, string Suffix) Split(string s)
-    {
-        var digits = s.TakeWhile(char.IsDigit).Count();
-        var number = digits > 0 && int.TryParse(s.AsSpan(0, Math.Min(digits, 9)), out var n) ? n : int.MaxValue;
-        return (number, s[digits..]);
     }
 }
