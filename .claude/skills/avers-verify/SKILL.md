@@ -34,5 +34,7 @@ CI (`.github/workflows/ci.yml`) собирает на Windows в Release и па
 
 ## Особенности
 
-- `Avers.Desktop` (Avalonia) собирается и на Linux; запуск окна в облаке невозможен — проверяй логику тестами.
+- `Avers.Desktop` (Avalonia) собирается и на Linux. Окно проверяют тесты `tests/Avers.Desktop.Tests`: главное окно
+  открывается без монитора (Avalonia.Headless, xUnit v3), с настоящими привязками таблиц. Поведение экрана
+  (выбор дома, оплата, приём заявки) проверяй там, а не только в модели.
 - Тесты базы идут на SQLite в памяти (`tests/Avers.Data.Tests/SqliteDatabase.cs`), Docker для них не нужен.
