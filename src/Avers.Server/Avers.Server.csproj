@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>Avers.Server</RootNamespace>
+    <AssemblyName>Avers.Server</AssemblyName>
+    <UserSecretsId>avers-server</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Avers.Contracts\Avers.Contracts.csproj" />
+    <ProjectReference Include="..\Avers.Data\Avers.Data.csproj" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
+  </ItemGroup>
+</Project>

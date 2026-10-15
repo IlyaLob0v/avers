@@ -20,13 +20,36 @@ public static class AversPaths
     public static string DatabaseFile => Path.Combine(DataDirectory, "avers.db");
 }
 
+/// <summary>Какая СУБД под моделью: PostgreSQL — рабочая база, SQLite — учебный режим и тесты.</summary>
+public enum DatabaseProvider
+{
+    Postgres,
+    Sqlite
+}
+
 public static class AversDataExtensions
 {
     public static IServiceCollection AddAversData(this IServiceCollection services, string? databasePath = null)
     {
         var path = databasePath ?? AversPaths.DatabaseFile;
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        services.AddDbContextFactory<AversDbContext>(options => options.UseSqlite($"Data Source={path}"));
+        services.AddDbContextFactory<AversDbContext>(options => options.UseSqlite($"Data Source={path}").AddInterceptors(SqliteUnicodeInterceptor.Instance));
         return services;
     }
+
+    /// <summary>Подключение для сервера приложений: один контекст на запрос.</summary>
+    public static IServiceCollection AddAversDbContext(this IServiceCollection services,
+        DatabaseProvider provider, string connectionString)
+    {
+        services.AddDbContext<AversDbContext>(options => options.UseAvers(provider, connectionString));
+        return services;
+    }
+
+    public static DbContextOptionsBuilder UseAvers(this DbContextOptionsBuilder options,
+        DatabaseProvider provider, string connectionString) => provider switch
+        {
+            DatabaseProvider.Postgres => options.UseNpgsql(connectionString),
+            DatabaseProvider.Sqlite => options.UseSqlite(connectionString).AddInterceptors(SqliteUnicodeInterceptor.Instance),
+            _ => throw new ArgumentOutOfRangeException(nameof(provider), provider, null)
+        };
 }
