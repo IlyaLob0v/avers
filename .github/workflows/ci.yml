@@ -28,6 +28,20 @@ jobs:
       - name: Format check
         if: hashFiles('Avers.sln') != ''
         run: dotnet format Avers.sln --verify-no-changes
+      - name: Publish Windows build
+        run: dotnet publish src/Avers.Desktop/Avers.Desktop.csproj -p:PublishProfile=win-x64
+      - name: Smoke start
+        shell: pwsh
+        run: |
+          $app = Start-Process src/Avers.Desktop/bin/publish/Avers/Avers.exe -PassThru
+          Start-Sleep -Seconds 20
+          if ($app.HasExited) { throw "Аверс закрылся при запуске, код $($app.ExitCode)" }
+          Stop-Process -Id $app.Id
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Avers-win-x64
+          path: src/Avers.Desktop/bin/publish/
+          retention-days: 30
 
   migration:
     runs-on: ubuntu-latest

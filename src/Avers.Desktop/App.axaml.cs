@@ -29,10 +29,12 @@ public partial class App : Application
         services.AddSingleton<MainViewModel>();
         var provider = services.BuildServiceProvider();
 
+        var databaseFile = databasePath ?? AversPaths.DatabaseFile;
         var factory = provider.GetRequiredService<IDbContextFactory<AversDbContext>>();
+        using (DemoDatabase.Lock(databaseFile))
         using (var db = factory.CreateDbContext())
         {
-            DemoDatabase.EnsureCurrent(db, databasePath ?? AversPaths.DatabaseFile);
+            DemoDatabase.EnsureCurrent(db, databaseFile);
             DemoSeeder.EnsureSeeded(db);
         }
 

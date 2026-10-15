@@ -51,5 +51,6 @@ public sealed class DesktopApp : IDisposable
         SqliteConnection.ClearAllPools();
         File.Delete(_databaseFile);
         File.Delete(_databaseFile + ".schema");
+        File.Delete(_databaseFile + ".lock");
     }
 }

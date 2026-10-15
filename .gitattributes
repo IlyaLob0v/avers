@@ -10,3 +10,5 @@
 *.docx binary
 *.pptx binary
 *.sh text eol=lf
+*.reg binary
+*.rdp binary
