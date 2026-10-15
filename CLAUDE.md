@@ -33,6 +33,15 @@ Claude отвечает на `@claude` в issue и PR — `.github/workflows/cla
 поручает её суб-агентам `requirements-analyst`, `architect`, `db-migration`, `dotnet-developer`, `docs-writer`.
 Таблица «какой скилл когда подключать» — в `orchestrator.md`.
 
+Скиллы проекта лежат в `.claude/skills/`: `avers-verify` (проверка как в CI), `avers-domain-change`
+(правка модели и расчётов), `avers-adr`, `avers-open-question`, `avers-pr`. Повторяющуюся работу,
+для которой скилла нет, оформляй новым скиллом там же.
+
+## Облачные сессии
+
+`.claude/hooks/session-start.sh` (SessionStart-хук) в облаке ставит .NET 10 SDK из архива Ubuntu и делает
+`dotnet restore`, поэтому сборка и тесты доступны сразу. На ПК хук ничего не делает.
+
 ## Команды
 
 ```bash

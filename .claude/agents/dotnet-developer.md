@@ -3,6 +3,10 @@ name: dotnet-developer
 description: Разработчик C#/.NET для Аверса. Используй для кода Avalonia-клиента, ASP.NET Core сервера, EF Core, импорта реестров DBF, отчётов XLSX/PDF и модульных тестов.
 tools: Read, Grep, Glob, Write, Edit, Bash, WebSearch, WebFetch, Skill
 model: inherit
+skills:
+  - avers-domain-change
+  - avers-verify
+  - engineering:testing-strategy
 isolation: worktree
 color: cyan
 ---

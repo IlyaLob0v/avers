@@ -25,9 +25,9 @@
 - Dependabot для NuGet, CodeQL для C# — бесплатно для приватных репозиториев с ограничениями плана GitHub.
 
 ### Б3. .NET SDK в облачной среде Claude
-- **Зачем:** чтобы я сам собирал и тестировал код в облаке. Сейчас .NET в контейнере нет.
-- **Как:** SessionStart-хук, который ставит .NET 10 SDK при старте сессии (скилл `session-start-hook`), сеть среды
-  должна пускать на `builds.dotnet.microsoft.com` и `api.nuget.org` (nuget.org уже доступен).
+- **Сделано (15.10.2026):** `.claude/hooks/session-start.sh` ставит `dotnet-sdk-10.0` из архива Ubuntu 24.04
+  (`builds.dotnet.microsoft.com` из облака закрыт, архив Ubuntu и `api.nuget.org` открыты) и делает `dotnet restore`.
+  Первый запуск около 35 с, повторный около 2 с.
 
 ### Б4. MCP-серверы (подключаются в `.mcp.json` проекта; образец — `.mcp.json.example`)
 
@@ -42,7 +42,9 @@
 ### Б5. Скиллы
 - Уже доступны и прописаны в `orchestrator.md`: `engineering:*` (architecture, system-design, code-review, testing-strategy,
   debug, documentation, deploy-checklist, tech-debt), `data:*` (write-query, validate-data, explore-data, data-context-extractor).
-- Предлагаю создать **скиллы проекта** после выгрузки JACK:
+- **Скиллы проекта (сделаны 15.10.2026, `.claude/skills/`):** `avers-verify`, `avers-domain-change`, `avers-adr`,
+  `avers-open-question`, `avers-pr`; подключены к агентам через `skills:` и таблицу в `orchestrator.md`.
+- Следующие скиллы проекта — после выгрузки JACK:
   - `avers-domain` — глоссарий, реальная схема JACK, правила расчёта долга и отгрузки;
   - `avers-reconciliation` — как сверять цифры с бухгалтерией (август 2026 как эталон);
   - `avers-1c-exchange` — формат обмена с 1С, когда он будет выбран.
