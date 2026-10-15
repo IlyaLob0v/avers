@@ -32,7 +32,7 @@
 
   <DockPanel>
     <!-- Шапка: как в прежнем AversDisp — дата, оператор, действия -->
-    <Border DockPanel.Dock="Top" Background="#D4EAFB" BorderBrush="#9EC0DE" BorderThickness="0,0,0,1" Padding="8,4">
+    <Border DockPanel.Dock="Top" Classes="toolbar">
       <StackPanel Orientation="Horizontal" Spacing="8">
         <TextBlock Text="Рабочая дата" VerticalAlignment="Center" />
         <TextBox Width="100" Classes="cell" Text="{Binding WorkDateText, Mode=OneWay}" IsReadOnly="True" />
@@ -146,7 +146,7 @@
             <TextBlock Classes="hint" Text="Характер неисправности" />
             <TextBox Classes="cell" Height="36" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding NewTicketFault}" PlaceholderText="Что случилось — со слов жильца" />
             <Border Classes="warn" IsVisible="{Binding HasFault}" Margin="0,6,0,0">
-              <TextBlock Text="{Binding FaultBanner}" TextWrapping="Wrap" Foreground="#5A3B00" />
+              <TextBlock Text="{Binding FaultBanner}" TextWrapping="Wrap" />
             </Border>
           </StackPanel>
         </Border>
@@ -198,7 +198,7 @@
                 <TextBlock Grid.Row="6" Grid.Column="1" Classes="v" Text="{Binding SelectedTicket.WorkDone}" />
               </Grid>
               <Border Classes="warn" Margin="0,6,0,0" IsVisible="{Binding HasTicketRightsHint}">
-                <TextBlock Text="{Binding TicketRightsHint}" TextWrapping="Wrap" Foreground="#5A3B00" />
+                <TextBlock Text="{Binding TicketRightsHint}" TextWrapping="Wrap" />
               </Border>
             </StackPanel>
           </Border>
@@ -250,7 +250,7 @@
                 <TextBlock Grid.Row="7" Grid.Column="1" Classes="v" Text="{Binding HouseStats}" />
               </Grid>
               <Border Classes="warn" IsVisible="{Binding HasFault}" Margin="0,6,0,0">
-                <TextBlock Text="{Binding FaultBanner}" TextWrapping="Wrap" Foreground="#5A3B00" />
+                <TextBlock Text="{Binding FaultBanner}" TextWrapping="Wrap" />
               </Border>
             </StackPanel>
           </Border>
@@ -260,7 +260,7 @@
               <TextBlock Classes="legend" Text="Выгрузка для ОЭК" />
               <TextBlock Classes="hint" TextWrapping="Wrap" Text="Заявки, отработанные за дату. Если принято больше, чем выполнено — список не выводится." />
               <Border Classes="warn" Margin="0,6,0,0">
-                <TextBlock Text="{Binding OekWarning}" TextWrapping="Wrap" Foreground="#5A3B00" />
+                <TextBlock Text="{Binding OekWarning}" TextWrapping="Wrap" />
               </Border>
             </StackPanel>
           </Border>

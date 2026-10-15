@@ -1,81 +1,37 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Avers.Desktop.ViewModels"
-             xmlns:d="using:Avers.Domain"
              x:Class="Avers.Desktop.Views.DesktopView"
              x:DataType="vm:MainViewModel">
+  <!-- Рабочий стол: ярлыки модулей, как ярлыки прежних программ на рабочем столе Windows -->
   <Border Classes="desk">
-    <Grid Margin="36,32" MaxWidth="780" HorizontalAlignment="Left">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
-      </Grid.ColumnDefinitions>
-      <Grid.RowDefinitions>
-        <RowDefinition Height="Auto"/><RowDefinition Height="28"/><RowDefinition Height="Auto"/>
-      </Grid.RowDefinitions>
-      <Button Grid.Column="0" Classes="icon" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Abon}">
-        <StackPanel Spacing="8" Width="140">
-          <Border Width="56" Height="56" CornerRadius="12" Background="White" HorizontalAlignment="Center" >
-            <TextBlock Text="Аб" FontSize="20" FontWeight="Bold" Foreground="#0078D4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-          </Border>
-          <TextBlock Text="AversAbon" Foreground="White" HorizontalAlignment="Center" FontWeight="SemiBold"/>
-        </StackPanel>
-      </Button>
-      <Button Grid.Column="1" Classes="icon" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Anten}">
-        <StackPanel Spacing="8" Width="140">
-          <Border Width="56" Height="56" CornerRadius="12" Background="White" HorizontalAlignment="Center" >
-            <TextBlock Text="Ан" FontSize="20" FontWeight="Bold" Foreground="#0078D4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-          </Border>
-          <TextBlock Text="AversAnten" Foreground="White" HorizontalAlignment="Center" FontWeight="SemiBold"/>
-        </StackPanel>
-      </Button>
-      <Button Grid.Column="2" Classes="icon" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Disp}">
-        <StackPanel Spacing="8" Width="140">
-          <Border Width="56" Height="56" CornerRadius="12" Background="White" HorizontalAlignment="Center" >
-            <TextBlock Text="Дс" FontSize="20" FontWeight="Bold" Foreground="#106EBE" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-          </Border>
-          <TextBlock Text="AversDisp" Foreground="White" HorizontalAlignment="Center" FontWeight="SemiBold"/>
-        </StackPanel>
-      </Button>
-      <Button Grid.Column="3" Classes="icon" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Phonebook}">
-        <StackPanel Spacing="8" Width="140">
-          <Border Width="56" Height="56" CornerRadius="12" Background="White" HorizontalAlignment="Center" >
-            <TextBlock Text="Сл" FontSize="20" FontWeight="Bold" Foreground="#2B88D8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-          </Border>
-          <TextBlock Text="phonebook" Foreground="White" HorizontalAlignment="Center" FontWeight="SemiBold"/>
-        </StackPanel>
-      </Button>
-      <Button Grid.Row="2" Grid.Column="0" Classes="icon" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.PrDubl}">
-        <StackPanel Spacing="8" Width="140">
-          <Border Width="56" Height="56" CornerRadius="12" Background="White" HorizontalAlignment="Center" >
-            <TextBlock Text="Кв" FontSize="20" FontWeight="Bold" Foreground="#0078D4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-          </Border>
-          <TextBlock Text="PrDublPay" Foreground="White" HorizontalAlignment="Center" FontWeight="SemiBold"/>
-        </StackPanel>
-      </Button>
-      <Button Grid.Row="2" Grid.Column="1" Classes="icon" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.AntenInfo}">
-        <StackPanel Spacing="8" Width="140">
-          <Border Width="56" Height="56" CornerRadius="12" Background="White" HorizontalAlignment="Center" >
-            <TextBlock Text="Ин" FontSize="20" FontWeight="Bold" Foreground="#2B88D8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-          </Border>
-          <TextBlock Text="anteninfo" Foreground="White" HorizontalAlignment="Center" FontWeight="SemiBold"/>
-        </StackPanel>
-      </Button>
-      <Button Grid.Row="2" Grid.Column="2" Classes="icon" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Contract}">
-        <StackPanel Spacing="8" Width="140">
-          <Border Width="56" Height="56" CornerRadius="12" Background="White" HorizontalAlignment="Center" >
-            <TextBlock Text="Дг" FontSize="20" FontWeight="Bold" Foreground="#0B5CAB" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-          </Border>
-          <TextBlock Text="aversContract" Foreground="White" HorizontalAlignment="Center" FontWeight="SemiBold"/>
-        </StackPanel>
-      </Button>
-      <Button Grid.Row="2" Grid.Column="3" Classes="icon" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Domofo}">
-        <StackPanel Spacing="8" Width="140">
-          <Border Width="56" Height="56" CornerRadius="12" Background="White" HorizontalAlignment="Center" >
-            <TextBlock Text="Дм" FontSize="20" FontWeight="Bold" Foreground="#0B5CAB" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-          </Border>
-          <TextBlock Text="domofo" Foreground="White" HorizontalAlignment="Center" FontWeight="SemiBold"/>
-        </StackPanel>
-      </Button>
-    </Grid>
+    <DockPanel Margin="28,22">
+      <StackPanel DockPanel.Dock="Top" Margin="8,0,0,14">
+        <TextBlock Text="{Binding UserLine}" Foreground="White" FontSize="15" FontWeight="Bold" />
+        <TextBlock Text="Выберите модуль. Видны только модули, доступные вашей роли." Foreground="#D6E2F2" Margin="0,2,0,0" />
+      </StackPanel>
+      <ItemsControl ItemsSource="{Binding Navigation}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:NavItem">
+            <Button Classes="icon" Margin="0,0,8,8" ToolTip.Tip="{Binding Hint}"
+                    Command="{Binding Go}" CommandParameter="{Binding Module}">
+              <StackPanel Spacing="6" Width="132">
+                <Border Width="52" Height="52" CornerRadius="4" Background="White" HorizontalAlignment="Center"
+                        BorderBrush="#0A246A" BorderThickness="1" BoxShadow="1 2 3 0 #40000000">
+                  <TextBlock Text="{Binding Glyph}" FontSize="19" FontWeight="Bold" Foreground="{StaticResource Accent}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <TextBlock Text="{Binding Title}" Foreground="White" HorizontalAlignment="Center" FontWeight="Bold"
+                           TextAlignment="Center" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding LegacyName}" Foreground="#C9D7EC" FontSize="11" HorizontalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </DockPanel>
   </Border>
 </UserControl>

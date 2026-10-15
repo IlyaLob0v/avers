@@ -18,7 +18,7 @@
         </StackPanel>
       </Grid>
       <Border Classes="warn" Margin="0,8,0,8" IsVisible="{Binding HasFault}">
-        <TextBlock Text="{Binding FaultBanner}" TextWrapping="Wrap" Foreground="#5A3B00" />
+        <TextBlock Text="{Binding FaultBanner}" TextWrapping="Wrap" />
       </Border>
       <Grid ColumnDefinitions="*,*">
         <Border Classes="card">

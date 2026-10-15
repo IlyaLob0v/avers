@@ -9,15 +9,24 @@
         Width="1280" Height="840" MinWidth="1000" MinHeight="680"
         WindowStartupLocation="CenterScreen">
   <Grid>
-    <Grid IsVisible="{Binding ShowLogin}" Background="#2F6FB4">
+    <!-- Вход: диалог в духе прежних окон Delphi на синем «рабочем столе» -->
+    <Grid IsVisible="{Binding ShowLogin}" Background="{StaticResource Desk}">
       <Border Width="440" HorizontalAlignment="Center" VerticalAlignment="Center"
-              Background="#F4F9FD" BorderBrush="#0B4A86" BorderThickness="1" CornerRadius="6">
+              Background="{StaticResource Face}" BorderBrush="{StaticResource AccentDark}" BorderThickness="1"
+              BoxShadow="0 6 18 0 #55000000">
         <DockPanel>
-          <TextBlock DockPanel.Dock="Top" Text="Аверс — вход в систему" Background="#0B5CAB"
-                     Foreground="White" FontWeight="SemiBold" Padding="12,8" />
-          <StackPanel Margin="16" Spacing="8">
-            <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto">
-              <TextBlock Text="Пользователь" VerticalAlignment="Center" />
+          <Border DockPanel.Dock="Top" Background="{StaticResource CaptionBar}" Padding="10,6">
+            <TextBlock Text="Аверс — вход в систему" Foreground="White" FontWeight="Bold" />
+          </Border>
+          <Border DockPanel.Dock="Bottom" Classes="actionbar">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+              <Button Classes="primary" Content="Войти" Command="{Binding LoginCommand}" IsDefault="True" MinWidth="80" />
+              <Button Content="Отмена" Command="{Binding LogoutCommand}" MinWidth="80" Margin="0" />
+            </StackPanel>
+          </Border>
+          <StackPanel Margin="14,12" Spacing="8">
+            <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto">
+              <TextBlock Classes="label" Text="Пользователь" />
               <ComboBox Grid.Column="1" Classes="cell" ItemsSource="{Binding Users}" SelectedItem="{Binding LoginUser}">
                 <ComboBox.ItemTemplate>
                   <DataTemplate x:DataType="d:AppUser">
@@ -25,75 +34,109 @@
                   </DataTemplate>
                 </ComboBox.ItemTemplate>
               </ComboBox>
-              <TextBlock Grid.Row="1" Text="Пароль" VerticalAlignment="Center" Margin="0,8,0,0" />
-              <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" PasswordChar="•" Text="{Binding Password}" Margin="0,8,0,0" />
-              <TextBlock Grid.Row="2" Text="Подразделение" VerticalAlignment="Center" Margin="0,8,0,0" />
+              <TextBlock Grid.Row="1" Classes="label" Text="Пароль" Margin="0,6,8,0" />
+              <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" PasswordChar="•" Text="{Binding Password}" Margin="0,6,0,0" />
+              <TextBlock Grid.Row="2" Classes="label" Text="Подразделение" Margin="0,6,8,0" />
               <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" IsReadOnly="True"
-                       Text="{Binding LoginUser.Department}" Margin="0,8,0,0" />
+                       Text="{Binding LoginUser.Department}" Margin="0,6,0,0" />
             </Grid>
-            <Border Classes="card">
+            <HeaderedContentControl Classes="group" Header="Назначенная роль" Margin="0">
               <StackPanel>
-                <TextBlock Classes="legend" Text="Назначенная роль" />
-                <TextBlock FontSize="13" Text="{Binding LoginUser.DisplayName}" />
-                <TextBlock Margin="0,4,0,0" Text="{Binding LoginRoleTitle}" />
-                <TextBlock Classes="hint" Margin="0,8,0,0" TextWrapping="Wrap"
+                <TextBlock FontWeight="Bold" Text="{Binding LoginUser.DisplayName}" />
+                <TextBlock Margin="0,2,0,0" Text="{Binding LoginRoleTitle}" />
+                <TextBlock Classes="hint" Margin="0,6,0,0" TextWrapping="Wrap"
                            Text="Права задаются при входе. Редактирование лицевого счёта — отдельное право. Режим администратора не через Alt+Backspace." />
               </StackPanel>
+            </HeaderedContentControl>
+            <Border Classes="debt" Margin="0" IsVisible="{Binding LoginError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <TextBlock Text="{Binding LoginError}" TextWrapping="Wrap" />
             </Border>
-            <TextBlock Foreground="#A33" Text="{Binding LoginError}" />
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-              <Button Content="Отмена" Command="{Binding LogoutCommand}" />
-              <Button Classes="primary" Content="Войти" Command="{Binding LoginCommand}" />
-            </StackPanel>
           </StackPanel>
         </DockPanel>
       </Border>
     </Grid>
 
+    <!-- Рабочее место -->
     <DockPanel IsVisible="{Binding ShowShell}">
-      <Border DockPanel.Dock="Top" Height="32" Background="#0B5CAB">
-        <TextBlock Text="{Binding WindowTitle}" Foreground="White" VerticalAlignment="Center" Margin="12,0" FontWeight="SemiBold" />
-      </Border>
       <Menu DockPanel.Dock="Top">
-        <MenuItem Header="Файл">
+        <MenuItem Header="_Файл">
           <MenuItem Header="Рабочий стол" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Desktop}" />
+          <Separator />
           <MenuItem Header="Сменить пользователя" Command="{Binding LogoutCommand}" />
         </MenuItem>
-        <MenuItem Header="Сервисы">
-          <MenuItem Header="AversAbon" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Abon}" />
-          <MenuItem Header="AversAnten" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Anten}" />
-          <MenuItem Header="AversDisp" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Disp}" />
-          <MenuItem Header="phonebook" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Phonebook}" />
-          <MenuItem Header="PrDublPay" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.PrDubl}" />
-          <MenuItem Header="anteninfo" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.AntenInfo}" />
-          <MenuItem Header="aversContract" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Contract}" />
-          <MenuItem Header="domofo" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Domofo}" />
+        <MenuItem Header="_Модули" ItemsSource="{Binding Navigation}">
+          <MenuItem.Styles>
+            <Style Selector="MenuItem" x:DataType="vm:NavItem">
+              <Setter Property="Header" Value="{Binding Title}" />
+              <Setter Property="Command" Value="{Binding Go}" />
+              <Setter Property="CommandParameter" Value="{Binding Module}" />
+              <Setter Property="InputGesture" Value="{x:Null}" />
+            </Style>
+          </MenuItem.Styles>
         </MenuItem>
-        <MenuItem Header="Словарь">
-          <MenuItem Header="Улицы, дома, материалы" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Phonebook}" />
-        </MenuItem>
-        <MenuItem Header="Сервис">
-          <MenuItem Header="Графики ППР" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Ppr}" />
-          <MenuItem Header="Права доступа" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Access}" />
-          <MenuItem Header="Читатель" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Reader}" />
-        </MenuItem>
-        <MenuItem Header="Отчёты">
-          <MenuItem Header="Конструктор отчётов" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Reports}" />
-          <MenuItem Header="Должники" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Legal}" />
-        </MenuItem>
-        <MenuItem Header="Справка">
+        <MenuItem Header="_Справка">
+          <MenuItem Header="Образцы оформления" Click="OnStyleGuideClick" />
           <MenuItem Header="О программе" Command="{Binding SavedCommand}" />
         </MenuItem>
       </Menu>
-      <Border DockPanel.Dock="Bottom" Height="24" Background="#D4EAFB" BorderBrush="#9EC0DE" BorderThickness="0,1,0,0">
-        <Grid ColumnDefinitions="*,Auto">
-          <TextBlock Text="{Binding StatusLeft}" VerticalAlignment="Center" Margin="10,0" Foreground="#1F4F80" FontSize="11" />
-          <TextBlock Grid.Column="1" Text="{Binding StatusRight}" VerticalAlignment="Center" Margin="10,0" Foreground="#1F4F80" FontSize="11" />
+
+      <!-- Панель модулей: только то, что разрешено роли -->
+      <Border DockPanel.Dock="Top" Classes="toolbar" Padding="6,3">
+        <DockPanel>
+          <Button DockPanel.Dock="Right" Content="Выйти" Command="{Binding LogoutCommand}" Margin="6,0,0,0"
+                  VerticalAlignment="Center" ToolTip.Tip="Сменить пользователя" />
+          <Button DockPanel.Dock="Left" Classes="nav" Classes.current="{Binding IsOnDesktop}" ToolTip.Tip="Все модули"
+                  Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Desktop}" VerticalAlignment="Top">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Border Classes="navglyph" Background="{StaticResource Desk}"><TextBlock Text="▦" /></Border>
+              <TextBlock Text="Рабочий стол" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Border DockPanel.Dock="Left" Width="1" Margin="2,3,6,3" Background="{StaticResource Edge}" />
+          <ItemsControl ItemsSource="{Binding Navigation}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:NavItem">
+                <Button Classes="nav" Classes.current="{Binding IsCurrent}" ToolTip.Tip="{Binding Hint}"
+                        Command="{Binding Go}" CommandParameter="{Binding Module}">
+                  <StackPanel Orientation="Horizontal" Spacing="5">
+                    <Border Classes="navglyph"><TextBlock Text="{Binding Glyph}" /></Border>
+                    <TextBlock Text="{Binding ShortTitle}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </DockPanel>
+      </Border>
+
+      <!-- Заголовок текущего окна, как полоса заголовка формы в прежнем Аверсе -->
+      <Border DockPanel.Dock="Top" Background="{StaticResource CaptionBar}" Padding="10,5">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Foreground="#DDE6F5" FontSize="11"
+                     Text="{Binding WorkDateText, StringFormat='Рабочая дата {0}'}" />
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <TextBlock Text="{Binding ModuleTitle}" Foreground="#BFD0EC" FontSize="13" VerticalAlignment="Center" />
+            <TextBlock Text="›" Foreground="#BFD0EC" FontSize="13" VerticalAlignment="Center" IsVisible="{Binding !IsOnDesktop}" />
+            <TextBlock Text="{Binding WindowTitle}" Foreground="White" FontWeight="Bold" FontSize="13"
+                       VerticalAlignment="Center" IsVisible="{Binding !IsOnDesktop}" />
+          </StackPanel>
+        </DockPanel>
+      </Border>
+
+      <!-- Строка состояния -->
+      <Border DockPanel.Dock="Bottom" Classes="statusbar">
+        <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+          <Border Classes="statuscell"><TextBlock Text="{Binding Status}" TextTrimming="CharacterEllipsis" /></Border>
+          <Border Grid.Column="1" Classes="statuscell" MinWidth="120"><TextBlock Text="{Binding ModuleLegacyName}" /></Border>
+          <Border Grid.Column="2" Classes="statuscell" MinWidth="200"><TextBlock Text="{Binding UserLine}" /></Border>
+          <Border Grid.Column="3" Classes="statuscell" Margin="0"><TextBlock Text="{Binding WorkDateText}" /></Border>
         </Grid>
       </Border>
-      <TextBlock DockPanel.Dock="Bottom" Text="{Binding Status}" Margin="10,4" Classes="hint" />
 
-      <Panel Background="#F4F9FD">
+      <Panel Background="{StaticResource Face}">
         <views:DesktopView IsVisible="{Binding ShowDesktop}" />
         <views:AbonView IsVisible="{Binding ShowAbon}" />
         <views:DispView IsVisible="{Binding ShowDisp}" />

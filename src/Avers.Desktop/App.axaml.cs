@@ -15,25 +15,29 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            desktop.MainWindow = new MainWindow { DataContext = CreateMainViewModel() };
+
+        base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>Готовит учебную базу и модель главного окна. Нужен и приложению, и снимкам экранов.</summary>
+    public static MainViewModel CreateMainViewModel(string? databasePath = null)
+    {
         var services = new ServiceCollection();
-        services.AddAversData();
+        services.AddAversData(databasePath);
         services.AddSingleton<MainViewModel>();
         var provider = services.BuildServiceProvider();
 
         var factory = provider.GetRequiredService<IDbContextFactory<AversDbContext>>();
         using (var db = factory.CreateDbContext())
         {
-            DemoDatabase.EnsureCurrent(db, AversPaths.DatabaseFile);
+            DemoDatabase.EnsureCurrent(db, databasePath ?? AversPaths.DatabaseFile);
             DemoSeeder.EnsureSeeded(db);
         }
 
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-        {
-            var vm = provider.GetRequiredService<MainViewModel>();
-            vm.Load();
-            desktop.MainWindow = new MainWindow { DataContext = vm };
-        }
-
-        base.OnFrameworkInitializationCompleted();
+        var vm = provider.GetRequiredService<MainViewModel>();
+        vm.Load();
+        return vm;
     }
 }

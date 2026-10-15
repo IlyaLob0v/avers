@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 
 namespace Avers.Desktop.Views;
 
@@ -8,4 +9,6 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
     }
+
+    private void OnStyleGuideClick(object? sender, RoutedEventArgs e) => new StyleGuideWindow().Show(this);
 }
