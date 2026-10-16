@@ -10,6 +10,6 @@
 | [05. Дорожная карта](05-roadmap.md) | Этапы и что нужно от предприятия |
 | [06. Интеграции и инструменты](06-integrations-and-tooling.md) | Что нужно Claude, что подключить |
 | [07. Открытые вопросы](07-open-questions.md) | Вопросы к сотрудникам и ИТ |
-| [08. Терминальный сервер](08-terminal-server.md) | Аверс для Windows 7 через RemoteApp: лицензии, установка, подключение |
+| [08. Терминальный сервер](08-terminal-server.md) | Аверс для Windows 7 через сервер Linux с xrdp; запасной вариант на Windows Server — [08б](08-terminal-server-windows.md) |
 
 Исходные материалы — в файлах проекта `/mnt/project-files/knowledge/` (в репозиторий не копируются).
