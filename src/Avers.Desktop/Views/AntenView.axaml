@@ -5,26 +5,27 @@
              x:Class="Avers.Desktop.Views.AntenView"
              x:DataType="vm:MainViewModel">
   <ScrollViewer>
-    <StackPanel Margin="12">
-      <Grid ColumnDefinitions="*,Auto">
-        <StackPanel>
-          <TextBlock Classes="hint" Text="Вносит главный инженер" />
-          <TextBlock FontSize="16" FontWeight="SemiBold" Text="{Binding HouseCaption}" />
-          <TextBlock Classes="hint" Text="{Binding HouseStats}" TextWrapping="Wrap" />
-        </StackPanel>
-        <StackPanel Grid.Column="1" Orientation="Horizontal">
-          <Button Content="Схема СКПТ" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Scheme}" />
-          <Button Classes="primary" Content="Сохранить" Command="{Binding SaveHouseCommand}" />
-        </StackPanel>
-      </Grid>
-      <Border Classes="warn" Margin="0,8,0,8" IsVisible="{Binding HasFault}">
+    <StackPanel Margin="16,0,16,2">
+      <Border Classes="card">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel>
+            <TextBlock Classes="hint" Text="Вносит главный инженер" />
+            <TextBlock FontSize="16" FontWeight="SemiBold" Text="{Binding HouseCaption}" />
+            <TextBlock Classes="hint" Text="{Binding HouseStats}" TextWrapping="Wrap" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+            <Button Content="Схема СКПТ" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Scheme}" />
+            <Button Classes="primary" Margin="0" Content="Сохранить" Command="{Binding SaveHouseCommand}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+      <Border Classes="warn" IsVisible="{Binding HasFault}">
         <TextBlock Text="{Binding FaultBanner}" TextWrapping="Wrap" />
       </Border>
       <Grid ColumnDefinitions="*,*">
-        <Border Classes="card">
+        <HeaderedContentControl Classes="group" Margin="0,0,5,10" Header="Обслуживающая организация и филиал">
           <StackPanel>
-            <TextBlock Classes="legend" Text="Обслуживающая организация и филиал" />
-            <TextBlock Classes="hint" Text="Не «УК» и не «домовладелец»." />
+            <TextBlock Classes="hint" Margin="0,0,0,4" Text="Не «УК» и не «домовладелец»." />
             <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
               <TextBlock Classes="label" Text="Организация" />
               <TextBox Grid.Column="1" Classes="cell" Text="{Binding SelectedHouse.Organization.Name}" />
@@ -40,11 +41,10 @@
               <TextBox Grid.Row="5" Grid.Column="1" Classes="cell" Text="{Binding SelectedHouse.Organization.EngineerName}" />
             </Grid>
           </StackPanel>
-        </Border>
-        <Border Classes="card">
+        </HeaderedContentControl>
+        <HeaderedContentControl Grid.Column="1" Classes="group" Margin="5,0,0,10" Header="Техническая информация">
           <StackPanel>
-            <TextBlock Classes="legend" Text="Техническая информация" />
-            <TextBlock Classes="hint" Text="Количество антенн отдельным числом не указывается." />
+            <TextBlock Classes="hint" Margin="0,0,0,4" Text="Количество антенн отдельным числом не указывается." />
             <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
               <TextBlock Classes="label" Text="Антенны, подъезды" />
               <TextBox Grid.Column="1" Classes="cell" Text="{Binding SelectedHouse.Antennas}" TextWrapping="Wrap" />
@@ -60,29 +60,25 @@
               <TextBox Grid.Row="5" Grid.Column="1" Classes="cell" Text="{Binding LastPprText, Mode=OneWay}" IsReadOnly="True" />
             </Grid>
           </StackPanel>
-        </Border>
+        </HeaderedContentControl>
       </Grid>
-      <Border Classes="card">
+      <HeaderedContentControl Classes="group" Header="Прочее">
+        <TextBox Classes="cell" Height="48" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" Text="{Binding SelectedHouse.OtherNotes}" />
+      </HeaderedContentControl>
+      <HeaderedContentControl Classes="group" Header="Заявки по дому">
         <StackPanel>
-          <TextBlock Classes="legend" Text="Прочее" />
-          <TextBox Classes="cell" Height="48" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding SelectedHouse.OtherNotes}" />
-        </StackPanel>
-      </Border>
-      <Border Classes="card">
-        <StackPanel>
-          <TextBlock Classes="legend" Text="Заявки по дому" />
           <DataGrid Height="150" ItemsSource="{Binding HouseTickets}" AutoGenerateColumns="False" IsReadOnly="True">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Дата" Binding="{Binding Date}" Width="110" />
               <DataGridTextColumn Header="Кв." Binding="{Binding Apartment}" Width="50" />
               <DataGridTextColumn Header="Заявленная неисправность" Binding="{Binding Fault}" Width="280" />
               <DataGridTextColumn Header="Радиомеханик" Binding="{Binding Mechanic}" Width="180" />
-              <DataGridTextColumn Header="Какую работу произвёл" Binding="{Binding WorkDone}" Width="220" />
+              <DataGridTextColumn Header="Какую работу произвёл" Binding="{Binding WorkDone}" Width="*" />
             </DataGrid.Columns>
           </DataGrid>
           <TextBlock Classes="hint" Margin="0,6,0,0" Text="Сведения о работах вносит диспетчерская служба." />
         </StackPanel>
-      </Border>
+      </HeaderedContentControl>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

@@ -3,19 +3,19 @@
              xmlns:vm="using:Avers.Desktop.ViewModels"
              x:Class="Avers.Desktop.Views.AccessView"
              x:DataType="vm:MainViewModel">
-  <StackPanel Margin="12">
+  <StackPanel Margin="16,0,16,12">
     <TextBlock Classes="hint" TextWrapping="Wrap"
                Text="Вместо скрытого режима «Администратор» (Alt+Backspace) — явные права. Редактирование лицевого счёта выдаётся отдельно." />
-    <DataGrid Margin="0,10,0,0" Height="320" ItemsSource="{Binding AccessRows}" AutoGenerateColumns="False" IsReadOnly="True">
+    <DataGrid Margin="0,8,0,0" Height="320" ItemsSource="{Binding AccessRows}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Роль" Binding="{Binding Role}" Width="200" />
-        <DataGridTextColumn Header="Платежи" Binding="{Binding Pay}" Width="90" />
-        <DataGridTextColumn Header="Л/с править" Binding="{Binding Account}" Width="100" />
-        <DataGridTextColumn Header="Заявки" Binding="{Binding Tickets}" Width="80" />
-        <DataGridTextColumn Header="Паспорт дома" Binding="{Binding House}" Width="110" />
-        <DataGridTextColumn Header="Схемы СКПТ" Binding="{Binding Scheme}" Width="100" />
-        <DataGridTextColumn Header="Должники" Binding="{Binding Legal}" Width="90" />
-        <DataGridTextColumn Header="Словари" Binding="{Binding Dict}" Width="90" />
+        <DataGridTextColumn Header="Роль" Binding="{Binding Role}" Width="220" />
+        <DataGridTextColumn Header="Платежи" Binding="{Binding Pay}" Width="100" />
+        <DataGridTextColumn Header="Л/с править" Binding="{Binding Account}" Width="110" />
+        <DataGridTextColumn Header="Заявки" Binding="{Binding Tickets}" Width="90" />
+        <DataGridTextColumn Header="Паспорт дома" Binding="{Binding House}" Width="120" />
+        <DataGridTextColumn Header="Схемы СКПТ" Binding="{Binding Scheme}" Width="110" />
+        <DataGridTextColumn Header="Должники" Binding="{Binding Legal}" Width="100" />
+        <DataGridTextColumn Header="Словари" Binding="{Binding Dict}" Width="100" />
       </DataGrid.Columns>
     </DataGrid>
   </StackPanel>

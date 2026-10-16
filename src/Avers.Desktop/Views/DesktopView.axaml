@@ -3,35 +3,32 @@
              xmlns:vm="using:Avers.Desktop.ViewModels"
              x:Class="Avers.Desktop.Views.DesktopView"
              x:DataType="vm:MainViewModel">
-  <!-- Рабочий стол: ярлыки модулей, как ярлыки прежних программ на рабочем столе Windows -->
-  <Border Classes="desk">
-    <DockPanel Margin="28,22">
-      <StackPanel DockPanel.Dock="Top" Margin="8,0,0,14">
-        <TextBlock Text="{Binding UserLine}" Foreground="White" FontSize="15" FontWeight="Bold" />
-        <TextBlock Text="Выберите модуль. Видны только модули, доступные вашей роли." Foreground="#D6E2F2" Margin="0,2,0,0" />
-      </StackPanel>
+  <!-- Рабочий стол: приветствие и плитки модулей, доступных роли -->
+  <ScrollViewer>
+    <StackPanel Margin="32,24,20,24">
+      <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding User.DisplayName, StringFormat='Добрый день, {0}'}" />
+      <TextBlock Classes="crumb" Margin="0,2,0,0" Text="Выберите модуль. Видны только модули, доступные вашей роли." />
+      <TextBlock Classes="section" Margin="0,20,0,10" Text="МОДУЛИ" />
       <ItemsControl ItemsSource="{Binding Navigation}">
         <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+          <ItemsPanelTemplate><UniformGrid Columns="4" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:NavItem">
-            <Button Classes="icon" Margin="0,0,8,8" ToolTip.Tip="{Binding Hint}"
-                    Command="{Binding Go}" CommandParameter="{Binding Module}">
-              <StackPanel Spacing="6" Width="132">
-                <Border Width="52" Height="52" CornerRadius="4" Background="White" HorizontalAlignment="Center"
-                        BorderBrush="#0A246A" BorderThickness="1" BoxShadow="1 2 3 0 #40000000">
-                  <TextBlock Text="{Binding Glyph}" FontSize="19" FontWeight="Bold" Foreground="{StaticResource Accent}"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <Button Classes="tile" ToolTip.Tip="{Binding Hint}" Command="{Binding Go}" CommandParameter="{Binding Module}">
+              <DockPanel>
+                <Border DockPanel.Dock="Left" Classes="tileglyph" Classes.stub="{Binding IsStub}" Margin="0,0,12,0">
+                  <TextBlock Text="{Binding Glyph}" />
                 </Border>
-                <TextBlock Text="{Binding Title}" Foreground="White" HorizontalAlignment="Center" FontWeight="Bold"
-                           TextAlignment="Center" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding LegacyName}" Foreground="#C9D7EC" FontSize="11" HorizontalAlignment="Center" />
-              </StackPanel>
+                <StackPanel>
+                  <TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Classes="hint" Margin="0,2,0,0" Text="{Binding Summary}" TextWrapping="Wrap" />
+                </StackPanel>
+              </DockPanel>
             </Button>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
-    </DockPanel>
-  </Border>
+    </StackPanel>
+  </ScrollViewer>
 </UserControl>

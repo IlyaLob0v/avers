@@ -5,24 +5,9 @@
              x:Class="Avers.Desktop.Views.SubscriberView"
              x:DataType="vm:MainViewModel">
   <UserControl.Styles>
-    <Style Selector="Border.head">
-      <Setter Property="BorderBrush" Value="{StaticResource Edge}" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="Background" Value="#F7FBFE" />
-      <Setter Property="Padding" Value="12,10" />
-      <Setter Property="Margin" Value="0,0,0,8" />
-    </Style>
-    <Style Selector="TextBlock.big">
-      <Setter Property="FontSize" Value="22" />
-      <Setter Property="FontWeight" Value="Bold" />
-    </Style>
-    <Style Selector="TextBlock.acc">
-      <Setter Property="FontSize" Value="20" />
-      <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="{StaticResource Caption}" />
-    </Style>
     <Style Selector="Grid.form > TextBlock">
       <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{StaticResource Muted}" />
       <Setter Property="Margin" Value="0,2,8,2" />
     </Style>
     <Style Selector="Grid.form > TextBox, Grid.form > ComboBox">
@@ -31,48 +16,48 @@
   </UserControl.Styles>
 
   <ScrollViewer>
-    <StackPanel Margin="12">
+    <StackPanel Margin="16,0,16,2">
       <!-- Шапка: фамилия крупно, адрес квартиры, лицевой счёт -->
-      <Border Classes="head">
+      <Border Classes="card" Padding="16,10">
         <Grid ColumnDefinitions="*,Auto">
           <StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="10">
-              <TextBlock Classes="big" Text="{Binding CardSurname}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding CardSurname}" />
               <TextBlock FontSize="16" VerticalAlignment="Bottom" Margin="0,0,0,2" Text="{Binding CardNameRest}" />
             </StackPanel>
-            <TextBlock Margin="0,4,0,0" Text="{Binding CardAddress}" />
+            <TextBlock Margin="0,2,0,0" Text="{Binding CardAddress}" />
             <TextBlock Classes="hint" Margin="0,2,0,0" Text="{Binding CardOrganization, StringFormat='Обслуживающая организация (бывш. «домовладелец»): {0}'}" />
             <TextBlock Classes="hint" Text="{Binding SelectedSubscriber.Phone, StringFormat='Телефон: {0}'}" />
           </StackPanel>
           <StackPanel Grid.Column="1" HorizontalAlignment="Right">
             <TextBlock Classes="hint" HorizontalAlignment="Right" Text="Лицевой счёт" />
-            <TextBlock Classes="acc" HorizontalAlignment="Right" Text="{Binding CardAccount}" />
+            <TextBlock FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource Caption}" HorizontalAlignment="Right" Text="{Binding CardAccount}" />
             <TextBlock Classes="hint" HorizontalAlignment="Right" Text="{Binding SelectedSubscriber.InnerCode, StringFormat='вн. код {0}'}" />
           </StackPanel>
         </Grid>
       </Border>
 
       <Border Classes="warn" IsVisible="{Binding HasFault}">
-        <TextBlock Text="{Binding FaultBanner}" TextWrapping="Wrap" Foreground="#5A3B00" />
+        <TextBlock Text="{Binding FaultBanner}" TextWrapping="Wrap" />
       </Border>
 
       <!-- Последняя оплата: общая жёлтая плашка warn, если без оплаты дольше порога -->
-      <Border Classes.card="{Binding !IsPaymentLate}" Classes.warn="{Binding IsPaymentLate}">
+      <Border Classes.card="{Binding !IsPaymentLate}" Classes.warn="{Binding IsPaymentLate}" Padding="16,8">
         <Grid ColumnDefinitions="*,Auto">
           <StackPanel>
             <TextBlock FontWeight="SemiBold" TextWrapping="Wrap" Text="{Binding LastPaymentLine}" />
             <TextBlock Classes="hint" Text="{Binding PaymentWarningHint}" />
           </StackPanel>
-          <TextBlock Grid.Column="1" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" Margin="12,0,0,0"
-                     Text="{Binding LastPaymentAgo}" />
+          <Border Grid.Column="1" Classes="badge" Classes.ok="{Binding !IsPaymentLate}" Classes.warn="{Binding IsPaymentLate}" Margin="12,0,0,0">
+            <TextBlock Text="{Binding LastPaymentAgo}" />
+          </Border>
         </Grid>
       </Border>
 
       <Grid ColumnDefinitions="*,*">
         <!-- Договор -->
-        <Border Classes="card" Margin="0,0,4,8">
+        <HeaderedContentControl Classes="group" Margin="0,0,5,10" Header="Договор на техобслуживание">
           <StackPanel>
-            <TextBlock Classes="legend" Text="Договор на техобслуживание" />
             <TextBlock TextWrapping="Wrap" Margin="0,0,0,6" Text="{Binding CardContractLine}" />
             <Grid Classes="form" ColumnDefinitions="150,*" RowDefinitions="Auto,Auto,Auto,Auto">
               <TextBlock Text="Номер договора" />
@@ -85,16 +70,15 @@
               <TextBox Grid.Row="3" Grid.Column="1" Classes="cell" Text="{Binding EditContractHolder}" PlaceholderText="пусто — с самим абонентом" IsReadOnly="{Binding !CanEditCard}" />
             </Grid>
             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-              <Button Classes="link" Content="Открыть договор →" Command="{Binding OpenContractCommand}" />
+              <Button Classes="link" VerticalAlignment="Center" Margin="0,0,16,0" Content="Открыть договор →" Command="{Binding OpenContractCommand}" />
               <Button Classes="primary" Content="Сохранить" Command="{Binding SaveCardCommand}" IsVisible="{Binding CanEditCard}" />
             </StackPanel>
           </StackPanel>
-        </Border>
+        </HeaderedContentControl>
 
         <!-- Абонент и примечание -->
-        <Border Grid.Column="1" Classes="card" Margin="4,0,0,8">
+        <HeaderedContentControl Grid.Column="1" Classes="group" Margin="5,0,0,10" Header="Квартира и абонент">
           <StackPanel>
-            <TextBlock Classes="legend" Text="Квартира и абонент" />
             <Grid Classes="form" ColumnDefinitions="150,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
               <TextBlock Text="ФИО полностью" />
               <TextBox Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.FullName, Mode=OneWay}" IsReadOnly="True" />
@@ -106,66 +90,70 @@
               <TextBlock Grid.Row="3" Text="Расчёт с" />
               <TextBox Grid.Row="3" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.SettlementFrom, Mode=OneWay}" IsReadOnly="True" />
               <TextBlock Grid.Row="4" Text="Долг" />
-              <TextBox Grid.Row="4" Grid.Column="1" Classes="cell" IsReadOnly="True" Text="{Binding DebtText, Mode=OneWay}" />
+              <TextBox Grid.Row="4" Grid.Column="1" Classes="cell" Classes.debt="{Binding HasDebt}" IsReadOnly="True" Text="{Binding DebtText, Mode=OneWay}" />
               <TextBlock Grid.Row="5" Text="Организация, тел." />
               <TextBox Grid.Row="5" Grid.Column="1" Classes="cell" IsReadOnly="True" Text="{Binding CardOrganizationPhones, Mode=OneWay}" />
             </Grid>
             <TextBlock Classes="legend" Margin="0,8,0,4" Text="Примечание" />
-            <TextBox Classes="cell" MinHeight="64" AcceptsReturn="True" TextWrapping="Wrap"
+            <TextBox Classes="cell" MinHeight="52" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top"
                      Text="{Binding EditNotes}" IsReadOnly="{Binding !CanEditCard}" />
-            <CheckBox Margin="0,8,0,0" IsChecked="{Binding SelectedSubscriber.PrintAccountWithPayDate}" Content="Печатать лицевой счёт с датой оплаты" />
+            <CheckBox Margin="0,6,0,0" IsChecked="{Binding SelectedSubscriber.PrintAccountWithPayDate}" Content="Печатать лицевой счёт с датой оплаты" />
           </StackPanel>
-        </Border>
+        </HeaderedContentControl>
       </Grid>
 
       <!-- Оплаты: кто внёс и кто оплатил -->
-      <Border Classes="card">
-        <StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,6">
-            <TextBlock Classes="legend" Margin="0" VerticalAlignment="Center" Text="Оплаты за" />
-            <ComboBox Classes="cell" MinWidth="90" ItemsSource="{Binding CardPaymentYears}" SelectedItem="{Binding CardPaymentYear}" />
-            <Button Classes="primary" Content="Внести оплату" Command="{Binding RecordPaymentCommand}" />
-          </StackPanel>
-          <DataGrid ItemsSource="{Binding CardPayments}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="330">
-            <DataGrid.Columns>
-              <DataGridTextColumn Header="Месяц" Binding="{Binding Month}" Width="100" />
-              <DataGridTextColumn Header="Тариф" Binding="{Binding Tariff}" Width="90" />
-              <DataGridTextColumn Header="Сумма" Binding="{Binding Amount}" Width="90" />
-              <DataGridTextColumn Header="Дата оплаты" Binding="{Binding PaidAt}" Width="125" />
-              <DataGridTextColumn Header="Источник" Binding="{Binding Source}" Width="110" />
-              <DataGridTextColumn Header="Внёс (сотрудник)" Binding="{Binding RecordedBy}" Width="170" />
-              <DataGridTextColumn Header="Оплатил" Binding="{Binding PayerName}" Width="*" />
-            </DataGrid.Columns>
-          </DataGrid>
-        </StackPanel>
-      </Border>
+      <HeaderedContentControl Classes="group">
+        <HeaderedContentControl.Header>
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Classes="primary" Margin="0" Content="Внести оплату" Command="{Binding RecordPaymentCommand}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock VerticalAlignment="Center" Text="Оплаты за" />
+              <ComboBox MinWidth="90" FontWeight="Normal" ItemsSource="{Binding CardPaymentYears}" SelectedItem="{Binding CardPaymentYear}" />
+            </StackPanel>
+          </DockPanel>
+        </HeaderedContentControl.Header>
+        <DataGrid ItemsSource="{Binding CardPayments}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="330">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Месяц" Binding="{Binding Month}" Width="100" />
+            <DataGridTextColumn Header="Тариф" Binding="{Binding Tariff}" Width="90" />
+            <DataGridTextColumn Header="Сумма" Binding="{Binding Amount}" Width="90" />
+            <DataGridTextColumn Header="Дата оплаты" Binding="{Binding PaidAt}" Width="125" />
+            <DataGridTextColumn Header="Источник" Binding="{Binding Source}" Width="110" />
+            <DataGridTextColumn Header="Внёс (сотрудник)" Binding="{Binding RecordedBy}" Width="170" />
+            <DataGridTextColumn Header="Оплатил" Binding="{Binding PayerName}" Width="*" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </HeaderedContentControl>
 
       <!-- Заявки по квартире -->
-      <Border Classes="card">
-        <StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,6">
-            <TextBlock Classes="legend" Margin="0" VerticalAlignment="Center" Text="Заявки по квартире за" />
-            <ComboBox Classes="cell" MinWidth="110" ItemsSource="{Binding CardTicketYears}" SelectedItem="{Binding CardTicketYear}">
-              <ComboBox.ItemTemplate>
-                <DataTemplate x:DataType="vm:YearOption">
-                  <TextBlock Text="{Binding Title}" />
-                </DataTemplate>
-              </ComboBox.ItemTemplate>
-            </ComboBox>
-            <Button Content="Принять заявку" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Disp}" />
-          </StackPanel>
-          <DataGrid ItemsSource="{Binding ApartmentTicketRows}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260">
-            <DataGrid.Columns>
-              <DataGridTextColumn Header="№" Binding="{Binding Number}" Width="60" />
-              <DataGridTextColumn Header="Дата" Binding="{Binding Date, Mode=OneWay, StringFormat='{}{0:dd.MM.yyyy}'}" Width="110" />
-              <DataGridTextColumn Header="Неисправность" Binding="{Binding Fault}" Width="2*" />
-              <DataGridTextColumn Header="Радиомеханик" Binding="{Binding Mechanic}" Width="150" />
-              <DataGridTextColumn Header="Работа" Binding="{Binding WorkDone}" Width="2*" />
-              <DataGridTextColumn Header="Вып." Binding="{Binding StatusLabel}" Width="70" />
-            </DataGrid.Columns>
-          </DataGrid>
-        </StackPanel>
-      </Border>
+      <HeaderedContentControl Classes="group">
+        <HeaderedContentControl.Header>
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Margin="0" FontWeight="Normal" Content="Принять заявку" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Disp}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock VerticalAlignment="Center" Text="Заявки по квартире за" />
+              <ComboBox MinWidth="110" FontWeight="Normal" ItemsSource="{Binding CardTicketYears}" SelectedItem="{Binding CardTicketYear}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:YearOption">
+                    <TextBlock Text="{Binding Title}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </StackPanel>
+          </DockPanel>
+        </HeaderedContentControl.Header>
+        <DataGrid ItemsSource="{Binding ApartmentTicketRows}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="260">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="№" Binding="{Binding Number}" Width="60" />
+            <DataGridTextColumn Header="Дата" Binding="{Binding Date, Mode=OneWay, StringFormat='{}{0:dd.MM.yyyy}'}" Width="110" />
+            <DataGridTextColumn Header="Неисправность" Binding="{Binding Fault}" Width="2*" />
+            <DataGridTextColumn Header="Радиомеханик" Binding="{Binding Mechanic}" Width="150" />
+            <DataGridTextColumn Header="Работа" Binding="{Binding WorkDone}" Width="2*" />
+            <DataGridTextColumn Header="Вып." Binding="{Binding StatusLabel}" Width="70" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </HeaderedContentControl>
 
       <!-- Порог подсветки: администратор и начальник АДС -->
       <Border Classes="card" IsVisible="{Binding CanEditSettings}">

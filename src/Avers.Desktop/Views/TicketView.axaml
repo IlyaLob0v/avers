@@ -4,12 +4,11 @@
              xmlns:d="using:Avers.Domain"
              x:Class="Avers.Desktop.Views.TicketView"
              x:DataType="vm:MainViewModel">
-  <StackPanel Margin="16" MaxWidth="900">
-    <Border Classes="card">
+  <ScrollViewer>
+    <HeaderedContentControl Classes="group" Margin="16,0,16,12" Width="920" HorizontalAlignment="Left" VerticalAlignment="Top" Header="{Binding TicketHeader}">
       <StackPanel>
-        <TextBlock Classes="legend" Text="{Binding TicketHeader}" />
         <Grid ColumnDefinitions="*,*">
-          <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto">
+          <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto" Margin="0,0,12,0">
             <TextBlock Classes="label" Text="Адрес" />
             <TextBox Grid.Column="1" Classes="cell" Text="{Binding TicketAddress, Mode=OneWay}" IsReadOnly="True" />
             <TextBlock Grid.Row="1" Classes="label" Text="Заявитель" />
@@ -27,17 +26,17 @@
           </Grid>
         </Grid>
         <TextBlock Classes="hint" Margin="0,8,0,2" Text="Описание неисправности" />
-        <TextBox Classes="cell" Height="64" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding TicketFault}" />
+        <TextBox Classes="cell" Height="64" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" Text="{Binding TicketFault}" />
         <TextBlock Classes="hint" Margin="0,8,0,2" Text="Что произведено (как в наряд-заказе)" />
-        <TextBox Classes="cell" Height="56" TextWrapping="Wrap" AcceptsReturn="True" PlaceholderText="Заполняет диспетчерская служба после отчёта радиомеханика." Text="{Binding TicketWork}" />
+        <TextBox Classes="cell" Height="56" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" PlaceholderText="Заполняет диспетчерская служба после отчёта радиомеханика." Text="{Binding TicketWork}" />
         <Border Classes="warn" Margin="0,8,0,0" IsVisible="{Binding HasTicketRightsHint}">
-          <TextBlock Text="{Binding TicketRightsHint}" TextWrapping="Wrap" Foreground="#5A3B00" />
+          <TextBlock Text="{Binding TicketRightsHint}" TextWrapping="Wrap" />
         </Border>
         <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
           <Button Classes="primary" Content="Сохранить" Command="{Binding SaveTicketCommand}" IsEnabled="{Binding CanEditSelectedTicket}" />
           <Button Content="Закрыть" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Disp}" />
         </StackPanel>
       </StackPanel>
-    </Border>
-  </StackPanel>
+    </HeaderedContentControl>
+  </ScrollViewer>
 </UserControl>

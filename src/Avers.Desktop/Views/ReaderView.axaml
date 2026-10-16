@@ -4,48 +4,48 @@
              xmlns:d="using:Avers.Domain"
              x:Class="Avers.Desktop.Views.ReaderView"
              x:DataType="vm:MainViewModel">
-  <StackPanel Margin="16">
+  <StackPanel Margin="16,0,16,12">
     <TextBlock Classes="hint" TextWrapping="Wrap" Text="Радиомеханик входит с правом читателя. Улица и номер дома. Схема на экране, выгрузка файла недоступна." />
-    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10,0,10">
-      <TextBlock Text="Улица" VerticalAlignment="Center" />
-      <ComboBox Width="200" Classes="cell" ItemsSource="{Binding Streets}" SelectedItem="{Binding SelectedStreet}">
-        <ComboBox.ItemTemplate>
-          <DataTemplate x:DataType="d:Street">
-            <TextBlock Text="{Binding Name}" />
-          </DataTemplate>
-        </ComboBox.ItemTemplate>
-      </ComboBox>
-      <TextBlock Text="Дом" VerticalAlignment="Center" />
-      <ComboBox Width="80" Classes="cell" ItemsSource="{Binding HousesOnStreet}" SelectedItem="{Binding SelectedHouse}">
-        <ComboBox.ItemTemplate>
-          <DataTemplate x:DataType="d:House">
-            <TextBlock Text="{Binding Number}" />
-          </DataTemplate>
-        </ComboBox.ItemTemplate>
-      </ComboBox>
-    </StackPanel>
+    <Border Classes="card" Margin="0,8,0,10" Padding="12,6">
+      <StackPanel Orientation="Horizontal">
+        <TextBlock Classes="label" Text="Улица" />
+        <ComboBox Width="200" Margin="0,0,16,0" ItemsSource="{Binding Streets}" SelectedItem="{Binding SelectedStreet}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="d:Street">
+              <TextBlock Text="{Binding Name}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <TextBlock Classes="label" Text="Дом" />
+        <ComboBox Width="90" ItemsSource="{Binding HousesOnStreet}" SelectedItem="{Binding SelectedHouse}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="d:House">
+              <TextBlock Text="{Binding Number}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+      </StackPanel>
+    </Border>
     <Grid ColumnDefinitions="*,*">
-      <Border Classes="card">
+      <HeaderedContentControl Classes="group" Margin="0,0,5,10" Header="Организация">
         <StackPanel>
-          <TextBlock Classes="legend" Text="Организация" />
           <TextBlock Text="{Binding SelectedHouse.Organization.Name}" />
           <TextBlock Text="{Binding SelectedHouse.Organization.Branch}" />
           <TextBlock Text="{Binding SelectedHouse.Organization.Address}" />
           <TextBlock Text="{Binding SelectedHouse.Organization.Phones}" />
           <TextBlock Text="{Binding SelectedHouse.Organization.HeadName}" />
         </StackPanel>
-      </Border>
-      <Border Classes="card">
+      </HeaderedContentControl>
+      <HeaderedContentControl Grid.Column="1" Classes="group" Margin="5,0,0,10" Header="Техника">
         <StackPanel>
-          <TextBlock Classes="legend" Text="Техника" />
           <TextBlock TextWrapping="Wrap" Text="{Binding SelectedHouse.Antennas}" />
           <TextBlock Margin="0,4,0,0" TextWrapping="Wrap" Text="{Binding SelectedHouse.AerialCables}" />
           <TextBlock TextWrapping="Wrap" Text="{Binding SelectedHouse.Amplifiers}" />
           <TextBlock TextWrapping="Wrap" Text="{Binding SelectedHouse.PowerSupplies}" />
           <TextBlock TextWrapping="Wrap" Text="{Binding SelectedHouse.TechFloorKey}" />
         </StackPanel>
-      </Border>
+      </HeaderedContentControl>
     </Grid>
-    <Button Margin="0,10,0,0" Content="Схема СКПТ (без выгрузки)" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Scheme}" />
+    <Button HorizontalAlignment="Left" Content="Схема СКПТ (без выгрузки)" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Scheme}" />
   </StackPanel>
 </UserControl>

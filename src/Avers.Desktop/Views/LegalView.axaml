@@ -5,33 +5,50 @@
              xmlns:ctl="using:Avers.Desktop.Controls"
              x:Class="Avers.Desktop.Views.LegalView"
              x:DataType="vm:MainViewModel">
-  <StackPanel Margin="12">
-    <TextBlock Classes="hint" Text="Красная строка — задолженность 450 ₽ и более. Жёлтая — последняя оплата 3 года и более назад." />
-    <DataGrid ctl:GridTone.Enabled="True" Margin="0,8,0,0" Height="240" ItemsSource="{Binding Debtors}" SelectedItem="{Binding SelectedDebtor}" AutoGenerateColumns="False" IsReadOnly="True">
-      <DataGrid.Columns>
-        <DataGridTextColumn Header="ФИО полностью" Binding="{Binding FullName}" Width="240" />
-        <DataGridTextColumn Header="Адрес" Binding="{Binding Address}" Width="240" />
-        <DataGridTextColumn Header="Долг" Binding="{Binding DebtText}" Width="90" />
-        <DataGridTextColumn Header="Неоплачено мес." Binding="{Binding Unpaid}" Width="140" />
-        <DataGridTextColumn Header="Последняя оплата" Binding="{Binding LastPay}" Width="160" />
-        <DataGridTextColumn Header="Дело-Аверс" Binding="{Binding Case}" Width="180" />
-      </DataGrid.Columns>
-    </DataGrid>
-    <StackPanel Orientation="Horizontal" Margin="0,8,0,8">
+  <DockPanel Margin="16,0,16,12">
+    <Border DockPanel.Dock="Bottom" Classes="card" Margin="0">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Classes="legend" Margin="0,0,8,0" Text="Калькулятор обратного отсчёта" VerticalAlignment="Center" />
+        <TextBlock Classes="label" Margin="0" Text="Дата претензии" />
+        <TextBox Width="104" Text="01.08.2026" />
+        <TextBlock Classes="label" Margin="8,0,0,0" Text="Срок исполнения" />
+        <TextBox Width="104" Text="31.08.2026" />
+        <TextBlock Classes="label" Margin="8,0,0,0" Text="Осталось" />
+        <TextBox Width="180" Text="0 дней (на 31.08.2026)" IsReadOnly="True" />
+      </StackPanel>
+    </Border>
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,0,0,10">
       <Button Classes="primary" Content="Сформировать претензии (долг ≥ 3 мес.)" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Claim}" />
       <Button Content="Отчёт по должникам" Command="{Binding NotReadyCommand}" CommandParameter="Отчёт по должникам" />
       <Button Content="Пакет документов для суда" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Claim}" />
     </StackPanel>
-    <Border Classes="card">
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <TextBlock Classes="legend" Text="Калькулятор обратного отсчёта" VerticalAlignment="Center" />
-        <TextBlock Text="Дата претензии" VerticalAlignment="Center" />
-        <TextBox Width="100" Classes="cell" Text="01.08.2026" />
-        <TextBlock Text="Срок исполнения" VerticalAlignment="Center" />
-        <TextBox Width="100" Classes="cell" Text="31.08.2026" />
-        <TextBlock Text="Осталось" VerticalAlignment="Center" />
-        <TextBox Width="180" Classes="cell" Text="0 дней (на 31.08.2026)" IsReadOnly="True" />
-      </StackPanel>
-    </Border>
-  </StackPanel>
+    <HeaderedContentControl Classes="group" Padding="0">
+      <HeaderedContentControl.Header>
+        <DockPanel>
+          <!-- Легенда цветов строк -->
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="16">
+            <StackPanel Orientation="Horizontal">
+              <Border Classes="swatch debt" />
+              <TextBlock Classes="hint" VerticalAlignment="Center" Text="задолженность 450 ₽ и более" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <Border Classes="swatch warn" />
+              <TextBlock Classes="hint" VerticalAlignment="Center" Text="последняя оплата 3 года и более назад" />
+            </StackPanel>
+          </StackPanel>
+          <TextBlock Text="Должники" VerticalAlignment="Center" />
+        </DockPanel>
+      </HeaderedContentControl.Header>
+      <DataGrid ctl:GridTone.Enabled="True" BorderThickness="0" ItemsSource="{Binding Debtors}" SelectedItem="{Binding SelectedDebtor}" AutoGenerateColumns="False" IsReadOnly="True">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="ФИО полностью" Binding="{Binding FullName}" Width="260" />
+          <DataGridTextColumn Header="Адрес" Binding="{Binding Address}" Width="280" />
+          <DataGridTextColumn Header="Долг" Binding="{Binding DebtText}" Width="100" />
+          <DataGridTextColumn Header="Неоплачено мес." Binding="{Binding Unpaid}" Width="140" />
+          <DataGridTextColumn Header="Последняя оплата" Binding="{Binding LastPay}" Width="200" />
+          <DataGridTextColumn Header="Дело-Аверс" Binding="{Binding Case}" Width="*" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </HeaderedContentControl>
+  </DockPanel>
 </UserControl>

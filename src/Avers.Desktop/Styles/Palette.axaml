@@ -1,91 +1,88 @@
 <!--
-  Палитра Аверса. Образец — прежние программы на Delphi под Windows XP:
-  серый фон окна, белые поля ввода, синее выделение, тёмно-синий заголовок окна.
+  Палитра Аверса: светло-серый фон окна, белые панели с тонкой рамкой, тёмно-синяя шапка, синий акцент.
+  Только сплошные цвета: без теней, прозрачности и градиентов (рабочие места ходят через xrdp с программной отрисовкой).
   Цвета в экранах не пишем числами, берём отсюда по ключу: {StaticResource Face}.
 -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!-- Поверхности -->
-  <SolidColorBrush x:Key="Face">#ECEAE3</SolidColorBrush>          <!-- фон окна (clBtnFace) -->
-  <SolidColorBrush x:Key="FaceDark">#DCD9CF</SolidColorBrush>      <!-- полосы инструментов и фильтров -->
-  <SolidColorBrush x:Key="FaceLight">#F7F6F2</SolidColorBrush>     <!-- рамки-группы -->
-  <SolidColorBrush x:Key="Field">#FFFFFF</SolidColorBrush>         <!-- поля ввода и таблицы (clWindow) -->
-  <SolidColorBrush x:Key="FieldReadOnly">#F4F3EE</SolidColorBrush> <!-- поле только для чтения -->
+  <SolidColorBrush x:Key="Face">#EEF0F3</SolidColorBrush>          <!-- фон окна -->
+  <SolidColorBrush x:Key="FaceDark">#E2E6EC</SolidColorBrush>      <!-- строка состояния, нажатая кнопка -->
+  <SolidColorBrush x:Key="FaceLight">#F3F5F8</SolidColorBrush>     <!-- шапка таблицы, вспомогательный блок, отключённая кнопка -->
+  <SolidColorBrush x:Key="Panel">#FFFFFF</SolidColorBrush>         <!-- панели -->
+  <SolidColorBrush x:Key="Field">#FFFFFF</SolidColorBrush>         <!-- поля ввода и таблицы -->
+  <SolidColorBrush x:Key="FieldReadOnly">#F7F8FA</SolidColorBrush> <!-- поле только для чтения -->
 
   <!-- Линии -->
-  <SolidColorBrush x:Key="Edge">#A8A496</SolidColorBrush>          <!-- рамки панелей -->
-  <SolidColorBrush x:Key="EdgeLight">#FFFFFF</SolidColorBrush>     <!-- светлая кромка объёма -->
-  <SolidColorBrush x:Key="FieldBorder">#7F9DB9</SolidColorBrush>   <!-- рамка поля ввода, как в XP -->
-  <SolidColorBrush x:Key="GridLine">#D8D5CB</SolidColorBrush>
+  <SolidColorBrush x:Key="Edge">#CDD3DC</SolidColorBrush>          <!-- рамки панелей -->
+  <SolidColorBrush x:Key="EdgeLight">#E3E7ED</SolidColorBrush>     <!-- разделитель под заголовком панели -->
+  <SolidColorBrush x:Key="FieldBorder">#B9C1CD</SolidColorBrush>   <!-- рамка полей и кнопок -->
+  <SolidColorBrush x:Key="GridLine">#E3E7ED</SolidColorBrush>      <!-- разделители строк таблицы -->
 
   <!-- Текст -->
-  <SolidColorBrush x:Key="Ink">#1A1A1A</SolidColorBrush>
-  <SolidColorBrush x:Key="Muted">#5E5B52</SolidColorBrush>
-  <SolidColorBrush x:Key="Caption">#0A246A</SolidColorBrush>       <!-- подписи групп -->
-  <SolidColorBrush x:Key="Link">#0645AD</SolidColorBrush>
+  <SolidColorBrush x:Key="Ink">#1B2330</SolidColorBrush>
+  <SolidColorBrush x:Key="Muted">#5A6474</SolidColorBrush>         <!-- подписи, подсказки -->
+  <SolidColorBrush x:Key="InkDisabled">#9AA2AE</SolidColorBrush>
+  <SolidColorBrush x:Key="Caption">#0A2F5C</SolidColorBrush>       <!-- крупные номера: лицевой счёт, марка на входе -->
+  <SolidColorBrush x:Key="Link">#2B5CB0</SolidColorBrush>
 
   <!-- Акцент и выделение -->
-  <SolidColorBrush x:Key="Accent">#316AC5</SolidColorBrush>        <!-- выделенная строка (clHighlight XP) -->
-  <SolidColorBrush x:Key="AccentDark">#0A246A</SolidColorBrush>
-  <SolidColorBrush x:Key="AccentSoft">#DCE7F8</SolidColorBrush>    <!-- наведение, текущий модуль -->
+  <SolidColorBrush x:Key="Accent">#2B5CB0</SolidColorBrush>        <!-- выделенная строка, главная кнопка -->
+  <SolidColorBrush x:Key="AccentDark">#0A2F5C</SolidColorBrush>
+  <SolidColorBrush x:Key="AccentHover">#1F4A94</SolidColorBrush>   <!-- главная кнопка под мышью -->
+  <SolidColorBrush x:Key="AccentSoft">#E3ECFA</SolidColorBrush>    <!-- наведение, значки модулей -->
+  <SolidColorBrush x:Key="AccentSoftInk">#1F4A94</SolidColorBrush> <!-- текст на AccentSoft -->
   <SolidColorBrush x:Key="OnAccent">#FFFFFF</SolidColorBrush>
-  <SolidColorBrush x:Key="Desk">#3A6EA5</SolidColorBrush>          <!-- рабочий стол, классический синий Windows -->
 
-  <LinearGradientBrush x:Key="CaptionBar" StartPoint="0%,0%" EndPoint="100%,0%">
-    <GradientStop Offset="0" Color="#0A246A" />
-    <GradientStop Offset="1" Color="#3A6EA5" />
-  </LinearGradientBrush>
-  <LinearGradientBrush x:Key="ButtonFace" StartPoint="0%,0%" EndPoint="0%,100%">
-    <GradientStop Offset="0" Color="#FFFFFF" />
-    <GradientStop Offset="0.85" Color="#ECEAE3" />
-    <GradientStop Offset="1" Color="#D9D5C9" />
-  </LinearGradientBrush>
-  <LinearGradientBrush x:Key="ButtonFaceHover" StartPoint="0%,0%" EndPoint="0%,100%">
-    <GradientStop Offset="0" Color="#FFFFFF" />
-    <GradientStop Offset="1" Color="#E3ECF8" />
-  </LinearGradientBrush>
-  <LinearGradientBrush x:Key="HeaderFace" StartPoint="0%,0%" EndPoint="0%,100%">
-    <GradientStop Offset="0" Color="#F8F7F3" />
-    <GradientStop Offset="1" Color="#E2DFD5" />
-  </LinearGradientBrush>
+  <!-- Шапка окна -->
+  <SolidColorBrush x:Key="TopBar">#0A2F5C</SolidColorBrush>        <!-- шапка и фон окна входа -->
+  <SolidColorBrush x:Key="TopBarInk">#D5DEEE</SolidColorBrush>     <!-- меню и подписи на шапке -->
+  <SolidColorBrush x:Key="TopBarEdge">#5D77A3</SolidColorBrush>    <!-- рамка кнопки «Выйти» -->
+  <SolidColorBrush x:Key="TopBarHover">#1B4274</SolidColorBrush>
+  <SolidColorBrush x:Key="TopBarDim">#A9B8D3</SolidColorBrush>     <!-- мелкая подпись на тёмном фоне -->
 
-  <!-- Цветовые пометки строк и плашек: см. Styles/Controls.axaml и Controls/GridTone.cs -->
-  <SolidColorBrush x:Key="WarnBg">#FFF1A6</SolidColorBrush>        <!-- жёлтый: давно не платил, внимание -->
-  <SolidColorBrush x:Key="WarnBd">#D9A700</SolidColorBrush>
-  <SolidColorBrush x:Key="WarnInk">#5A4500</SolidColorBrush>
-  <SolidColorBrush x:Key="DebtBg">#F8D0D0</SolidColorBrush>        <!-- красный: долг, просрочка -->
-  <SolidColorBrush x:Key="DebtBd">#C0504D</SolidColorBrush>
-  <SolidColorBrush x:Key="DebtInk">#7A1714</SolidColorBrush>
-  <SolidColorBrush x:Key="OkBg">#D3EED5</SolidColorBrush>          <!-- зелёный: оплачено, выполнено -->
-  <SolidColorBrush x:Key="OkBd">#4E9A55</SolidColorBrush>
-  <SolidColorBrush x:Key="OkInk">#1E5424</SolidColorBrush>
-  <SolidColorBrush x:Key="InfoBg">#DCE9F9</SolidColorBrush>        <!-- голубой: в плане, в работе -->
+  <!-- Цветовые метки строк и плашек: см. Styles/Controls.axaml и Controls/GridTone.cs -->
+  <SolidColorBrush x:Key="WarnBg">#FFF0B3</SolidColorBrush>        <!-- жёлтый: давно не платил, внимание -->
+  <SolidColorBrush x:Key="WarnBd">#D9A400</SolidColorBrush>
+  <SolidColorBrush x:Key="WarnInk">#5A4300</SolidColorBrush>
+  <SolidColorBrush x:Key="WarnText">#9A5B00</SolidColorBrush>      <!-- жёлтая пометка текстом на белом: есть невыполненные -->
+  <SolidColorBrush x:Key="DebtBg">#F9D6D4</SolidColorBrush>        <!-- красный: долг, просрочка -->
+  <SolidColorBrush x:Key="DebtBd">#C2413B</SolidColorBrush>
+  <SolidColorBrush x:Key="DebtInk">#7A1A16</SolidColorBrush>
+  <SolidColorBrush x:Key="OkBg">#D7F0DA</SolidColorBrush>          <!-- зелёный: оплачено, выполнено -->
+  <SolidColorBrush x:Key="OkBd">#3F8F4A</SolidColorBrush>
+  <SolidColorBrush x:Key="OkInk">#1D5126</SolidColorBrush>
+  <SolidColorBrush x:Key="InfoBg">#E3ECFA</SolidColorBrush>        <!-- голубой: в плане, в работе -->
   <SolidColorBrush x:Key="InfoBd">#5B8BD0</SolidColorBrush>
-  <SolidColorBrush x:Key="InfoInk">#0A2E6A</SolidColorBrush>
-  <SolidColorBrush x:Key="OffBg">#EDEDED</SolidColorBrush>         <!-- серый: снят, расторгнут, архив -->
-  <SolidColorBrush x:Key="OffInk">#7A7A7A</SolidColorBrush>
+  <SolidColorBrush x:Key="InfoInk">#1F4A94</SolidColorBrush>
+  <SolidColorBrush x:Key="OffBg">#ECEDEF</SolidColorBrush>         <!-- серый: снят, расторгнут, архив -->
+  <SolidColorBrush x:Key="OffBd">#A9AFB8</SolidColorBrush>
+  <SolidColorBrush x:Key="OffInk">#7A808A</SolidColorBrush>
 
-  <FontFamily x:Key="UiFont">Tahoma, Segoe UI, avares://Avalonia.Fonts.Inter/Assets#Inter</FontFamily>
+  <!-- IBM Plex Sans вшит в приложение (Assets/Fonts, лицензия OFL): на всех ПК и в xrdp текст одинаковый -->
+  <FontFamily x:Key="UiFont">avares://Avers/Assets/Fonts#IBM Plex Sans</FontFamily>
 
-  <!-- Переопределения Fluent: острые углы и синий XP вместо акцента Windows 11 -->
-  <Color x:Key="SystemAccentColor">#316AC5</Color>
-  <Color x:Key="SystemAccentColorDark1">#2A5BAA</Color>
-  <Color x:Key="SystemAccentColorDark2">#1F4A92</Color>
-  <Color x:Key="SystemAccentColorLight1">#4F84D6</Color>
-  <CornerRadius x:Key="ControlCornerRadius">2</CornerRadius>
-  <CornerRadius x:Key="OverlayCornerRadius">2</CornerRadius>
+  <!-- Переопределения Fluent: синий акцент Аверса и небольшие скругления -->
+  <Color x:Key="SystemAccentColor">#2B5CB0</Color>
+  <Color x:Key="SystemAccentColorDark1">#1F4A94</Color>
+  <Color x:Key="SystemAccentColorDark2">#0A2F5C</Color>
+  <Color x:Key="SystemAccentColorLight1">#5B8BD0</Color>
+  <CornerRadius x:Key="ControlCornerRadius">3</CornerRadius>
+  <CornerRadius x:Key="OverlayCornerRadius">4</CornerRadius>
 
   <!-- Таблицы -->
   <StaticResource x:Key="DataGridGridLinesBrush" ResourceKey="GridLine" />
-  <StaticResource x:Key="DataGridColumnHeaderBackgroundBrush" ResourceKey="HeaderFace" />
-  <StaticResource x:Key="DataGridColumnHeaderForegroundBrush" ResourceKey="Ink" />
+  <StaticResource x:Key="DataGridColumnHeaderBackgroundBrush" ResourceKey="FaceLight" />
+  <StaticResource x:Key="DataGridColumnHeaderForegroundBrush" ResourceKey="Muted" />
   <StaticResource x:Key="DataGridRowSelectedBackgroundBrush" ResourceKey="Accent" />
   <StaticResource x:Key="DataGridRowSelectedHoveredBackgroundBrush" ResourceKey="Accent" />
   <StaticResource x:Key="DataGridRowSelectedUnfocusedBackgroundBrush" ResourceKey="Accent" />
   <StaticResource x:Key="DataGridRowSelectedHoveredUnfocusedBackgroundBrush" ResourceKey="Accent" />
+  <StaticResource x:Key="DataGridRowHoveredBackground" ResourceKey="AccentSoft" />
+  <!-- место под значок сортировки не резервируем, иначе узкие заголовки («Фев», «Под.») обрезаются -->
+  <x:Double x:Key="DataGridSortIconMinWidth">0</x:Double>
   <x:Double x:Key="DataGridRowSelectedBackgroundOpacity">1</x:Double>
   <x:Double x:Key="DataGridRowSelectedHoveredBackgroundOpacity">1</x:Double>
-  <x:Double x:Key="DataGridRowSelectedUnfocusedBackgroundOpacity">0.75</x:Double>
-  <x:Double x:Key="DataGridRowSelectedHoveredUnfocusedBackgroundOpacity">0.85</x:Double>
-  <SolidColorBrush x:Key="DataGridRowHoveredBackground">#E8EFFA</SolidColorBrush>
+  <x:Double x:Key="DataGridRowSelectedUnfocusedBackgroundOpacity">1</x:Double>
+  <x:Double x:Key="DataGridRowSelectedHoveredUnfocusedBackgroundOpacity">1</x:Double>
 </ResourceDictionary>

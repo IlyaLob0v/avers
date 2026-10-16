@@ -4,36 +4,35 @@
              xmlns:d="using:Avers.Domain"
              x:Class="Avers.Desktop.Views.SchemeView"
              x:DataType="vm:MainViewModel">
-  <Grid ColumnDefinitions="*,280" Margin="12">
-    <Border Classes="card">
+  <Grid ColumnDefinitions="*,290" Margin="16,0,16,12" VerticalAlignment="Top">
+    <HeaderedContentControl Classes="group" Margin="0,0,10,0" Header="Схема стояков · JPEG / PNG / SVG / XLSX">
       <StackPanel>
-        <TextBlock Classes="legend" Text="Схема стояков · JPEG / PNG / SVG / XLSX" />
-        <Border Background="#F4F9FD" Height="280" BorderBrush="#9EC0DE" BorderThickness="1">
+        <!-- Условная схема-образец: антенна, усилители по подъездам, отводы -->
+        <Border Background="{StaticResource AccentSoft}" Height="280" BorderBrush="{StaticResource Edge}" BorderThickness="1" CornerRadius="3">
           <Canvas>
-            <TextBlock Canvas.Left="12" Canvas.Top="10" Text="{Binding HouseCaption}" Foreground="#0B5CAB" />
-            <Ellipse Canvas.Left="170" Canvas.Top="36" Width="12" Height="12" Fill="#0078D4" />
-            <TextBlock Canvas.Left="188" Canvas.Top="34" Text="Антенна" Foreground="#0078D4" FontSize="11" />
-            <Rectangle Canvas.Left="40" Canvas.Top="70" Width="70" Height="22" Fill="White" Stroke="#0B5CAB" />
-            <Rectangle Canvas.Left="120" Canvas.Top="70" Width="70" Height="22" Fill="White" Stroke="#0B5CAB" />
-            <Rectangle Canvas.Left="200" Canvas.Top="70" Width="70" Height="22" Fill="White" Stroke="#0B5CAB" />
-            <Rectangle Canvas.Left="280" Canvas.Top="70" Width="70" Height="22" Fill="White" Stroke="#0B5CAB" />
-            <Rectangle Canvas.Left="50" Canvas.Top="230" Width="50" Height="14" Fill="#0B5CAB" />
-            <Rectangle Canvas.Left="130" Canvas.Top="230" Width="50" Height="14" Fill="#0B5CAB" />
-            <Rectangle Canvas.Left="210" Canvas.Top="230" Width="50" Height="14" Fill="#0B5CAB" />
-            <Rectangle Canvas.Left="290" Canvas.Top="230" Width="50" Height="14" Fill="#0B5CAB" />
-            <TextBlock Canvas.Left="54" Canvas.Top="250" FontSize="11" Text="под. 1" />
-            <TextBlock Canvas.Left="134" Canvas.Top="250" FontSize="11" Text="под. 2" />
-            <TextBlock Canvas.Left="214" Canvas.Top="250" FontSize="11" Text="под. 3" />
-            <TextBlock Canvas.Left="294" Canvas.Top="250" FontSize="11" Text="под. 4" />
+            <TextBlock Canvas.Left="12" Canvas.Top="10" Text="{Binding HouseCaption}" Foreground="{StaticResource AccentDark}" />
+            <Ellipse Canvas.Left="170" Canvas.Top="36" Width="12" Height="12" Fill="{StaticResource Accent}" />
+            <TextBlock Canvas.Left="188" Canvas.Top="34" Text="Антенна" Foreground="{StaticResource Accent}" FontSize="12" />
+            <Rectangle Canvas.Left="40" Canvas.Top="70" Width="70" Height="22" Fill="{StaticResource Panel}" Stroke="{StaticResource Accent}" StrokeThickness="1" />
+            <Rectangle Canvas.Left="120" Canvas.Top="70" Width="70" Height="22" Fill="{StaticResource Panel}" Stroke="{StaticResource Accent}" StrokeThickness="1" />
+            <Rectangle Canvas.Left="200" Canvas.Top="70" Width="70" Height="22" Fill="{StaticResource Panel}" Stroke="{StaticResource Accent}" StrokeThickness="1" />
+            <Rectangle Canvas.Left="280" Canvas.Top="70" Width="70" Height="22" Fill="{StaticResource Panel}" Stroke="{StaticResource Accent}" StrokeThickness="1" />
+            <Rectangle Canvas.Left="50" Canvas.Top="230" Width="50" Height="14" Fill="{StaticResource Accent}" />
+            <Rectangle Canvas.Left="130" Canvas.Top="230" Width="50" Height="14" Fill="{StaticResource Accent}" />
+            <Rectangle Canvas.Left="210" Canvas.Top="230" Width="50" Height="14" Fill="{StaticResource Accent}" />
+            <Rectangle Canvas.Left="290" Canvas.Top="230" Width="50" Height="14" Fill="{StaticResource Accent}" />
+            <TextBlock Canvas.Left="54" Canvas.Top="250" FontSize="12" Text="под. 1" />
+            <TextBlock Canvas.Left="134" Canvas.Top="250" FontSize="12" Text="под. 2" />
+            <TextBlock Canvas.Left="214" Canvas.Top="250" FontSize="12" Text="под. 3" />
+            <TextBlock Canvas.Left="294" Canvas.Top="250" FontSize="12" Text="под. 4" />
           </Canvas>
         </Border>
         <TextBlock Classes="hint" Margin="0,8,0,0" TextWrapping="Wrap"
                    Text="Главный инженер пополняет базу схем. Читатель открывает на экране без сохранения файла." />
       </StackPanel>
-    </Border>
-    <Border Classes="card">
+    </HeaderedContentControl>
+    <HeaderedContentControl Grid.Column="1" Classes="group" Margin="0" Header="Файлы в базе">
       <StackPanel>
-        <TextBlock Classes="legend" Text="Файлы в базе" />
         <ListBox Height="180" ItemsSource="{Binding Schemes}">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="d:HouseScheme">
@@ -41,9 +40,11 @@
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
-        <Button Classes="primary" Margin="0,8,0,0" Content="Заменить файл" Command="{Binding NotReadyCommand}" CommandParameter="Заменить файл" />
-        <Button Content="Добавить схему" Command="{Binding NotReadyCommand}" CommandParameter="Добавить схему" />
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+          <Button Classes="primary" Content="Заменить файл" Command="{Binding NotReadyCommand}" CommandParameter="Заменить файл" />
+          <Button Content="Добавить схему" Margin="0" Command="{Binding NotReadyCommand}" CommandParameter="Добавить схему" />
+        </StackPanel>
       </StackPanel>
-    </Border>
+    </HeaderedContentControl>
   </Grid>
 </UserControl>

@@ -3,30 +3,26 @@
              xmlns:vm="using:Avers.Desktop.ViewModels"
              x:Class="Avers.Desktop.Views.DomofoView"
              x:DataType="vm:MainViewModel">
-  <Grid ColumnDefinitions="*,*" Margin="12">
-    <Border Classes="card">
+  <Grid ColumnDefinitions="*,*" Margin="16,0,16,12" VerticalAlignment="Top">
+    <HeaderedContentControl Classes="group" Margin="0,0,5,0" Header="Панель подъезда">
+      <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+        <TextBlock Classes="label" Text="Улица / дом" /><TextBox Grid.Column="1" Classes="cell" Text="{Binding HouseCaption, Mode=OneWay}" IsReadOnly="True"/>
+        <TextBlock Grid.Row="1" Classes="label" Text="Подъезд" /><TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding Intercom.Entrance, Mode=OneWay}" IsReadOnly="True"/>
+        <TextBlock Grid.Row="2" Classes="label" Text="Тип панели" /><TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding Intercom.PanelType}"/>
+        <TextBlock Grid.Row="3" Classes="label" Text="Блок коммутации" /><TextBox Grid.Row="3" Grid.Column="1" Classes="cell" Text="{Binding Intercom.SwitchBlock}"/>
+        <TextBlock Grid.Row="4" Classes="label" Text="Ключи / ключницы" /><TextBox Grid.Row="4" Grid.Column="1" Classes="cell" Text="{Binding Intercom.Keys}"/>
+        <TextBlock Grid.Row="5" Classes="label" Text="Питание" /><TextBox Grid.Row="5" Grid.Column="1" Classes="cell" Text="{Binding Intercom.Power}"/>
+      </Grid>
+    </HeaderedContentControl>
+    <HeaderedContentControl Grid.Column="1" Classes="group" Margin="5,0,0,0" Header="Заявки по домофону">
       <StackPanel>
-        <TextBlock Classes="legend" Text="Панель подъезда" />
-        <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
-          <TextBlock Classes="label" Text="Улица / дом" /><TextBox Grid.Column="1" Classes="cell" Text="{Binding HouseCaption, Mode=OneWay}" IsReadOnly="True"/>
-          <TextBlock Grid.Row="1" Classes="label" Text="Подъезд" /><TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding Intercom.Entrance, Mode=OneWay}" IsReadOnly="True"/>
-          <TextBlock Grid.Row="2" Classes="label" Text="Тип панели" /><TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding Intercom.PanelType}"/>
-          <TextBlock Grid.Row="3" Classes="label" Text="Блок коммутации" /><TextBox Grid.Row="3" Grid.Column="1" Classes="cell" Text="{Binding Intercom.SwitchBlock}"/>
-          <TextBlock Grid.Row="4" Classes="label" Text="Ключи / ключницы" /><TextBox Grid.Row="4" Grid.Column="1" Classes="cell" Text="{Binding Intercom.Keys}"/>
-          <TextBlock Grid.Row="5" Classes="label" Text="Питание" /><TextBox Grid.Row="5" Grid.Column="1" Classes="cell" Text="{Binding Intercom.Power}"/>
-        </Grid>
-      </StackPanel>
-    </Border>
-    <Border Classes="card">
-      <StackPanel>
-        <TextBlock Classes="legend" Text="Заявки по домофону" />
         <DataGrid Height="220" ItemsSource="{Binding IntercomTickets}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
             <DataGridTextColumn Header="Дата" Binding="{Binding Date}" Width="110" />
-            <DataGridTextColumn Header="Под." Binding="{Binding Entrance}" Width="50" />
-            <DataGridTextColumn Header="Неисправность" Binding="{Binding Fault}" Width="220" />
+            <DataGridTextColumn Header="Под." Binding="{Binding Entrance}" Width="56" />
+            <DataGridTextColumn Header="Неисправность" Binding="{Binding Fault}" Width="*" />
             <DataGridTextColumn Header="Механик" Binding="{Binding Mechanic}" Width="120" />
-            <DataGridCheckBoxColumn Header="Выполн." Binding="{Binding Done}" Width="70" />
+            <DataGridCheckBoxColumn Header="Выполн." Binding="{Binding Done}" Width="76" />
           </DataGrid.Columns>
         </DataGrid>
         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
@@ -34,6 +30,6 @@
           <Button Content="Печать" Command="{Binding NotReadyCommand}" CommandParameter="Печать" />
         </StackPanel>
       </StackPanel>
-    </Border>
+    </HeaderedContentControl>
   </Grid>
 </UserControl>
