@@ -43,6 +43,33 @@ jobs:
           path: src/Avers.Desktop/bin/publish/
           retention-days: 30
 
+  linux:
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      AVALONIA_TELEMETRY_OPTOUT: 1
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Publish Linux build
+        run: dotnet publish src/Avers.Desktop/Avers.Desktop.csproj -p:PublishProfile=linux-x64
+      - name: Smoke start
+        run: |
+          sudo apt-get install -y -qq xvfb
+          xvfb-run -a timeout 20 src/Avers.Desktop/bin/publish-linux/Avers/Avers || [ $? -eq 124 ]
+      - name: Package
+        run: |
+          mkdir -p out
+          cp -r src/Avers.Desktop/bin/publish-linux/Avers out/Avers
+          cp deploy/xrdp/* out/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Avers-linux-x64
+          path: out/
+          retention-days: 30
+
   migration:
     runs-on: ubuntu-latest
     services:
@@ -65,7 +92,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Shellcheck
-        run: shellcheck db/stand/stand.sh db/migration/reconcile/test/run-tests.sh
+        run: shellcheck db/stand/stand.sh db/migration/reconcile/test/run-tests.sh deploy/xrdp/install.sh deploy/xrdp/startwm.sh
       - name: Docker Compose config
         run: docker compose -f db/docker-compose.yml --profile legacy config -q
       - name: Reconcile tests
