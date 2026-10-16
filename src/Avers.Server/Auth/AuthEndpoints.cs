@@ -27,9 +27,14 @@ public static class AuthEndpoints
         var login = request.Login?.Trim() ?? "";
         if (login.Length == 0 || string.IsNullOrEmpty(request.Password))
             return TypedResults.Unauthorized();
-        var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Login == login, ct);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Login == login, ct);
         if (user is null || !Password.Verify(user, request.Password))
             return TypedResults.Unauthorized();
+        if (Password.NeedsRehash(user.PasswordHash))
+        {
+            user.PasswordHash = Password.Hash(request.Password);
+            await db.SaveChangesAsync(ct);
+        }
 
         var identity = new ClaimsIdentity(
         [

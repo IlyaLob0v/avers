@@ -28,8 +28,16 @@ dotnet run --project src/Avers.Server -- --Avers:Database:Provider=Postgres
 | Ключ | По умолчанию | Development | Смысл |
 |---|---|---|---|
 | `Provider` | `Postgres` | `Sqlite` | Какая СУБД |
-| `EnsureCreated` | `false` | `true` | Создать таблицы, если их нет. До появления миграций EF — только стенд |
+| `Migrate` | `true` | — | При запуске довести схему PostgreSQL до последней миграции |
+| `EnsureCreated` | `false` | `true` | Создать таблицы SQLite без миграций (учебный режим, тесты) |
 | `SeedDemo` | `false` | `true` | Учебные пользователи и абоненты. На рабочем сервере не включать |
+
+Миграции лежат в `src/Avers.Data/Migrations` и пишутся только под PostgreSQL. После правки модели:
+
+```bash
+dotnet tool restore
+dotnet ef migrations add <Название> --project src/Avers.Data --output-dir Migrations
+```
 
 Строка подключения — `ConnectionStrings:Avers`. Пароль в `appsettings.json` не писать: user-secrets или
 переменная окружения `ConnectionStrings__Avers`.

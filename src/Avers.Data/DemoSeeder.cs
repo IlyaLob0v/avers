@@ -324,7 +324,7 @@ public static class DemoSeeder
     {
         Login = login,
         DisplayName = name,
-        PasswordHash = Password.Hash(login, "avers"),
+        PasswordHash = Password.Hash("avers"),
         Role = role,
         Department = dept,
         CanEditAccount = editAccount

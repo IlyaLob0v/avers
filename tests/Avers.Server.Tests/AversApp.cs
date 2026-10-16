@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Avers.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
@@ -38,6 +39,12 @@ public sealed class AversApp : WebApplicationFactory<Program>
         var token = await response.Content.ReadFromJsonAsync<TokenResponse>();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token!.AccessToken);
         return client;
+    }
+
+    public async Task<T> WithDbAsync<T>(Func<AversDbContext, Task<T>> action)
+    {
+        await using var scope = Services.CreateAsyncScope();
+        return await action(scope.ServiceProvider.GetRequiredService<AversDbContext>());
     }
 
     public override async ValueTask DisposeAsync()

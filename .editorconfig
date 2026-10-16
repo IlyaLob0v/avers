@@ -23,3 +23,6 @@ csharp_style_namespace_declarations = file_scoped:warning
 csharp_style_var_for_built_in_types = true:suggestion
 dotnet_style_qualification_for_field = false:suggestion
 dotnet_diagnostic.CA2007.severity = none
+
+[src/Avers.Data/Migrations/*.cs]
+generated_code = true

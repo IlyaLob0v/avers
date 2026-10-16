@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
+using System.Text;
 using Avers.Contracts;
+using Microsoft.EntityFrameworkCore;
 
 namespace Avers.Server.Tests;
 
@@ -35,6 +38,20 @@ public class AuthTests
             new StringContent(body, System.Text.Encoding.UTF8, "application/json"));
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_OldHash_IsReplacedWithPbkdf2()
+    {
+        await using var app = new AversApp();
+        var legacy = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes("admin:avers:avers")));
+        await app.WithDbAsync(db => db.Users.Where(u => u.Login == "admin")
+            .ExecuteUpdateAsync(u => u.SetProperty(x => x.PasswordHash, legacy)));
+
+        await app.LoginAsync("admin");
+
+        var stored = await app.WithDbAsync(db => db.Users.Where(u => u.Login == "admin").Select(u => u.PasswordHash).SingleAsync());
+        Assert.StartsWith("pbkdf2.", stored);
     }
 
     [Fact]

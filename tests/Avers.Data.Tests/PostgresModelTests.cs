@@ -5,7 +5,6 @@ namespace Avers.Data.Tests;
 
 /// <summary>
 /// Модель строится и для PostgreSQL. Подключение не нужно: EF только генерирует DDL.
-/// Интеграционные тесты на живом PostgreSQL (Testcontainers) — следующим шагом.
 /// </summary>
 public class PostgresModelTests
 {
@@ -26,5 +25,14 @@ public class PostgresModelTests
         Assert.Contains("\"Amount\" numeric(12,2)", script);
         Assert.Contains("\"PaidAt\" date", script);
         Assert.Contains("CREATE UNIQUE INDEX \"IX_Payments_SubscriberId_Year_Month\"", script);
+    }
+
+    [Fact]
+    public void Migrations_MatchModel()
+    {
+        using var db = Context();
+
+        Assert.False(db.Database.HasPendingModelChanges(),
+            "Модель поменялась без миграции: dotnet ef migrations add <Название> --project src/Avers.Data --output-dir Migrations");
     }
 }
