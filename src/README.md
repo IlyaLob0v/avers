@@ -1,9 +1,14 @@
 # src
 
-Исходники оболочки перенесены из `D:\Avers\Source` как есть (ветка `import/shell-net8`, 14.10.2026):
-`Avers.Domain`, `Avers.Data` (EF Core + SQLite), `Avers.Desktop` (Avalonia 11.2.8). `Avers.sln`,
-`Directory.Build.props` и `global.json` лежат в корне репозитория. Целевая раскладка проектов — `docs/03-architecture.md`.
+| Проект | Что внутри |
+|---|---|
+| `Avers.Domain` | Сущности и правила: абоненты, дома, оплаты, долг, заявки, роли |
+| `Avers.Data` | EF Core: PostgreSQL на сервере, SQLite в учебном режиме; учебные данные Омска |
+| `Avers.Contracts` | DTO API, общие для сервера и Desktop |
+| `Avers.Server` | Сервер приложений ASP.NET Core 10, см. [Avers.Server/README.md](Avers.Server/README.md) |
+| `Avers.Desktop` | Рабочее место на Avalonia 12 |
 
-Сейчас (ADR-0004): `net10.0`, Avalonia 12.1.4 (DataGrid 12.1.2), EF Core 10.0.13, CommunityToolkit.Mvvm 8.4.2.
+Версии (ADR-0004): `net10.0`, Avalonia 12.1.4 (DataGrid 12.1.2), EF Core 10.0.13, CommunityToolkit.Mvvm 8.4.2.
+`Avers.sln`, `Directory.Build.props` и `global.json` лежат в корне репозитория. Целевая раскладка — `docs/03-architecture.md`.
 
-Сервер приложений — `Avers.Server` (ASP.NET Core 10, PostgreSQL через Npgsql), DTO — `Avers.Contracts`; см. `src/Avers.Server/README.md`.
+Исходный вид оболочки (Avalonia 11, .NET 8, перенесён из `D:\Avers\Source` 14.10.2026) — ветка `import/shell-net8`.

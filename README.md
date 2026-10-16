@@ -17,12 +17,13 @@
 ```
 .claude/            настройки Claude Code и суб-агенты (оркестратор, аналитик, архитектор, БД, разработчик, документатор)
 .vscode/            рекомендуемые расширения, задачи сборки, запуск
-.github/workflows/  CI: сборка и тесты
+.github/workflows/  CI: сборка, тесты, сборки для Windows и Linux
 docs/               документация, ADR
-src/                исходники (.NET 10): Domain, Application, Infrastructure, Server, Desktop
+src/                исходники (.NET 10): Domain, Data, Contracts, Server, Desktop
 tests/              тесты
 db/                 docker-compose стенда, инвентаризация старой базы, скрипты миграции
-tools/              служебные скрипты
+deploy/             терминальный сервер для Windows 7 (xrdp, запасной вариант RemoteApp)
+tools/              снимки экранов без монитора, хуки
 ```
 
 ## Среда разработчика

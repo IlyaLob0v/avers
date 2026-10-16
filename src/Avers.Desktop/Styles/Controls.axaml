@@ -105,6 +105,11 @@
     <Setter Property="BorderBrush" Value="{StaticResource FieldBorder}" />
     <Setter Property="CornerRadius" Value="0" />
   </Style>
+  <Style Selector="CalendarDatePicker">
+    <Setter Property="SelectedDateFormat" Value="Custom" />
+    <Setter Property="CustomDateFormatString" Value="dd.MM.yyyy" />
+    <Setter Property="Watermark" Value="дд.мм.гггг" />
+  </Style>
   <Style Selector="CheckBox, RadioButton">
     <Setter Property="MinHeight" Value="22" />
     <Setter Property="FontSize" Value="12" />

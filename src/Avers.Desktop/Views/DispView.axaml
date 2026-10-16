@@ -17,7 +17,7 @@
     <Style Selector="Button.month">
       <Setter Property="Margin" Value="0,0,4,0" />
       <Setter Property="Padding" Value="4,2" />
-      <Setter Property="MinWidth" Value="54" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.month.selected">
@@ -58,7 +58,7 @@
         <DataGrid Grid.Row="2" ItemsSource="{Binding HousesOnStreet}" SelectedItem="{Binding SelectedHouse}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
             <DataGridTextColumn Header="Дом" Binding="{Binding Number}" Width="72" />
-            <DataGridTextColumn Header="Под." Binding="{Binding Entrances}" Width="60" />
+            <DataGridTextColumn Header="Под." Binding="{Binding Entrances}" Width="66" />
             <DataGridTextColumn Header="Индекс" Binding="{Binding PzhreuIndex}" Width="*" />
           </DataGrid.Columns>
         </DataGrid>
@@ -89,11 +89,11 @@
             <WrapPanel>
               <StackPanel Margin="0,0,10,0">
                 <TextBlock Classes="hint" Text="Период с" />
-                <CalendarDatePicker Width="130" SelectedDate="{Binding TicketFrom}" SelectedDateFormat="Custom" CustomDateFormatString="dd.MM.yyyy" />
+                <CalendarDatePicker Width="130" SelectedDate="{Binding TicketFrom}" />
               </StackPanel>
               <StackPanel Margin="0,0,10,0">
                 <TextBlock Classes="hint" Text="по" />
-                <CalendarDatePicker Width="130" SelectedDate="{Binding TicketTo}" SelectedDateFormat="Custom" CustomDateFormatString="dd.MM.yyyy" />
+                <CalendarDatePicker Width="130" SelectedDate="{Binding TicketTo}" />
               </StackPanel>
               <StackPanel Margin="0,0,10,0">
                 <TextBlock Classes="hint" Text="Год" />
@@ -117,7 +117,7 @@
             <ItemsControl ItemsSource="{Binding TicketMonths}">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                  <WrapPanel />
+                  <UniformGrid Columns="6" />
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
@@ -161,10 +161,10 @@
             <DataGrid MinHeight="180" ItemsSource="{Binding Tickets}" SelectedItem="{Binding SelectedTicket}" AutoGenerateColumns="False" IsReadOnly="True">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="№" Binding="{Binding Number}" Width="60" />
-                <DataGridTextColumn Header="Время" Binding="{Binding Time}" Width="70" />
+                <DataGridTextColumn Header="Время" Binding="{Binding Time}" Width="80" />
                 <DataGridTextColumn Header="Улица" Binding="{Binding House.Street.Name}" Width="120" />
-                <DataGridTextColumn Header="Дом" Binding="{Binding House.Number}" Width="60" />
-                <DataGridTextColumn Header="Кв" Binding="{Binding Apartment}" Width="50" />
+                <DataGridTextColumn Header="Дом" Binding="{Binding House.Number}" Width="66" />
+                <DataGridTextColumn Header="Кв" Binding="{Binding Apartment}" Width="56" />
                 <DataGridTextColumn Header="ФИО" Binding="{Binding Subscriber.ShortName}" Width="140" />
                 <DataGridTextColumn Header="Неисправность" Binding="{Binding Fault}" Width="260" />
                 <DataGridTextColumn Header="Механик" Binding="{Binding Mechanic}" Width="120" />

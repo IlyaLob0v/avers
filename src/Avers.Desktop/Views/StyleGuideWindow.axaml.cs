@@ -13,7 +13,7 @@ public partial class StyleGuideWindow : Window
     }
 }
 
-public sealed record SampleRow(string Account, string Apartment, string Owner, string LastPayment, int MonthsSince, string Note, RowTone Tone) : IRowTone
+public sealed record SampleRow(string Account, string Apartment, string Subscriber, string LastPayment, int MonthsSince, string Note, RowTone Tone) : IRowTone
 {
     public static IReadOnlyList<SampleRow> All { get; } =
     [

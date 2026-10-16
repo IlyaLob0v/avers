@@ -12,7 +12,7 @@
         <DataGridTextColumn Header="ФИО полностью" Binding="{Binding FullName}" Width="240" />
         <DataGridTextColumn Header="Адрес" Binding="{Binding Address}" Width="240" />
         <DataGridTextColumn Header="Долг" Binding="{Binding DebtText}" Width="90" />
-        <DataGridTextColumn Header="Мес. без оплаты" Binding="{Binding Unpaid}" Width="120" />
+        <DataGridTextColumn Header="Неоплачено мес." Binding="{Binding Unpaid}" Width="140" />
         <DataGridTextColumn Header="Последняя оплата" Binding="{Binding LastPay}" Width="160" />
         <DataGridTextColumn Header="Дело-Аверс" Binding="{Binding Case}" Width="180" />
       </DataGrid.Columns>

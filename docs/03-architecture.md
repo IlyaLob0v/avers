@@ -6,13 +6,14 @@
 
 Модульный монолит на .NET 10 LTS: один сервер приложений (ASP.NET Core) с одной базой PostgreSQL,
 к нему подключаются настольное приложение Avalonia 12 на рабочих местах Windows 10/11 и веб-интерфейс
-(для телефонов радиомехаников и машин с Windows 7). Обмен с 1С и загрузка банковских реестров живут на сервере.
+для телефонов радиомехаников. Машины с Windows 7 работают с тем же настольным приложением через
+терминальный сервер Linux с xrdp (ADR-0008). Обмен с 1С и загрузка банковских реестров живут на сервере.
 
 ```mermaid
 flowchart LR
   subgraph Рабочие места
     D[Avers.Desktop<br/>Avalonia 12, Win10/11]
-    W7[Windows 7<br/>браузер]
+    W7[Windows 7<br/>RDP к терминальному серверу]
     M[Телефон радиомеханика<br/>браузер, только чтение]
   end
   subgraph Сервер предприятия
@@ -26,7 +27,8 @@ flowchart LR
   BANK[Реестры DBF/XLSX<br/>банки, Почта, ОЭК]
 
   D -- HTTPS/JSON --> S
-  W7 -- HTTPS --> S
+  W7 -- RDP --> T[Терминальный сервер<br/>Linux + xrdp, Avers.Desktop]
+  T -- HTTPS/JSON --> S
   M -- HTTPS через VPN или публикацию --> S
   S --> PG
   S --> FS
@@ -50,9 +52,10 @@ tests/
   Avers.Domain.Tests/  Avers.Application.Tests/  Avers.Server.IntegrationTests/ (Testcontainers + PostgreSQL)
 ```
 
-Текущая оболочка (Desktop / Domain / Data на SQLite) ложится на эту схему: `Avers.Domain` переносится почти как есть,
-`Avers.Data` делится на `Infrastructure` (PostgreSQL) и учебный режим, экраны `Avers.Desktop` переходят с прямого
-доступа к БД на вызовы API.
+Сейчас в `src/` — `Avers.Domain`, `Avers.Data` (EF Core: PostgreSQL на сервере, SQLite в учебном режиме),
+`Avers.Contracts`, `Avers.Server` и `Avers.Desktop`. `Application` и `Infrastructure` выделяются, когда появятся
+импорт реестров, отчёты и обмен с 1С. Экраны `Avers.Desktop` пока работают с учебной базой напрямую и переходят
+на вызовы API по мере готовности сервера.
 
 ## Ключевые решения
 
@@ -65,6 +68,7 @@ tests/
 | [0005](adr/0005-migration-approach.md) | Миграция: выгрузка JACK → промежуточная схема → преобразование → сверка, параллельная работа |
 | [0006](adr/0006-1c-integration.md) | Обмен с 1С: Аверс — источник начислений и оплат, 1С получает сводные документы |
 | [0007](adr/0007-reports-xlsx-pdf.md) | Отчёты: XLSX (ClosedXML) и PDF |
+| [0008](adr/0008-windows7-terminal-server.md) | Windows 7 — через терминальный сервер Linux с xrdp |
 
 ## Сквозные вопросы
 
@@ -80,7 +84,8 @@ tests/
 - **Импорт реестров.** Перенос логики ImportPay (35 форматов DBF) в `Infrastructure` с описанием формата каждого
   реестра в конфигурации; логика `JACK.IMPORTPAYFROMBUFF` — в C# после разбора PL/SQL.
 - **Развёртывание.** Сервер — Windows Server или Linux на сервере предприятия, PostgreSQL рядом. Desktop —
-  самодостаточная сборка win-x64 с автообновлением (Velopack). Резервные копии — `pg_dump` ежедневно + WAL-архив.
+  самодостаточная сборка win-x64 с автообновлением (Velopack); для Windows 7 — сборка linux-x64 на терминальном
+  сервере (`deploy/xrdp`). Резервные копии — `pg_dump` ежедневно + WAL-архив.
 - **Наблюдаемость.** Serilog в файл и в БД, health-check сервера, OpenTelemetry по желанию.
 
 ## Технологии
