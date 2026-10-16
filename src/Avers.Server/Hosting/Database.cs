@@ -12,7 +12,10 @@ public sealed class DatabaseOptions
     /// <summary>Postgres — рабочая база, Sqlite — учебный режим.</summary>
     public DatabaseProvider Provider { get; set; } = DatabaseProvider.Postgres;
 
-    /// <summary>Создать таблицы, если базы ещё нет. Только для стенда разработки — до появления миграций EF.</summary>
+    /// <summary>При запуске довести схему PostgreSQL до последней миграции EF.</summary>
+    public bool Migrate { get; set; } = true;
+
+    /// <summary>Создать таблицы SQLite без миграций. Только для учебного режима и тестов.</summary>
     public bool EnsureCreated { get; set; }
 
     /// <summary>Залить учебные данные Омска (пользователи admin/avers и т.д.). На рабочем сервере — никогда.</summary>
@@ -38,12 +41,11 @@ public static class DatabaseSetup
     public static async Task InitializeDatabaseAsync(this WebApplication app)
     {
         var options = app.Services.GetRequiredService<DatabaseOptions>();
-        if (!options.EnsureCreated && !options.SeedDemo)
-            return;
-
         await using var scope = app.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AversDbContext>();
-        if (options.EnsureCreated)
+        if (options.Provider == DatabaseProvider.Postgres && options.Migrate)
+            await db.Database.MigrateAsync();
+        else if (options.EnsureCreated)
             await db.Database.EnsureCreatedAsync();
         if (options.SeedDemo)
             DemoSeeder.EnsureSeeded(db);
