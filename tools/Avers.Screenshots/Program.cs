@@ -8,14 +8,20 @@ using Avers.Desktop.Views;
 using Avers.Domain;
 
 // Снимки экранов Аверса без монитора: учебная база, вход под ролью, переход по модулям.
-// Запуск: dotnet run --project tools/Avers.Screenshots -- <папка> [логин] [модуль ...]
-// Пример: dotnet run --project tools/Avers.Screenshots -- shots admin Desktop Abon Disp
+// Запуск: dotnet run --project tools/Avers.Screenshots -- <папка> [логин] [модуль ...] [--size=ШxВ]
+// Пример: dotnet run --project tools/Avers.Screenshots -- shots admin Desktop Abon Disp --size=1366x768
+// Без --size главное окно 1280×840, образцы оформления 1000×900; с --size оба окна этого размера.
 
 var ru = CultureInfo.GetCultureInfo("ru-RU");
 CultureInfo.DefaultThreadCurrentCulture = ru;
 CultureInfo.DefaultThreadCurrentUICulture = ru;
 CultureInfo.CurrentCulture = ru;
 CultureInfo.CurrentUICulture = ru;
+
+const string SizeOption = "--size=";
+var sizeArg = args.FirstOrDefault(a => a.StartsWith(SizeOption, StringComparison.Ordinal));
+Size? size = sizeArg is null ? null : ParseSize(sizeArg[SizeOption.Length..]);
+args = args.Where(a => a != sizeArg).ToArray();
 
 var outDir = Path.GetFullPath(args.Length > 0 ? args[0] : "screenshots");
 var login = args.Length > 1 ? args[1] : "admin";
@@ -32,7 +38,7 @@ AppBuilder.Configure<App>()
 
 var dbPath = Path.Combine(Path.GetTempPath(), $"avers-shots-{Guid.NewGuid():N}.db");
 var vm = App.CreateMainViewModel(dbPath);
-var window = new MainWindow { DataContext = vm, Width = 1280, Height = 840 };
+var window = new MainWindow { DataContext = vm, Width = size?.Width ?? 1280, Height = size?.Height ?? 840 };
 window.Show();
 
 Save("00-vhod");
@@ -49,7 +55,7 @@ foreach (var module in modules)
     Save($"{n++:00}-{module.ToString().ToLowerInvariant()}");
 }
 
-var guide = new StyleGuideWindow { Width = 1000, Height = 900 };
+var guide = new StyleGuideWindow { Width = size?.Width ?? 1000, Height = size?.Height ?? 900 };
 guide.Show();
 Save("99-obraztsy", guide);
 
@@ -71,4 +77,14 @@ void Save(string name, Avalonia.Controls.Window? target = null)
     var file = Path.Combine(outDir, $"{name}.png");
     frame.Save(file, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
     Console.WriteLine(file);
+}
+
+static Size ParseSize(string text)
+{
+    var parts = text.Split('x', 'X', '×');
+    if (parts.Length == 2
+        && int.TryParse(parts[0], CultureInfo.InvariantCulture, out var width) && width > 0
+        && int.TryParse(parts[1], CultureInfo.InvariantCulture, out var height) && height > 0)
+        return new Size(width, height);
+    throw new ArgumentException($"Размер окна задаётся как --size=1366x768, а не «{text}»");
 }
