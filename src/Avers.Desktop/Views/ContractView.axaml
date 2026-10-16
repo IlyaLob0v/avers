@@ -39,7 +39,7 @@
     <DataGrid x:Name="Registry" ctl:GridTone.Enabled="True" Margin="0,10,0,0" MinHeight="240" ItemsSource="{Binding ContractRows}" SelectedItem="{Binding SelectedContractRow}"
               AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Секц" Binding="{Binding Section}" Width="60" />
+        <DataGridTextColumn Header="Секц" Binding="{Binding Section}" Width="66" />
         <DataGridTextColumn Header="Кв" Binding="{Binding Apartment}" Width="55" />
         <DataGridTextColumn Header="Лиц. счёт" Binding="{Binding Account}" Width="100" />
         <DataGridTextColumn Header="Фамилия И.О. полностью" Binding="{Binding FullName}" Width="230" />

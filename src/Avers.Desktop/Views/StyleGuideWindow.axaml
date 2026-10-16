@@ -45,7 +45,7 @@
         <Grid ColumnDefinitions="*,10,*">
           <HeaderedContentControl Classes="group" Header="HeaderedContentControl.group — рамка с заголовком">
             <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto">
-              <TextBlock Classes="label" Text="Домовладелец" />
+              <TextBlock Classes="label" Text="Абонент" />
               <TextBlock Grid.Column="1" Classes="value" Text="Иванова Мария Петровна" />
               <TextBlock Grid.Row="1" Classes="label" Text="Лицевой счёт" />
               <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="1932068" />
@@ -88,11 +88,11 @@
         <TextBlock Classes="legend" Text="Таблица с цветными строками: ctl:GridTone.Enabled=&quot;True&quot;, строка реализует IRowTone" />
         <DataGrid x:Name="Samples" ctl:GridTone.Enabled="True" AutoGenerateColumns="False" IsReadOnly="True" Height="170">
           <DataGrid.Columns>
-            <DataGridTextColumn Header="Лиц. счёт" Binding="{Binding Account}" Width="90" x:DataType="v:SampleRow" />
-            <DataGridTextColumn Header="Кв." Binding="{Binding Apartment}" Width="50" x:DataType="v:SampleRow" />
-            <DataGridTextColumn Header="Домовладелец" Binding="{Binding Owner}" Width="160" x:DataType="v:SampleRow" />
-            <DataGridTextColumn Header="Последняя оплата" Binding="{Binding LastPayment}" Width="130" x:DataType="v:SampleRow" />
-            <DataGridTextColumn Header="Мес. без оплаты" Binding="{Binding MonthsSince}" Width="120" x:DataType="v:SampleRow" />
+            <DataGridTextColumn Header="Лиц. счёт" Binding="{Binding Account}" Width="100" x:DataType="v:SampleRow" />
+            <DataGridTextColumn Header="Кв." Binding="{Binding Apartment}" Width="56" x:DataType="v:SampleRow" />
+            <DataGridTextColumn Header="Абонент" Binding="{Binding Subscriber}" Width="160" x:DataType="v:SampleRow" />
+            <DataGridTextColumn Header="Последняя оплата" Binding="{Binding LastPayment}" Width="145" x:DataType="v:SampleRow" />
+            <DataGridTextColumn Header="Мес. без оплаты" Binding="{Binding MonthsSince}" Width="135" x:DataType="v:SampleRow" />
             <DataGridTextColumn Header="Примечание" Binding="{Binding Note}" Width="*" x:DataType="v:SampleRow" />
           </DataGrid.Columns>
         </DataGrid>
