@@ -16,7 +16,9 @@ public sealed partial class MainViewModel
 
     public bool IsOnDesktop => Module == AppModule.Desktop;
 
-    public string UserLine => User is null ? "" : $"{User.DisplayName} · {RoleCatalog.Title(User.Role)}";
+    public string UserLine => User is null ? "" : $"{User.DisplayName} · {UserRoleTitle}";
+
+    public string UserRoleTitle => User is null ? "" : RoleCatalog.Title(User.Role);
 
     private void RebuildNavigation()
     {

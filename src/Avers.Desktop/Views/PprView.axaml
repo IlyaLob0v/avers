@@ -3,32 +3,34 @@
              xmlns:vm="using:Avers.Desktop.ViewModels"
              x:Class="Avers.Desktop.Views.PprView"
              x:DataType="vm:MainViewModel">
-  <StackPanel Margin="12">
-    <StackPanel Orientation="Horizontal" Spacing="8">
-      <TextBlock Text="Год" VerticalAlignment="Center" />
-      <TextBox Width="70" Classes="cell" Text="2026" />
-      <TextBlock Text="Зона" VerticalAlignment="Center" />
-      <TextBox Width="120" Classes="cell" Text="все" />
-      <Button Content="Применить" Command="{Binding NotReadyCommand}" CommandParameter="Применить" />
-      <Button Content="Копировать план на 2027" Command="{Binding NotReadyCommand}" CommandParameter="Копировать план на 2027" />
-    </StackPanel>
-    <DataGrid Margin="0,10,0,0" Height="360" ItemsSource="{Binding PprRows}" AutoGenerateColumns="False" IsReadOnly="True">
+  <StackPanel Margin="16,0,16,12">
+    <Border Classes="card" Padding="12,6">
+      <StackPanel Orientation="Horizontal">
+        <TextBlock Classes="label" Text="Год" />
+        <TextBox Width="70" Margin="0,0,16,0" Text="2026" />
+        <TextBlock Classes="label" Text="Зона" />
+        <TextBox Width="120" Margin="0,0,16,0" Text="все" />
+        <Button Content="Применить" Command="{Binding NotReadyCommand}" CommandParameter="Применить" />
+        <Button Content="Копировать план на 2027" Command="{Binding NotReadyCommand}" CommandParameter="Копировать план на 2027" />
+      </StackPanel>
+    </Border>
+    <DataGrid Height="360" ItemsSource="{Binding PprRows}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Адрес" Binding="{Binding Address}" Width="200" />
-        <DataGridTextColumn Header="Эт." Binding="{Binding Floors}" Width="40" />
-        <DataGridTextColumn Header="П." Binding="{Binding Entrances}" Width="40" />
-        <DataGridTextColumn Header="Янв" Binding="{Binding Jan}" Width="60" />
-        <DataGridTextColumn Header="Фев" Binding="{Binding Feb}" Width="60" />
-        <DataGridTextColumn Header="Мар" Binding="{Binding Mar}" Width="60" />
-        <DataGridTextColumn Header="Апр" Binding="{Binding Apr}" Width="60" />
-        <DataGridTextColumn Header="Май" Binding="{Binding May}" Width="60" />
-        <DataGridTextColumn Header="Июн" Binding="{Binding Jun}" Width="60" />
-        <DataGridTextColumn Header="Июл" Binding="{Binding Jul}" Width="60" />
-        <DataGridTextColumn Header="Авг" Binding="{Binding Aug}" Width="60" />
-        <DataGridTextColumn Header="Сен" Binding="{Binding Sep}" Width="60" />
-        <DataGridTextColumn Header="Окт" Binding="{Binding Oct}" Width="60" />
-        <DataGridTextColumn Header="Ноя" Binding="{Binding Nov}" Width="60" />
-        <DataGridTextColumn Header="Дек" Binding="{Binding Dec}" Width="60" />
+        <DataGridTextColumn Header="Адрес" Binding="{Binding Address}" Width="220" />
+        <DataGridTextColumn Header="Эт." Binding="{Binding Floors}" Width="50" />
+        <DataGridTextColumn Header="П." Binding="{Binding Entrances}" Width="50" />
+        <DataGridTextColumn Header="Янв" Binding="{Binding Jan}" Width="*" MinWidth="56" />
+        <DataGridTextColumn Header="Фев" Binding="{Binding Feb}" Width="*" MinWidth="56" />
+        <DataGridTextColumn Header="Мар" Binding="{Binding Mar}" Width="*" MinWidth="56" />
+        <DataGridTextColumn Header="Апр" Binding="{Binding Apr}" Width="*" MinWidth="56" />
+        <DataGridTextColumn Header="Май" Binding="{Binding May}" Width="*" MinWidth="56" />
+        <DataGridTextColumn Header="Июн" Binding="{Binding Jun}" Width="*" MinWidth="56" />
+        <DataGridTextColumn Header="Июл" Binding="{Binding Jul}" Width="*" MinWidth="56" />
+        <DataGridTextColumn Header="Авг" Binding="{Binding Aug}" Width="*" MinWidth="56" />
+        <DataGridTextColumn Header="Сен" Binding="{Binding Sep}" Width="*" MinWidth="56" />
+        <DataGridTextColumn Header="Окт" Binding="{Binding Oct}" Width="*" MinWidth="56" />
+        <DataGridTextColumn Header="Ноя" Binding="{Binding Nov}" Width="*" MinWidth="56" />
+        <DataGridTextColumn Header="Дек" Binding="{Binding Dec}" Width="*" MinWidth="56" />
       </DataGrid.Columns>
     </DataGrid>
     <TextBlock Classes="hint" Margin="0,8,0,0" Text="Цвет: план / выполнено / просрочено. Дата последнего ППР — в паспорте дома." />

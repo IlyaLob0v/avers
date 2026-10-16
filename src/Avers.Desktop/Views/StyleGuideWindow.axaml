@@ -4,106 +4,185 @@
         xmlns:v="using:Avers.Desktop.Views"
         x:Class="Avers.Desktop.Views.StyleGuideWindow"
         Title="Образцы оформления"
-        Width="1000" Height="760" WindowStartupLocation="CenterOwner">
-  <!-- Живой справочник по Styles/Controls.axaml: как выглядит и как называется каждый общий элемент. -->
-  <DockPanel>
-    <Border DockPanel.Dock="Top" Background="{StaticResource CaptionBar}" Padding="10,5">
-      <TextBlock Text="Образцы оформления Аверса" Foreground="White" FontWeight="Bold" FontSize="13" />
-    </Border>
-    <Border DockPanel.Dock="Top" Classes="toolbar">
-      <StackPanel Orientation="Horizontal">
-        <Button Classes="primary" Content="Главное действие" />
-        <Button Content="Обычная кнопка" />
-        <Button Content="Недоступна" IsEnabled="False" />
-        <TextBlock Classes="hint" VerticalAlignment="Center" Margin="8,0,0,0" Text="Border.toolbar · Button.primary · Button" />
-      </StackPanel>
-    </Border>
-    <Border DockPanel.Dock="Top" Classes="filterbar">
-      <StackPanel Orientation="Horizontal" Spacing="6">
-        <TextBlock Text="Период с" />
-        <CalendarDatePicker Width="120" />
-        <TextBlock Text="по" />
-        <CalendarDatePicker Width="120" />
-        <TextBlock Text="Дом" Margin="8,0,0,0" />
-        <ComboBox Width="160" PlaceholderText="Все дома" />
-        <CheckBox Content="Только открытые" Margin="8,0,0,0" />
-        <TextBlock Classes="hint" Text="Border.filterbar" Margin="8,0,0,0" />
-      </StackPanel>
-    </Border>
-    <Border DockPanel.Dock="Bottom" Classes="actionbar">
-      <DockPanel>
-        <TextBlock Classes="hint" VerticalAlignment="Center" Text="Border.actionbar — кнопки окна справа внизу" />
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-          <Button Classes="primary" Content="ОК" MinWidth="80" />
-          <Button Content="Отмена" MinWidth="80" Margin="0" />
+        Width="1100" Height="760" WindowStartupLocation="CenterOwner">
+  <!-- Живой справочник по Styles/Palette.axaml и Styles/Controls.axaml: как выглядит и как называется каждый общий элемент. -->
+  <Window.Styles>
+    <Style Selector="Border.chip">
+      <Setter Property="Background" Value="{StaticResource Panel}" />
+      <Setter Property="BorderBrush" Value="{StaticResource Edge}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Margin" Value="0,0,8,8" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Border.chip > StackPanel > Border">
+      <Setter Property="Height" Value="40" />
+    </Style>
+    <Style Selector="Border.chip > StackPanel > StackPanel">
+      <Setter Property="Margin" Value="8,6" />
+    </Style>
+    <Style Selector="Border.mark">
+      <Setter Property="Margin" Value="0,0,8,0" />
+      <Setter Property="Padding" Value="12,10" />
+    </Style>
+    <Style Selector="Border.mark TextBlock">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="Border.mark TextBlock.name">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+  </Window.Styles>
+
+  <ScrollViewer>
+    <StackPanel Margin="32,24" Spacing="20">
+      <TextBlock FontSize="20" FontWeight="SemiBold" Text="Образцы оформления" />
+
+      <Grid ColumnDefinitions="*,24,*">
+        <StackPanel>
+          <TextBlock Classes="section" Margin="0,0,0,10" Text="ЦВЕТА · Styles/Palette.axaml" />
+          <UniformGrid Columns="4">
+            <Border Classes="chip"><StackPanel><Border Background="{StaticResource TopBar}" /><StackPanel><TextBlock Text="Шапка" /><TextBlock Classes="hint" Text="TopBar #0A2F5C" /></StackPanel></StackPanel></Border>
+            <Border Classes="chip"><StackPanel><Border Background="{StaticResource Accent}" /><StackPanel><TextBlock Text="Акцент, выделение" /><TextBlock Classes="hint" Text="Accent #2B5CB0" /></StackPanel></StackPanel></Border>
+            <Border Classes="chip"><StackPanel><Border Background="{StaticResource AccentSoft}" /><StackPanel><TextBlock Text="Наведение, значки" /><TextBlock Classes="hint" Text="AccentSoft #E3ECFA" /></StackPanel></StackPanel></Border>
+            <Border Classes="chip"><StackPanel><Border Background="{StaticResource Face}" /><StackPanel><TextBlock Text="Фон окна" /><TextBlock Classes="hint" Text="Face #EEF0F3" /></StackPanel></StackPanel></Border>
+            <Border Classes="chip"><StackPanel><Border Background="{StaticResource Panel}" BorderBrush="{StaticResource EdgeLight}" BorderThickness="0,0,0,1" /><StackPanel><TextBlock Text="Панели и поля" /><TextBlock Classes="hint" Text="Panel, Field #FFFFFF" /></StackPanel></StackPanel></Border>
+            <Border Classes="chip"><StackPanel><Border Background="{StaticResource Edge}" /><StackPanel><TextBlock Text="Рамки" /><TextBlock Classes="hint" Text="Edge #CDD3DC" /></StackPanel></StackPanel></Border>
+            <Border Classes="chip"><StackPanel><Border Background="{StaticResource Ink}" /><StackPanel><TextBlock Text="Текст" /><TextBlock Classes="hint" Text="Ink #1B2330" /></StackPanel></StackPanel></Border>
+            <Border Classes="chip"><StackPanel><Border Background="{StaticResource Muted}" /><StackPanel><TextBlock Text="Подписи" /><TextBlock Classes="hint" Text="Muted #5A6474" /></StackPanel></StackPanel></Border>
+          </UniformGrid>
         </StackPanel>
-      </DockPanel>
-    </Border>
-    <ScrollViewer>
-      <StackPanel Margin="10">
-        <TextBlock Classes="h1" Text="TextBlock.h1 — заголовок экрана" Margin="0,0,0,8" />
+
+        <StackPanel Grid.Column="2">
+          <TextBlock Classes="section" Margin="0,0,0,10" Text="ЦВЕТОВЫЕ МЕТКИ СТРОК" />
+          <UniformGrid Columns="5">
+            <Border Classes="warn mark"><StackPanel><TextBlock Classes="name" Text="Жёлтый" /><TextBlock Text="давно не платил" /></StackPanel></Border>
+            <Border Classes="debt mark"><StackPanel><TextBlock Classes="name" Text="Красный" /><TextBlock Text="долг, просрочка" /></StackPanel></Border>
+            <Border Classes="ok mark"><StackPanel><TextBlock Classes="name" Text="Зелёный" /><TextBlock Text="оплачено, выполнено" /></StackPanel></Border>
+            <Border Classes="info mark"><StackPanel><TextBlock Classes="name" Text="Голубой" /><TextBlock Text="в плане, в работе" /></StackPanel></Border>
+            <Border Classes="off mark" Margin="0"><StackPanel><TextBlock Classes="name" Text="Серый" /><TextBlock Text="договор расторгнут" /></StackPanel></Border>
+          </UniformGrid>
+          <TextBlock Classes="hint" Margin="0,8,0,0" TextWrapping="Wrap"
+                     Text="Метки отличаются не только оттенком, но и светлотой, чтобы читаться на плохом мониторе. Плашка — Border.warn / .debt / .ok / .info / .off, метка в строке — Border.badge." />
+          <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+            <Border Classes="badge warn"><TextBlock Text="5 мес." /></Border>
+            <Border Classes="badge debt"><TextBlock Text="долг" /></Border>
+            <Border Classes="badge ok"><TextBlock Text="1 месяц назад" /></Border>
+            <Border Classes="badge info"><TextBlock Text="в работе" /></Border>
+            <Border Classes="badge off"><TextBlock Text="архив" /></Border>
+          </StackPanel>
+        </StackPanel>
+      </Grid>
+
+      <Grid ColumnDefinitions="*,24,*">
+        <StackPanel>
+          <TextBlock Classes="section" Margin="0,0,0,10" Text="ЭЛЕМЕНТЫ · Styles/Controls.axaml" />
+          <Border Classes="card" Margin="0" Padding="14">
+            <StackPanel Spacing="10">
+              <WrapPanel>
+                <Button Classes="primary" Content="Внести оплату" />
+                <Button Content="Печать л/с" />
+                <Button Content="Пока не работает" IsEnabled="False" />
+                <Button Classes="link" VerticalAlignment="Center" Content="Открыть договор →" />
+              </WrapPanel>
+              <WrapPanel>
+                <TextBox Width="160" Margin="0,0,8,0" Text="Волочаевская" />
+                <TextBox Width="160" Margin="0,0,8,0" PlaceholderText="подсказка в поле" />
+                <TextBox Width="160" Margin="0,0,8,0" Text="только для чтения" IsReadOnly="True" />
+                <CheckBox Content="Флажок" IsChecked="True" />
+              </WrapPanel>
+              <WrapPanel>
+                <ComboBox Width="160" Margin="0,0,8,0" PlaceholderText="Все дома" />
+                <CalendarDatePicker Width="130" Margin="0,0,8,0" />
+                <RadioButton Content="Адресу" IsChecked="True" GroupName="sample" />
+                <RadioButton Content="Фамилии" GroupName="sample" />
+              </WrapPanel>
+              <TextBlock Classes="hint" Text="Button · Button.primary · Button.link · TextBox · ComboBox · CalendarDatePicker" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <StackPanel Grid.Column="2">
+          <TextBlock Classes="section" Margin="0,0,0,10" Text="ШРИФТ · IBM Plex Sans" />
+          <Border Classes="card" Margin="0" Padding="14">
+            <StackPanel Spacing="6">
+              <TextBlock FontSize="20" FontWeight="SemiBold" Text="Иванова Мария Петровна · 20" />
+              <TextBlock Classes="h1" HorizontalAlignment="Left" Text="Заголовок экрана · 15 · TextBlock.h1" />
+              <TextBlock Text="Основной текст, поля и таблицы · 13 · 1 140,00 ₽" />
+              <TextBlock Classes="hint" Text="Подписи и подсказки · 12 · TextBlock.hint" />
+              <StackPanel Orientation="Horizontal" Spacing="24" Margin="0,4,0,0">
+                <StackPanel><TextBlock Classes="hint" Text="Всего должен" /><TextBlock Classes="total" Text="1 140,00 ₽" /></StackPanel>
+                <StackPanel><TextBlock Classes="hint" Text="Оплачено" /><TextBlock Classes="total ok" Text="665,00 ₽" /></StackPanel>
+                <StackPanel><TextBlock Classes="hint" Text="Долг" /><TextBlock Classes="total debt" Text="475,00 ₽" /></StackPanel>
+              </StackPanel>
+              <TextBlock Classes="hint" Text="TextBlock.total · .total.ok · .total.debt" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Grid>
+
+      <StackPanel>
+        <TextBlock Classes="section" Margin="0,0,0,10" Text="ПАНЕЛИ" />
         <Grid ColumnDefinitions="*,10,*">
-          <HeaderedContentControl Classes="group" Header="HeaderedContentControl.group — рамка с заголовком">
+          <HeaderedContentControl Classes="group" Margin="0" Header="HeaderedContentControl.group — панель с заголовком">
             <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto">
               <TextBlock Classes="label" Text="Абонент" />
               <TextBlock Grid.Column="1" Classes="value" Text="Иванова Мария Петровна" />
               <TextBlock Grid.Row="1" Classes="label" Text="Лицевой счёт" />
               <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="1932068" />
-              <TextBlock Grid.Row="2" Classes="label" Text="Только чтение" />
-              <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="поле только для чтения" IsReadOnly="True" />
+              <TextBlock Grid.Row="2" Classes="label" Text="Долг" />
+              <TextBox Grid.Row="2" Grid.Column="1" Classes="cell debt" Text="475,00 ₽" IsReadOnly="True" />
               <TextBlock Grid.Row="3" Classes="label" Text="Договор" />
-              <Button Grid.Row="3" Grid.Column="1" Classes="link" Content="№ 1450 от 12.03.2014 — открыть" HorizontalAlignment="Left" />
+              <Button Grid.Row="3" Grid.Column="1" Classes="link" Margin="0,4" Content="№ 1450 от 12.03.2014 — открыть" HorizontalAlignment="Left" />
             </Grid>
           </HeaderedContentControl>
-          <Border Grid.Column="2" Classes="card">
-            <StackPanel>
-              <TextBlock Classes="legend" Text="Border.card + TextBlock.legend" />
-              <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
-                <TextBlock Classes="label" Text="Начислено" />
-                <TextBlock Grid.Column="1" Classes="money" Text="1 140,00 ₽" />
-                <TextBlock Grid.Row="1" Classes="label" Text="Долг" />
-                <TextBlock Grid.Row="1" Grid.Column="1" Classes="money" Text="475,00 ₽" FontWeight="Bold" />
-              </Grid>
-              <TextBlock Classes="hint" Margin="0,6,0,0" Text="TextBlock.label · .value · .money · .hint" />
-            </StackPanel>
-          </Border>
+          <StackPanel Grid.Column="2">
+            <Border Classes="card">
+              <StackPanel>
+                <TextBlock Classes="legend" Text="Border.card + TextBlock.legend" />
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
+                  <TextBlock Classes="label" Text="Начислено" />
+                  <TextBlock Grid.Column="1" Classes="money" Text="1 140,00 ₽" />
+                  <TextBlock Grid.Row="1" Classes="label" Text="Долг" />
+                  <TextBlock Grid.Row="1" Grid.Column="1" Classes="money" Text="475,00 ₽" FontWeight="SemiBold" />
+                </Grid>
+                <TextBlock Classes="hint" Margin="0,6,0,0" Text="TextBlock.label · .value · .money · .hint" />
+              </StackPanel>
+            </Border>
+            <Border Classes="warn"><TextBlock TextWrapping="Wrap" Text="Border.warn — внимание: с последней оплаты прошло 5 месяцев." /></Border>
+            <Border Classes="inset">
+              <TextBlock TextWrapping="Wrap" Text="Border.inset — вспомогательный блок внутри панели: назначенная роль на окне входа." />
+            </Border>
+          </StackPanel>
         </Grid>
+      </StackPanel>
 
-        <TextBlock Classes="legend" Text="Плашки: Border.warn / .debt / .ok / .info / .off" />
-        <Border Classes="warn"><TextBlock Text="Жёлтый — внимание: с последней оплаты прошло 5 месяцев." /></Border>
-        <Border Classes="debt"><TextBlock Text="Красный — долг 475,00 ₽, дело у юристов." /></Border>
-        <Border Classes="ok"><TextBlock Text="Зелёный — оплачено, заявка выполнена." /></Border>
-        <Border Classes="info"><TextBlock Text="Голубой — в плане, заявка в работе." /></Border>
-        <Border Classes="off"><TextBlock Text="Серый — снят с обслуживания, договор расторгнут." /></Border>
-
-        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
-          <TextBlock Classes="label" Text="Метки Border.badge:" />
-          <Border Classes="badge warn"><TextBlock Text="5 мес." /></Border>
-          <Border Classes="badge debt"><TextBlock Text="долг" /></Border>
-          <Border Classes="badge ok"><TextBlock Text="оплачено" /></Border>
-          <Border Classes="badge info"><TextBlock Text="в работе" /></Border>
-          <Border Classes="badge off"><TextBlock Text="архив" /></Border>
-        </StackPanel>
-
-        <TextBlock Classes="legend" Text="Таблица с цветными строками: ctl:GridTone.Enabled=&quot;True&quot;, строка реализует IRowTone" />
-        <DataGrid x:Name="Samples" ctl:GridTone.Enabled="True" AutoGenerateColumns="False" IsReadOnly="True" Height="170">
+      <StackPanel>
+        <TextBlock Classes="section" Margin="0,0,0,10" Text="ТАБЛИЦА · ctl:GridTone.Enabled=&quot;True&quot;, строка реализует IRowTone" />
+        <DataGrid x:Name="Samples" ctl:GridTone.Enabled="True" AutoGenerateColumns="False" IsReadOnly="True" Height="190">
           <DataGrid.Columns>
             <DataGridTextColumn Header="Лиц. счёт" Binding="{Binding Account}" Width="100" x:DataType="v:SampleRow" />
             <DataGridTextColumn Header="Кв." Binding="{Binding Apartment}" Width="56" x:DataType="v:SampleRow" />
             <DataGridTextColumn Header="Абонент" Binding="{Binding Subscriber}" Width="160" x:DataType="v:SampleRow" />
-            <DataGridTextColumn Header="Последняя оплата" Binding="{Binding LastPayment}" Width="145" x:DataType="v:SampleRow" />
-            <DataGridTextColumn Header="Мес. без оплаты" Binding="{Binding MonthsSince}" Width="135" x:DataType="v:SampleRow" />
+            <DataGridTextColumn Header="Последняя оплата" Binding="{Binding LastPayment}" Width="150" x:DataType="v:SampleRow" />
+            <DataGridTextColumn Header="Мес. без оплаты" Binding="{Binding MonthsSince}" Width="140" x:DataType="v:SampleRow" />
             <DataGridTextColumn Header="Примечание" Binding="{Binding Note}" Width="*" x:DataType="v:SampleRow" />
           </DataGrid.Columns>
         </DataGrid>
-
         <TabControl Margin="0,10,0,0">
-          <TabItem Header="Квартира"><TextBlock Margin="8" Text="TabItem — закладки, как в старых формах." /></TabItem>
+          <TabItem Header="Квартира"><TextBlock Margin="0,8" Text="TabItem — закладки, как в старых формах." /></TabItem>
           <TabItem Header="Оплаты" />
           <TabItem Header="Заявки" />
           <TabItem Header="Договор" />
         </TabControl>
       </StackPanel>
-    </ScrollViewer>
-  </DockPanel>
+
+      <StackPanel>
+        <TextBlock Classes="section" Margin="0,0,0,10" Text="ПРАВИЛА" />
+        <TextBlock TextWrapping="Wrap" LineHeight="21"
+                   Text="• Шрифт IBM Plex Sans вшит в приложение, на всех ПК и на сервере xrdp текст выглядит одинаково.&#10;• Никаких теней, прозрачности, анимаций и градиентов: удалённый экран рисует программно.&#10;• Экраны рассчитаны на окно 1366×768; длинные таблицы прокручиваются внутри себя.&#10;• Раскладка экранов и названия модулей те же, что раньше; меняется оформление.&#10;• Цвета в экранах не пишем числами — только ключи из Styles/Palette.axaml." />
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
 </Window>

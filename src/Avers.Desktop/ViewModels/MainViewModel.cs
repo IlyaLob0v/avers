@@ -97,6 +97,7 @@ public sealed partial class MainViewModel : ObservableObject
     public string ChargedText => Money(SelectedSubscriber is null ? 0 : Billing.Charged(SelectedSubscriber.Payments));
     public string PaidText => Money(SelectedSubscriber is null ? 0 : Billing.Paid(SelectedSubscriber.Payments));
     public string DebtText => Money(SelectedSubscriber is null ? 0 : Billing.Debt(SelectedSubscriber.Payments));
+    public bool HasDebt => SelectedSubscriber is not null && Billing.Debt(SelectedSubscriber.Payments) > 0;
     public string ToPayText => SelectedSubscriber?.Payments.FirstOrDefault(p => p.Year == _today.Year && p.Month == _today.Month) is { } p
         ? Money(p.Tariff)
         : "";
@@ -182,6 +183,7 @@ public sealed partial class MainViewModel : ObservableObject
         BindTicket();
         RebuildNavigation();
         OnPropertyChanged(nameof(UserLine));
+        OnPropertyChanged(nameof(UserRoleTitle));
         OnPropertyChanged(nameof(WindowTitle));
     }
 
@@ -283,6 +285,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ChargedText));
         OnPropertyChanged(nameof(PaidText));
         OnPropertyChanged(nameof(DebtText));
+        OnPropertyChanged(nameof(HasDebt));
         OnPropertyChanged(nameof(ToPayText));
         OnPropertyChanged(nameof(OekWarning));
         OnPropertyChanged(nameof(HouseCaption));

@@ -10,99 +10,120 @@
         Width="1280" Height="840" MinWidth="1000" MinHeight="680"
         WindowStartupLocation="CenterScreen">
   <Grid>
-    <!-- Вход: диалог в духе прежних окон Delphi на синем «рабочем столе» -->
-    <Grid IsVisible="{Binding ShowLogin}" Background="{StaticResource Desk}">
-      <Border Width="440" HorizontalAlignment="Center" VerticalAlignment="Center"
-              Background="{StaticResource Face}" BorderBrush="{StaticResource AccentDark}" BorderThickness="1"
-              BoxShadow="0 6 18 0 #55000000">
-        <DockPanel>
-          <Border DockPanel.Dock="Top" Background="{StaticResource CaptionBar}" Padding="10,6">
-            <TextBlock Text="Аверс — вход в систему" Foreground="White" FontWeight="Bold" />
-          </Border>
-          <Border DockPanel.Dock="Bottom" Classes="actionbar">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-              <Button Classes="primary" Content="Войти" Command="{Binding LoginCommand}" IsDefault="True" MinWidth="80" />
-              <Button Content="Отмена" Command="{Binding LogoutCommand}" MinWidth="80" Margin="0" />
+    <!-- Вход: белая карточка на тёмно-синем фоне -->
+    <Panel IsVisible="{Binding ShowLogin}" Background="{StaticResource TopBar}">
+      <Border Classes="card" Width="420" Padding="0" Margin="0" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel>
+          <Border Padding="24,20,24,16" BorderBrush="{StaticResource EdgeLight}" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" Spacing="16">
+              <Image Source="/Assets/logo-avers-servis.png" Height="72" />
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="АВЕРС" FontSize="22" FontWeight="SemiBold" LetterSpacing="1.3" Foreground="{StaticResource Caption}" />
+                <TextBlock Classes="crumb" Margin="0,2,0,0" Text="Антенная служба · вход в систему" />
+              </StackPanel>
             </StackPanel>
           </Border>
-          <StackPanel Margin="14,12" Spacing="8">
-            <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto">
-              <TextBlock Classes="label" Text="Пользователь" />
-              <ComboBox Grid.Column="1" Classes="cell" ItemsSource="{Binding Users}" SelectedItem="{Binding LoginUser}">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate x:DataType="d:AppUser">
-                    <TextBlock Text="{Binding Login}" />
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
-              <TextBlock Grid.Row="1" Classes="label" Text="Пароль" Margin="0,6,8,0" />
-              <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" PasswordChar="•" Text="{Binding Password}" Margin="0,6,0,0" />
-              <TextBlock Grid.Row="2" Classes="label" Text="Подразделение" Margin="0,6,8,0" />
-              <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" IsReadOnly="True"
-                       Text="{Binding LoginUser.Department}" Margin="0,6,0,0" />
-            </Grid>
-            <HeaderedContentControl Classes="group" Header="Назначенная роль" Margin="0">
-              <StackPanel>
-                <TextBlock FontWeight="Bold" Text="{Binding LoginUser.DisplayName}" />
-                <TextBlock Margin="0,2,0,0" Text="{Binding LoginRoleTitle}" />
-                <TextBlock Classes="hint" Margin="0,6,0,0" TextWrapping="Wrap"
-                           Text="Права задаются при входе. Редактирование лицевого счёта — отдельное право. Режим администратора не через Alt+Backspace." />
-              </StackPanel>
-            </HeaderedContentControl>
-            <Border Classes="debt" Margin="0" IsVisible="{Binding LoginError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-              <TextBlock Text="{Binding LoginError}" TextWrapping="Wrap" />
-            </Border>
+          <Grid Margin="24,16" ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto">
+            <TextBlock Classes="label" Text="Пользователь" />
+            <ComboBox Grid.Column="1" Classes="cell" MinHeight="28" ItemsSource="{Binding Users}" SelectedItem="{Binding LoginUser}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="d:AppUser">
+                  <TextBlock Text="{Binding Login}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Grid.Row="1" Classes="label" Text="Пароль" Margin="0,8,8,0" />
+            <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" MinHeight="28" PasswordChar="•" Text="{Binding Password}" Margin="0,8,0,0" />
+            <TextBlock Grid.Row="2" Classes="label" Text="Подразделение" Margin="0,8,8,0" />
+            <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" MinHeight="28" IsReadOnly="True"
+                     Text="{Binding LoginUser.Department}" Margin="0,8,0,0" />
+          </Grid>
+          <Border Classes="inset" Margin="24,0">
+            <StackPanel>
+              <TextBlock TextWrapping="Wrap">
+                <Run Text="{Binding LoginUser.DisplayName}" FontWeight="SemiBold" />
+                <Run Text="·" />
+                <Run Text="{Binding LoginRoleTitle}" />
+              </TextBlock>
+              <TextBlock Classes="hint" Margin="0,4,0,0" TextWrapping="Wrap"
+                         Text="Права задаются при входе. Редактирование лицевого счёта — отдельное право. Режим администратора не через Alt+Backspace." />
+            </StackPanel>
+          </Border>
+          <Border Classes="debt" Margin="24,12,24,0" IsVisible="{Binding LoginError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="{Binding LoginError}" TextWrapping="Wrap" />
+          </Border>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="24,16">
+            <Button Content="Отмена" Command="{Binding LogoutCommand}" MinHeight="30" Padding="16,4" />
+            <Button Classes="primary" Content="Войти" Command="{Binding LoginCommand}" IsDefault="True"
+                    MinHeight="30" MinWidth="96" Padding="16,4" Margin="0" HorizontalContentAlignment="Center" />
           </StackPanel>
-        </DockPanel>
+        </StackPanel>
       </Border>
-    </Grid>
+      <TextBlock HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="16,12" FontSize="12"
+                 Foreground="{StaticResource TopBarDim}" Text="{Binding WorkDateText, StringFormat='Аверс 2026 · рабочая дата {0}'}" />
+    </Panel>
 
     <!-- Рабочее место -->
     <DockPanel IsVisible="{Binding ShowShell}">
-      <Menu DockPanel.Dock="Top">
-        <MenuItem Header="_Файл">
-          <MenuItem Header="Рабочий стол" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Desktop}" />
-          <Separator />
-          <MenuItem Header="Сменить пользователя" Command="{Binding LogoutCommand}" />
-        </MenuItem>
-        <MenuItem Header="_Модули" ItemsSource="{Binding Navigation}">
-          <MenuItem.Styles>
-            <Style Selector="MenuItem" x:DataType="vm:NavItem">
-              <Setter Property="Header" Value="{Binding Title}" />
-              <Setter Property="Command" Value="{Binding Go}" />
-              <Setter Property="CommandParameter" Value="{Binding Module}" />
-              <Setter Property="InputGesture" Value="{x:Null}" />
-            </Style>
-          </MenuItem.Styles>
-        </MenuItem>
-        <MenuItem Header="_Справка">
-          <MenuItem Header="Образцы оформления" Click="OnStyleGuideClick" />
-          <MenuItem Header="О программе" Command="{Binding AboutCommand}" />
-        </MenuItem>
-      </Menu>
-
-      <!-- Панель модулей: только то, что разрешено роли -->
-      <Border DockPanel.Dock="Top" Classes="toolbar" Padding="6,3">
+      <!-- Шапка: марка, меню, рабочая дата, пользователь, выход -->
+      <Border DockPanel.Dock="Top" Classes="topbar">
         <DockPanel>
-          <Button DockPanel.Dock="Right" Content="Выйти" Command="{Binding LogoutCommand}" Margin="6,0,0,0"
+          <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="8" Margin="0,0,14,0">
+            <Image Source="/Assets/logo-avers-servis.png" Height="26" VerticalAlignment="Center" />
+            <TextBlock Classes="brand" Text="АВЕРС" />
+          </StackPanel>
+          <Button DockPanel.Dock="Right" Classes="ontop" Content="Выйти" Command="{Binding LogoutCommand}"
                   VerticalAlignment="Center" ToolTip.Tip="Сменить пользователя" />
-          <Button DockPanel.Dock="Left" Classes="nav" Classes.current="{Binding IsOnDesktop}" ToolTip.Tip="Все модули"
-                  Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Desktop}" VerticalAlignment="Top">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-              <Border Classes="navglyph" Background="{StaticResource Desk}"><TextBlock Text="▦" /></Border>
-              <TextBlock Text="Рабочий стол" VerticalAlignment="Center" />
-            </StackPanel>
+          <TextBlock DockPanel.Dock="Right" Classes="ontop" Margin="14,0">
+            <Run Classes="strong" Text="{Binding User.DisplayName}" />
+            <Run Text="·" />
+            <Run Text="{Binding UserRoleTitle}" />
+          </TextBlock>
+          <TextBlock DockPanel.Dock="Right" Classes="ontop">
+            <Run Text="Рабочая дата" />
+            <Run Classes="strong" Text="{Binding WorkDateText, Mode=OneWay}" />
+          </TextBlock>
+          <Menu Classes="topmenu" HorizontalAlignment="Left">
+            <MenuItem Header="_Файл">
+              <MenuItem Header="Рабочий стол" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Desktop}" />
+              <Separator />
+              <MenuItem Header="Сменить пользователя" Command="{Binding LogoutCommand}" />
+            </MenuItem>
+            <MenuItem Header="_Модули" ItemsSource="{Binding Navigation}">
+              <MenuItem.Styles>
+                <Style Selector="MenuItem" x:DataType="vm:NavItem">
+                  <Setter Property="Header" Value="{Binding Title}" />
+                  <Setter Property="Command" Value="{Binding Go}" />
+                  <Setter Property="CommandParameter" Value="{Binding Module}" />
+                  <Setter Property="InputGesture" Value="{x:Null}" />
+                </Style>
+              </MenuItem.Styles>
+            </MenuItem>
+            <MenuItem Header="_Справка">
+              <MenuItem Header="Образцы оформления" Click="OnStyleGuideClick" />
+              <MenuItem Header="О программе" Command="{Binding AboutCommand}" />
+            </MenuItem>
+          </Menu>
+        </DockPanel>
+      </Border>
+
+      <!-- Полоса модулей: рабочий стол и модули, разрешённые роли -->
+      <Border DockPanel.Dock="Top" Classes="modbar">
+        <DockPanel>
+          <Button DockPanel.Dock="Left" Classes="mod" Classes.current="{Binding IsOnDesktop}" Width="32" Padding="0,2,0,0"
+                  HorizontalContentAlignment="Center" ToolTip.Tip="Рабочий стол"
+                  Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Desktop}">
+            <Path Data="M2,7.5 L8,2.5 L14,7.5 M4,6.5 L4,13 L7,13 L7,9.5 L9,9.5 L9,13 L12,13 L12,6.5" Width="16" Height="16" />
           </Button>
-          <Border DockPanel.Dock="Left" Width="1" Margin="2,3,6,3" Background="{StaticResource Edge}" />
           <ItemsControl ItemsSource="{Binding Navigation}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:NavItem">
-                <Button Classes="nav" Classes.current="{Binding IsCurrent}" ToolTip.Tip="{Binding Hint}"
+                <Button Classes="mod" Classes.current="{Binding IsCurrent}" ToolTip.Tip="{Binding Hint}"
                         Command="{Binding Go}" CommandParameter="{Binding Module}">
-                  <StackPanel Orientation="Horizontal" Spacing="5">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
                     <Border Classes="navglyph"><TextBlock Text="{Binding Glyph}" /></Border>
                     <TextBlock Text="{Binding ShortTitle}" VerticalAlignment="Center" />
                   </StackPanel>
@@ -113,31 +134,25 @@
         </DockPanel>
       </Border>
 
-      <!-- Заголовок текущего окна, как полоса заголовка формы в прежнем Аверсе -->
-      <Border DockPanel.Dock="Top" Background="{StaticResource CaptionBar}" Padding="10,5">
+      <!-- Строка состояния -->
+      <Border DockPanel.Dock="Bottom" Classes="statusbar">
         <DockPanel>
-          <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Foreground="#DDE6F5" FontSize="11"
-                     Text="{Binding WorkDateText, StringFormat='Рабочая дата {0}'}" />
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <TextBlock Text="{Binding ModuleTitle}" Foreground="#BFD0EC" FontSize="13" VerticalAlignment="Center" />
-            <TextBlock Text="›" Foreground="#BFD0EC" FontSize="13" VerticalAlignment="Center" IsVisible="{Binding !IsOnDesktop}" />
-            <TextBlock Text="{Binding WindowTitle}" Foreground="White" FontWeight="Bold" FontSize="13"
-                       VerticalAlignment="Center" IsVisible="{Binding !IsOnDesktop}" />
-          </StackPanel>
+          <TextBlock DockPanel.Dock="Right" Margin="24,0,0,0" Text="{Binding WorkDateText}" />
+          <TextBlock DockPanel.Dock="Right" Margin="24,0,0,0" Text="{Binding UserLine}" />
+          <TextBlock DockPanel.Dock="Right" Margin="24,0,0,0" Text="{Binding ModuleLegacyName}" />
+          <TextBlock Text="{Binding Status}" TextTrimming="CharacterEllipsis" />
         </DockPanel>
       </Border>
 
-      <!-- Строка состояния -->
-      <Border DockPanel.Dock="Bottom" Classes="statusbar">
-        <Grid ColumnDefinitions="*,Auto,Auto,Auto">
-          <Border Classes="statuscell"><TextBlock Text="{Binding Status}" TextTrimming="CharacterEllipsis" /></Border>
-          <Border Grid.Column="1" Classes="statuscell" MinWidth="120"><TextBlock Text="{Binding ModuleLegacyName}" /></Border>
-          <Border Grid.Column="2" Classes="statuscell" MinWidth="200"><TextBlock Text="{Binding UserLine}" /></Border>
-          <Border Grid.Column="3" Classes="statuscell" Margin="0"><TextBlock Text="{Binding WorkDateText}" /></Border>
-        </Grid>
+      <!-- Заголовок экрана: модуль серым и название окна -->
+      <Border DockPanel.Dock="Top" Classes="screenhead" IsVisible="{Binding !IsOnDesktop}">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Classes="crumb" Text="{Binding ModuleTitle, StringFormat='{}{0} ›'}" />
+          <TextBlock Classes="h1" Text="{Binding WindowTitle}" />
+        </StackPanel>
       </Border>
 
-      <Panel Background="{StaticResource Face}">
+      <Panel>
         <views:DesktopView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Desktop}}" />
         <views:AbonView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Abon}}" />
         <views:DispView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Disp}}" />
