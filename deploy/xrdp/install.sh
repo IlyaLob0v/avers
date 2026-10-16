@@ -12,8 +12,13 @@ apt-get update
 apt-get install -y xrdp xorgxrdp openbox locales fonts-dejavu-core
 locale-gen ru_RU.UTF-8
 
+# avers.json (адрес сервера Аверса) переживает обновление.
+config=$(mktemp)
+[ -f /opt/avers/avers.json ] && cp /opt/avers/avers.json "$config"
 rm -rf /opt/avers
 cp -r "$src" /opt/avers
+[ -s "$config" ] && cp "$config" /opt/avers/avers.json
+rm -f "$config"
 chmod 755 /opt/avers/Avers
 
 install -m 755 "$here/startwm.sh" /etc/xrdp/startwm.sh

@@ -12,3 +12,12 @@ public sealed record UpdateContractRequest(
 
 /// <summary>Через сколько месяцев без оплаты карточка подсвечивается жёлтым.</summary>
 public sealed record PaymentWarningSettings(int Months);
+
+/// <summary>Паспорт дома: техника СКПТ и примечания. Запрос заменяет все поля целиком.</summary>
+public sealed record HousePassportRequest(
+    string? Antennas,
+    string? AerialCables,
+    string? Amplifiers,
+    string? PowerSupplies,
+    string? TechFloorKey,
+    string? OtherNotes);

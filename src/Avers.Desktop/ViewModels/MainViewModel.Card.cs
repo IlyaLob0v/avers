@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using Avers.Contracts;
 using Avers.Data;
 using Avers.Desktop.Controls;
 using Avers.Domain;
@@ -198,7 +199,7 @@ public sealed partial class MainViewModel
     }
 
     [RelayCommand]
-    private void SaveCard()
+    private async Task SaveCard()
     {
         if (SelectedSubscriber is null) return;
         if (!CanEditCard)
@@ -217,21 +218,19 @@ public sealed partial class MainViewModel
             return;
         }
 
-        using var db = _db.CreateDbContext();
-        var s = db.Subscribers.First(x => x.Id == SelectedSubscriber.Id);
-        s.ContractNumber = EditContractNumber.Trim();
-        s.ContractDate = signed;
-        s.ContractTerminated = ended;
-        s.ContractHolder = EditContractHolder.Trim();
-        s.Notes = EditNotes.Trim();
-        db.SaveChanges();
-        _cardBoundId = null;
-        Load();
-        Status = $"Карточка {s.LastName}, кв. {s.Apartment}, сохранена.";
+        var s = SelectedSubscriber;
+        await Save(async () =>
+        {
+            await _store.SaveContractAsync(s.Id, new UpdateContractRequest(
+                EditContractNumber.Trim(), signed, ended, EditContractHolder.Trim(), EditNotes.Trim()));
+            _cardBoundId = null;
+            await ReloadAsync();
+            Status = $"Карточка {s.LastName}, кв. {s.Apartment}, сохранена.";
+        });
     }
 
     [RelayCommand]
-    private void SavePaymentWarning()
+    private async Task SavePaymentWarning()
     {
         if (!CanEditSettings)
         {
@@ -244,10 +243,12 @@ public sealed partial class MainViewModel
             Status = $"Порог — от {PaymentAge.MinWarningMonths} до {PaymentAge.MaxWarningMonths} месяцев.";
             return;
         }
-        using (var db = _db.CreateDbContext())
-            Settings.SetPaymentWarningMonths(db, months);
-        PaymentWarningMonths = months;
-        Status = $"Жёлтая подсветка: без оплаты {PaymentAge.MonthsText(months)} и больше.";
+        await Save(async () =>
+        {
+            await _store.SetPaymentWarningMonthsAsync(months);
+            PaymentWarningMonths = months;
+            Status = $"Жёлтая подсветка: без оплаты {PaymentAge.MonthsText(months)} и больше.";
+        });
     }
 
     private static bool TryParseDate(string text, out DateOnly? date)

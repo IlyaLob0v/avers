@@ -33,6 +33,7 @@ public static class Policies
     public const string TicketsCreate = "tickets.create";
     public const string SubscribersEdit = "subscribers.edit";
     public const string SettingsEdit = "settings.edit";
+    public const string HousesEdit = "houses.edit";
 
     public static void Add(AuthorizationOptions options)
     {
@@ -47,6 +48,8 @@ public static class Policies
         // Договор и примечание правит тот же круг, что и лицевой счёт (REQ-ADS-11).
         options.AddPolicy(SubscribersEdit, p => p.RequireAuthenticatedUser()
             .AddRequirements(new ModuleAccessRequirement(AppModule.Abon, AccessLevel.View), new RecordPaymentRequirement()));
+        options.AddPolicy(HousesEdit, p => p.RequireAuthenticatedUser()
+            .AddRequirements(new ModuleAccessRequirement(AppModule.Anten, AccessLevel.Edit)));
         // Общие настройки (порог жёлтой подсветки) — администратор и начальник АДС.
         options.AddPolicy(SettingsEdit, p => p.RequireAuthenticatedUser()
             .RequireRole(nameof(UserRole.Administrator), nameof(UserRole.AdsHead)));

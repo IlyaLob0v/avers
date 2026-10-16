@@ -25,7 +25,9 @@
           </Border>
           <Grid Margin="24,16" ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto">
             <TextBlock Classes="label" Text="Пользователь" />
-            <ComboBox Grid.Column="1" Classes="cell" MinHeight="28" ItemsSource="{Binding Users}" SelectedItem="{Binding LoginUser}">
+            <TextBox Grid.Column="1" Classes="cell" MinHeight="28" Text="{Binding LoginName}" IsVisible="{Binding IsShared}" />
+            <ComboBox Grid.Column="1" Classes="cell" MinHeight="28" ItemsSource="{Binding Users}" SelectedItem="{Binding LoginUser}"
+                      IsVisible="{Binding !IsShared}">
               <ComboBox.ItemTemplate>
                 <DataTemplate x:DataType="d:AppUser">
                   <TextBlock Text="{Binding Login}" />
@@ -34,11 +36,11 @@
             </ComboBox>
             <TextBlock Grid.Row="1" Classes="label" Text="Пароль" Margin="0,8,8,0" />
             <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" MinHeight="28" PasswordChar="•" Text="{Binding Password}" Margin="0,8,0,0" />
-            <TextBlock Grid.Row="2" Classes="label" Text="Подразделение" Margin="0,8,8,0" />
-            <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" MinHeight="28" IsReadOnly="True"
+            <TextBlock Grid.Row="2" Classes="label" Text="Подразделение" Margin="0,8,8,0" IsVisible="{Binding !IsShared}" />
+            <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" MinHeight="28" IsReadOnly="True" IsVisible="{Binding !IsShared}"
                      Text="{Binding LoginUser.Department}" Margin="0,8,0,0" />
           </Grid>
-          <Border Classes="inset" Margin="24,0">
+          <Border Classes="inset" Margin="24,0" IsVisible="{Binding !IsShared}">
             <StackPanel>
               <TextBlock TextWrapping="Wrap">
                 <Run Text="{Binding LoginUser.DisplayName}" FontWeight="SemiBold" />
@@ -60,7 +62,10 @@
         </StackPanel>
       </Border>
       <TextBlock HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="16,12" FontSize="12"
-                 Foreground="{StaticResource TopBarDim}" Text="{Binding WorkDateText, StringFormat='Аверс 2026 · рабочая дата {0}'}" />
+                 Foreground="{StaticResource TopBarDim}">
+        <Run Text="{Binding StoreTitle, StringFormat='Аверс 2026 · {0}'}" />
+        <Run Text="{Binding WorkDateText, StringFormat='· рабочая дата {0}'}" />
+      </TextBlock>
     </Panel>
 
     <!-- Рабочее место -->

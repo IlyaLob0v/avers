@@ -5,6 +5,7 @@ public sealed record LoginRequest(string Login, string Password);
 
 /// <summary>Кто вошёл и что ему можно.</summary>
 public sealed record CurrentUserDto(
+    int Id,
     string Login,
     string DisplayName,
     string Role,

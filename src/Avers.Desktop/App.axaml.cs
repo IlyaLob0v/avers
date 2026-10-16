@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avers.Data;
+using Avers.Desktop.Data;
 using Avers.Desktop.ViewModels;
 using Avers.Desktop.Views;
 using Microsoft.EntityFrameworkCore;
@@ -16,30 +17,54 @@ public partial class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            desktop.MainWindow = new MainWindow { DataContext = CreateMainViewModel() };
+            desktop.MainWindow = new MainWindow { DataContext = CreateMainViewModel(desktop.Args ?? []) };
 
         base.OnFrameworkInitializationCompleted();
     }
 
-    /// <summary>Готовит учебную базу и модель главного окна. Нужен и приложению, и снимкам экранов.</summary>
-    public static MainViewModel CreateMainViewModel(string? databasePath = null)
+    /// <summary>С адресом сервера — общая база, без него — учебная (см. <see cref="ServerAddress"/>).</summary>
+    private static MainViewModel CreateMainViewModel(string[] args)
+    {
+        Uri? server;
+        try
+        {
+            server = ServerAddress.Find(args);
+        }
+        catch (InvalidOperationException e)
+        {
+            var vm = CreateMainViewModel();
+            vm.LoginError = e.Message + " Открыта учебная база.";
+            return vm;
+        }
+        return server is null
+            ? CreateMainViewModel()
+            : CreateMainViewModel(new ServerStore(new HttpClient { BaseAddress = server, Timeout = TimeSpan.FromSeconds(30) }));
+    }
+
+    /// <summary>Модель главного окна на учебной базе. Нужна и приложению, и тестам со снимками экранов.</summary>
+    public static MainViewModel CreateMainViewModel(string? databasePath = null) =>
+        CreateMainViewModel(OpenDemoDatabase(databasePath));
+
+    public static MainViewModel CreateMainViewModel(IAversStore store)
+    {
+        var vm = new MainViewModel(store);
+        vm.Start();
+        return vm;
+    }
+
+    private static LocalStore OpenDemoDatabase(string? databasePath)
     {
         var services = new ServiceCollection();
         services.AddAversData(databasePath);
-        services.AddSingleton<MainViewModel>();
-        var provider = services.BuildServiceProvider();
+        var factory = services.BuildServiceProvider().GetRequiredService<IDbContextFactory<AversDbContext>>();
 
         var databaseFile = databasePath ?? AversPaths.DatabaseFile;
-        var factory = provider.GetRequiredService<IDbContextFactory<AversDbContext>>();
         using (DemoDatabase.Lock(databaseFile))
         using (var db = factory.CreateDbContext())
         {
             DemoDatabase.EnsureCurrent(db, databaseFile);
             DemoSeeder.EnsureSeeded(db);
         }
-
-        var vm = provider.GetRequiredService<MainViewModel>();
-        vm.Load();
-        return vm;
+        return new LocalStore(factory);
     }
 }

@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Avers.Server.Auth;
+using Avers.Server.Desktop;
 using Avers.Server.Hosting;
 using Avers.Server.Subscribers;
 using Avers.Server.Tickets;
@@ -44,6 +45,7 @@ app.MapHealthChecks("/health").AllowAnonymous();
 app.MapAuth();
 app.MapSubscribers();
 app.MapTickets();
+app.MapDesktop();
 
 await app.InitializeDatabaseAsync();
 await app.RunAsync();

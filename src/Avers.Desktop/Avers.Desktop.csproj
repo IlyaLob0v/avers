@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Avers.Contracts\Avers.Contracts.csproj" />
     <ProjectReference Include="..\Avers.Data\Avers.Data.csproj" />
     <PackageReference Include="Avalonia" Version="12.1.4" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
