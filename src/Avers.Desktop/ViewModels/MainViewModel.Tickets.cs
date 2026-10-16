@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
+using Avers.Contracts;
 using Avers.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -352,55 +353,44 @@ public sealed partial class MainViewModel
     }
 
     [RelayCommand]
-    private void AcceptTicket()
+    private async Task AcceptTicket()
     {
         if (SelectedHouse is null || User is null) return;
         if (!CanAcceptTickets) { Status = $"Роль «{RoleCatalog.Title(User.Role)}» не принимает заявки."; return; }
-        using var db = _db.CreateDbContext();
-        var num = (db.Tickets.Max(t => (int?)t.Number) ?? 0) + 1;
         var subscriber = SelectedSubscriber?.HouseId == SelectedHouse.Id ? SelectedSubscriber : null;
-        var ticket = new WorkTicket
+        var request = new CreateTicketRequest(
+            SelectedHouse.Id,
+            string.IsNullOrWhiteSpace(NewTicketFault) ? "Принята с рабочего места диспетчера" : NewTicketFault.Trim(),
+            (NewTicketKind?.Value ?? TicketKind.Antenna).ToString(),
+            subscriber?.Id,
+            subscriber?.Section ?? FindSection,
+            subscriber?.Apartment ?? FindApartment,
+            subscriber?.Phone ?? "");
+        await Save(async () =>
         {
-            Number = num,
-            Date = _today,
-            Time = TimeOnly.FromDateTime(DateTime.Now),
-            HouseId = SelectedHouse.Id,
-            SubscriberId = subscriber?.Id,
-            Apartment = subscriber?.Apartment ?? FindApartment,
-            Section = subscriber?.Section ?? FindSection,
-            Phone = subscriber?.Phone ?? "",
-            Kind = NewTicketKind?.Value ?? TicketKind.Antenna,
-            Fault = string.IsNullOrWhiteSpace(NewTicketFault) ? "Принята с рабочего места диспетчера" : NewTicketFault.Trim(),
-            Status = TicketStatus.Accepted,
-            AcceptedBy = User.DisplayName,
-            AcceptedByUserId = User.Id,
-            RisersNote = ""
-        };
-        db.Tickets.Add(ticket);
-        db.SaveChanges();
-        Load();
-        NewTicketFault = "";
-        SelectedTicket = Tickets.FirstOrDefault(t => t.Number == num);
-        Status = $"Принята заявка № {num}.";
-        Module = AppModule.Disp;
+            var number = await _store.AcceptTicketAsync(request, User);
+            await ReloadAsync();
+            NewTicketFault = "";
+            SelectedTicket = Tickets.FirstOrDefault(t => t.Number == number);
+            Status = $"Принята заявка № {number}.";
+            Module = AppModule.Disp;
+        });
     }
 
     [RelayCommand]
-    private void SaveTicket()
+    private async Task SaveTicket()
     {
         if (SelectedTicket is null) return;
         if (!CanEditSelectedTicket) { Status = TicketRightsHint; return; }
-        var number = SelectedTicket.Number;
-        using var db = _db.CreateDbContext();
-        var t = db.Tickets.First(x => x.Id == SelectedTicket.Id);
-        t.Fault = TicketFault.Trim();
-        t.Mechanic = TicketMechanic.Trim();
-        TicketJournal.ApplyWork(t, TicketWork, _today);
-        db.SaveChanges();
-        Load();
-        SelectedTicket = Tickets.FirstOrDefault(x => x.Number == number) ?? _tickets.FirstOrDefault(x => x.Number == number);
-        Status = $"Заявка № {number} записана.";
-        Module = AppModule.Disp;
+        var (id, number) = (SelectedTicket.Id, SelectedTicket.Number);
+        await Save(async () =>
+        {
+            await _store.SaveTicketAsync(id, TicketFault.Trim(), TicketMechanic.Trim(), TicketWork);
+            await ReloadAsync();
+            SelectedTicket = Tickets.FirstOrDefault(x => x.Number == number) ?? _tickets.FirstOrDefault(x => x.Number == number);
+            Status = $"Заявка № {number} записана.";
+            Module = AppModule.Disp;
+        });
     }
 }
 

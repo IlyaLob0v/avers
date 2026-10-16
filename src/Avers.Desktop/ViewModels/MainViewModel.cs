@@ -1,24 +1,32 @@
 using System.Collections.ObjectModel;
+using Avers.Contracts;
 using Avers.Data;
 using Avers.Desktop.Controls;
+using Avers.Desktop.Data;
 using Avers.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.EntityFrameworkCore;
 
 namespace Avers.Desktop.ViewModels;
 
 public sealed partial class MainViewModel : ObservableObject
 {
-    private readonly IDbContextFactory<AversDbContext> _db;
-    private readonly DateOnly _today = DemoSeeder.WorkDate;
+    private readonly IAversStore _store;
+    private readonly DateOnly _today;
     private List<House> _houses = [];
     private List<Subscriber> _subscribers = [];
     private List<WorkTicket> _tickets = [];
+    private List<IntercomTicket> _intercomTickets = [];
     private bool _holdRefresh;
     private int? _intercomHouseId;
 
-    public MainViewModel(IDbContextFactory<AversDbContext> db) => _db = db;
+    public MainViewModel(IAversStore store)
+    {
+        _store = store;
+        _today = store.Today;
+        _reportFrom = new DateOnly(_today.Year, 1, 1);
+        _reportTo = _today;
+    }
 
     public ObservableCollection<AppUser> Users { get; } = [];
     public ObservableCollection<Street> Streets { get; } = [];
@@ -37,6 +45,7 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<PaymentGridRow> PaymentRows { get; } = [];
 
     [ObservableProperty] private AppUser? _loginUser;
+    [ObservableProperty] private string _loginName = "";
     [ObservableProperty] private string _password = "";
     [ObservableProperty] private string? _loginError;
     [ObservableProperty] private AppUser? _user;
@@ -58,13 +67,15 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _ticketWork = "";
     [ObservableProperty] private string _ticketMechanic = "";
     [ObservableProperty] private string _claimText = "";
-    [ObservableProperty] private DateOnly _reportFrom = new(DemoSeeder.WorkDate.Year, 1, 1);
-    [ObservableProperty] private DateOnly _reportTo = DemoSeeder.WorkDate;
+    [ObservableProperty] private DateOnly _reportFrom;
+    [ObservableProperty] private DateOnly _reportTo;
     [ObservableProperty] private IntercomPanel? _intercom;
 
     public string LoginRoleTitle => LoginUser is null ? "" : RoleCatalog.Title(LoginUser.Role);
     public bool ShowLogin => User is null;
     public bool ShowShell => User is not null;
+    public bool IsShared => _store.IsShared;
+    public string StoreTitle => _store.Title;
 
     public string WindowTitle => Module switch
     {
@@ -125,33 +136,41 @@ public sealed partial class MainViewModel : ObservableObject
     public string LastPprText => SelectedHouse?.LastPpr is { } d ? d.ToString("dd.MM.yyyy") : "";
     public IReadOnlyList<string> Months { get; } = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
 
-    public void Load()
+    /// <summary>Экран входа: в учебной базе — список пользователей, на сервере логин вводят руками.</summary>
+    public void Start()
     {
-        var keepSubscriberId = SelectedSubscriber?.Id;
-        using var db = _db.CreateDbContext();
-        PaymentWarningMonths = Settings.PaymentWarningMonths(db);
         Users.Clear();
-        foreach (var u in db.Users.AsNoTracking().OrderBy(x => x.Login))
+        foreach (var u in _store.LoginUsers())
             Users.Add(u);
         LoginUser = Users.FirstOrDefault(x => x.Login == DemoSeeder.StartLogin) ?? Users.FirstOrDefault();
-
-        Streets.Clear();
-        foreach (var s in db.Streets.AsNoTracking().OrderBy(x => x.Name))
-            Streets.Add(s);
-
-        _houses = db.Houses.AsNoTracking().Include(h => h.Street).Include(h => h.Organization).Include(h => h.Schemes).Include(h => h.Ppr).Include(h => h.Intercoms).ToList();
-        _subscribers = db.Subscribers.AsNoTracking().Include(s => s.House).ThenInclude(h => h.Street).Include(s => s.Payments).Include(s => s.CourtCases).Include(s => s.Receipts).ToList();
-        _tickets = db.Tickets.AsNoTracking().Include(t => t.House).ThenInclude(h => h.Street).Include(t => t.Subscriber).ToList();
-        LoadTicketYears();
-
-        Mechanics.Clear();
-        foreach (var m in db.Mechanics.AsNoTracking().OrderBy(x => x.FullName)) Mechanics.Add(m);
-        Materials.Clear();
-        foreach (var m in db.Materials.AsNoTracking()) Materials.Add(m);
 
         AccessRows.Clear();
         foreach (var (role, title) in RoleCatalog.All)
             AccessRows.Add(AccessRow.From(role, title));
+    }
+
+    /// <summary>Перечитать данные после записи: своя запись и чужие изменения в общей базе.</summary>
+    private async Task ReloadAsync() => Apply(await _store.LoadAsync(User!));
+
+    private void Apply(AversSnapshot data)
+    {
+        var keepSubscriberId = SelectedSubscriber?.Id;
+        PaymentWarningMonths = data.PaymentWarningMonths;
+
+        Streets.Clear();
+        foreach (var s in data.Streets)
+            Streets.Add(s);
+
+        _houses = data.Houses;
+        _subscribers = data.Subscribers;
+        _tickets = data.Tickets;
+        _intercomTickets = data.IntercomTickets;
+        LoadTicketYears();
+
+        Mechanics.Clear();
+        foreach (var m in data.Mechanics) Mechanics.Add(m);
+        Materials.Clear();
+        foreach (var m in data.Materials) Materials.Add(m);
 
         RefreshTotals();
 
@@ -273,8 +292,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (SelectedHouse is not null)
             {
                 foreach (var s in SelectedHouse.Schemes) Schemes.Add(s);
-                using var db = _db.CreateDbContext();
-                foreach (var t in db.IntercomTickets.AsNoTracking().Where(x => x.HouseId == SelectedHouse.Id).OrderByDescending(x => x.Date))
+                foreach (var t in _intercomTickets.Where(x => x.HouseId == SelectedHouse.Id))
                     IntercomTickets.Add(t);
             }
         }
@@ -323,16 +341,23 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void Login()
+    private async Task Login()
     {
         LoginError = null;
-        if (LoginUser is null) { LoginError = "Выберите пользователя."; return; }
-        if (!Avers.Data.Password.Verify(LoginUser, this.Password))
+        var login = IsShared ? LoginName.Trim() : LoginUser?.Login;
+        if (string.IsNullOrEmpty(login)) { LoginError = IsShared ? "Введите логин." : "Выберите пользователя."; return; }
+        try
         {
-            LoginError = "Неверный пароль. Для учебной базы пароль у всех: avers";
+            var user = await _store.SignInAsync(login, Password);
+            Apply(await _store.LoadAsync(user));
+            User = user;
+        }
+        catch (StoreException e)
+        {
+            _store.SignOut();
+            LoginError = e.Message;
             return;
         }
-        User = LoginUser;
         Password = "";
         Module = User.Role switch
         {
@@ -349,6 +374,7 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Logout()
     {
+        _store.SignOut();
         User = null;
         Module = AppModule.Desktop;
         Status = "Сеанс завершён.";
@@ -400,43 +426,45 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void RecordPayment()
+    private async Task RecordPayment()
     {
-        if (SelectedSubscriber is null) return;
+        if (SelectedSubscriber is null || User is null) return;
         if (User is { CanEditAccount: false, Role: not UserRole.AdsHead and not UserRole.Administrator })
         {
             Status = "Нет права вносить оплату.";
             return;
         }
-        using var db = _db.CreateDbContext();
-        var next = db.Payments.Where(p => p.SubscriberId == SelectedSubscriber.Id && p.Year == _today.Year && p.Amount == null)
-            .OrderBy(p => p.Month).FirstOrDefault();
-        if (next is null) { Status = $"Все месяцы {_today.Year} уже оплачены."; return; }
-        next.Amount = next.Tariff;
-        next.Source = "Касса";
-        next.PaidAt = _today;
-        next.RecordedBy = User?.DisplayName;
-        if (SelectedSubscriber.LastPaymentDate is null || SelectedSubscriber.LastPaymentDate < _today)
-            db.Subscribers.First(s => s.Id == SelectedSubscriber.Id).LastPaymentDate = _today;
-        db.SaveChanges();
-        Load();
-        Status = $"Внесена оплата {next.Tariff:N2} ₽ за {Months[next.Month - 1]} {next.Year}.";
+        await Save(async () =>
+        {
+            var paid = await _store.RecordPaymentAsync(SelectedSubscriber.Id, _today.Year, User);
+            await ReloadAsync();
+            Status = $"Внесена оплата {paid.Amount:N2} ₽ за {Months[paid.Month - 1]} {paid.Year}.";
+        });
     }
 
     [RelayCommand]
-    private void SaveHouse()
+    private async Task SaveHouse()
     {
-        if (SelectedHouse is null) return;
-        using var db = _db.CreateDbContext();
-        var h = db.Houses.First(x => x.Id == SelectedHouse.Id);
-        h.Antennas = SelectedHouse.Antennas;
-        h.AerialCables = SelectedHouse.AerialCables;
-        h.Amplifiers = SelectedHouse.Amplifiers;
-        h.PowerSupplies = SelectedHouse.PowerSupplies;
-        h.TechFloorKey = SelectedHouse.TechFloorKey;
-        h.OtherNotes = SelectedHouse.OtherNotes;
-        db.SaveChanges();
-        Status = "Паспорт дома сохранён в локальную базу.";
+        if (SelectedHouse is not { } h) return;
+        await Save(async () =>
+        {
+            await _store.SaveHousePassportAsync(h.Id, new HousePassportRequest(
+                h.Antennas, h.AerialCables, h.Amplifiers, h.PowerSupplies, h.TechFloorKey, h.OtherNotes));
+            Status = "Паспорт дома сохранён.";
+        });
+    }
+
+    /// <summary>Запись в базу: отказ сервера или нет связи — в строку состояния, программа продолжает работать.</summary>
+    private async Task Save(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (StoreException e)
+        {
+            Status = e.Message;
+        }
     }
 
     /// <summary>Кнопка экрана-макета: действие ещё не реализовано, говорим об этом прямо.</summary>

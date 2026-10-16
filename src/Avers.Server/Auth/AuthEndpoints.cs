@@ -56,6 +56,7 @@ public static class AuthEndpoints
             return TypedResults.Unauthorized();
 
         return TypedResults.Ok(new CurrentUserDto(
+            user.Id,
             user.Login,
             user.DisplayName,
             user.Role.ToString(),
