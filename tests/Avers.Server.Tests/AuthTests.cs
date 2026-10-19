@@ -27,6 +27,29 @@ public class AuthTests
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    [Fact]
+    public async Task LoginLimit_CountsEachAddressBehindProxySeparately()
+    {
+        await using var app = new AversApp();
+        var client = app.CreateClient();
+
+        async Task<HttpStatusCode> Login(string address)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login")
+            {
+                Content = JsonContent.Create(new LoginRequest("admin", "wrong"))
+            };
+            request.Headers.Add("X-Forwarded-For", address);
+            return (await client.SendAsync(request)).StatusCode;
+        }
+
+        for (var i = 0; i < 10; i++)
+            await Login("203.0.113.1");
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, await Login("203.0.113.1"));
+        Assert.Equal(HttpStatusCode.Unauthorized, await Login("203.0.113.2"));
+    }
+
     [Theory]
     [InlineData("{\"login\":null,\"password\":\"avers\"}")]
     [InlineData("{\"login\":\"admin\",\"password\":null}")]

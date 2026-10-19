@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Открывает в интернет только страницу механиков (/m/) по HTTPS: sudo avers-internet avers.example.ru
+# Остальной API (абоненты, оплаты, настольная программа) из интернета не виден.
+# Нужно заранее: имя сайта указывает на внешний адрес офиса, роутер пробрасывает порты 80 и 443 на этот сервер.
+set -euo pipefail
+
+[ $# -eq 1 ] || { echo "Как: sudo avers-internet <имя сайта>"; exit 1; }
+[ "$(id -u)" -eq 0 ] || { echo "Запустите через sudo"; exit 1; }
+domain=$1
+
+# С учебным паролем avers из интернета вошёл бы кто угодно.
+for login in admin engineer sokolova orlov orlova lawyer novikov; do
+    code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' \
+        -d "{\"login\":\"$login\",\"password\":\"avers\"}" http://localhost:5115/api/auth/login)
+    if [ "$code" = 200 ]; then
+        echo "У пользователя $login учебный пароль avers. Смените его (sudo avers-password $login) или отключите пользователя."
+        exit 1
+    fi
+done
+
+apt-get install -y caddy
+cat > /etc/caddy/Caddyfile <<CADDY
+$domain {
+    @mechanics path /m /m/* /api/auth/login /api/mobile/*
+    handle @mechanics {
+        reverse_proxy 127.0.0.1:5115
+    }
+    handle {
+        respond 404
+    }
+}
+CADDY
+systemctl enable caddy
+systemctl restart caddy
+
+if command -v ufw >/dev/null && ufw status | grep -q "Status: active"; then
+    ufw allow 80/tcp
+    ufw allow 443/tcp
+fi
+
+echo "Страница механиков: https://$domain/m/ (сертификат выпускается автоматически в первые минуты)"

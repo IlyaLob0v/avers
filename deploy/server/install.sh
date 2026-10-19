@@ -39,6 +39,7 @@ chmod 755 /opt/avers-server/Avers.Server
 
 install -m 644 "$here/avers-server.service" /etc/systemd/system/avers-server.service
 install -m 755 "$here/avers-password" /usr/local/bin/avers-password
+install -m 755 "$here/avers-internet" /usr/local/bin/avers-internet
 install -m 755 "$here/avers-backup" /etc/cron.daily/avers-backup
 install -d -m 750 -o postgres -g postgres /var/backups/avers
 
