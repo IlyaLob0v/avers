@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using Avers.Server.Auth;
 using Avers.Server.Desktop;
 using Avers.Server.Hosting;
+using Avers.Server.Mobile;
 using Avers.Server.Ppr;
 using Avers.Server.Subscribers;
 using Avers.Server.Tickets;
@@ -35,6 +36,8 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
@@ -49,6 +52,7 @@ app.MapSubscribers();
 app.MapTickets();
 app.MapDesktop();
 app.MapPpr();
+app.MapMobile();
 
 await app.InitializeDatabaseAsync();
 if (AdminCommands.TryRun(args, out var command))
