@@ -59,7 +59,7 @@ public sealed partial class MainViewModel
         yield return ("Выполнено заявок", hs => Tickets(hs).Count(t => t.Status == TicketStatus.Done));
         yield return ("Неустранённые неисправности СКПТ", hs => hs.Count(h => h.OpenFault != null));
         yield return ("Сумма дебиторской задолженности", hs =>
-            _subscribers.Where(s => hs.Any(h => h.Id == s.HouseId)).Sum(s => Billing.Debt(s.Payments)));
+            _subscribers.Where(s => hs.Any(h => h.Id == s.HouseId)).Sum(s => Billing.Debt(Billing.Due(s.Payments, _today))));
     }
 
     [RelayCommand]

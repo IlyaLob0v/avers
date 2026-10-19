@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.VisualTree;
+using Avers.Data;
 using Avers.Desktop.ViewModels;
 using Avers.Domain;
 
@@ -70,13 +71,16 @@ public class AppearanceTests
         foreach (var subscriber in subscribers)
         {
             app.Vm.SelectedSubscriber = subscriber;
-            Assert.Equal(Billing.Debt(subscriber.Payments) > 0, app.Vm.HasDebt);
+            Assert.Equal(HasDebt(subscriber), app.Vm.HasDebt);
         }
-        Assert.Contains(subscribers, s => Billing.Debt(s.Payments) > 0);
+        Assert.Contains(subscribers, HasDebt);
+        Assert.Contains(subscribers, s => !HasDebt(s));
 
         app.Vm.SelectedSubscriber = null;
         Assert.False(app.Vm.HasDebt);
     }
+
+    private static bool HasDebt(Subscriber s) => Billing.Debt(Billing.Due(s.Payments, DemoSeeder.WorkDate)) > 0;
 
     [AvaloniaFact]
     public void Shell_ShowsUserAndRoleInHeader()

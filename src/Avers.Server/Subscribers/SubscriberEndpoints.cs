@@ -44,7 +44,7 @@ public static class SubscriberEndpoints
     /// account, innerCode, pzhreu, surname (от 4 букв). Не больше <see cref="MaxResults"/> строк.
     /// </summary>
     private static async Task<Results<Ok<List<SubscriberListItem>>, ValidationProblem>> Search(
-        AversDbContext db, CancellationToken ct,
+        AversDbContext db, TimeProvider time, CancellationToken ct,
         SearchMode mode = SearchMode.Address, string? q = null,
         string? street = null, string? house = null, string? apartment = null)
     {
@@ -82,6 +82,8 @@ public static class SubscriberEndpoints
                 break;
         }
 
+        var today = time.Today();
+        var dueMonth = today.Year * 12 + today.Month;
         var found = await query
             .OrderBy(s => s.LastName).ThenBy(s => s.Id)
             .Take(MaxResults)
@@ -90,8 +92,8 @@ public static class SubscriberEndpoints
                 Subscriber = s,
                 s.House,
                 Street = s.House.Street,
-                Charged = s.Payments.Sum(p => p.Tariff),
-                Paid = s.Payments.Sum(p => p.Amount ?? 0)
+                Charged = s.Payments.Where(p => p.Year * 12 + p.Month <= dueMonth).Sum(p => p.Tariff),
+                Paid = s.Payments.Where(p => p.Year * 12 + p.Month <= dueMonth).Sum(p => p.Amount ?? 0)
             })
             .ToListAsync(ct);
 
@@ -118,8 +120,9 @@ public static class SubscriberEndpoints
         if (s is null)
             return TypedResults.NotFound();
 
-        var debt = Billing.Debt(s.Payments);
         var today = time.Today();
+        var due = Billing.Due(s.Payments, today);
+        var debt = Billing.Debt(due);
         var warning = Settings.PaymentWarningMonths(db);
         var last = PaymentAge.LastPayment(s.Payments);
         return TypedResults.Ok(new SubscriberCard(
@@ -127,7 +130,7 @@ public static class SubscriberEndpoints
             s.HouseId, s.House.AddressLine, s.Apartment, s.Section,
             s.ContractDate, s.ContractTerminated, s.Notes, s.PzhreuIndex, s.PzhreuAccount, s.Benefit,
             s.LastPaymentDate,
-            Billing.Charged(s.Payments), Billing.Paid(s.Payments), debt, Billing.UnpaidMonths(s.Payments),
+            Billing.Charged(due), Billing.Paid(due), debt, Billing.UnpaidMonths(due),
             debt >= Billing.DebtHighlight, Billing.IsOldPayer(s.LastPaymentDate, today),
             s.ContractNumber, s.ContractParty, ServiceOrganizations.Title(s.House.Organization),
             last is null ? null : PaymentEndpoints.ToDto(last),

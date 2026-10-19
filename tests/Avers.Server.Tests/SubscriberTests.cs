@@ -47,6 +47,20 @@ public class SubscriberTests
     }
 
     [Fact]
+    public async Task Card_PaidThroughCurrentMonth_HasNoDebt()
+    {
+        // Белоусов оплатил январь–август, рабочая дата 31.08: сентябрь–декабрь ещё не наступили.
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("admin");
+        var found = await client.GetFromJsonAsync<List<SubscriberListItem>>("/api/subscribers?mode=Account&q=1932041");
+        var card = await client.GetFromJsonAsync<SubscriberCard>($"/api/subscribers/{Assert.Single(found!).Id}");
+
+        Assert.Equal(0m, card!.Debt);
+        Assert.Equal(0, card.UnpaidMonths);
+        Assert.Equal(0m, Assert.Single(found!).Debt);
+    }
+
+    [Fact]
     public async Task Search_BySurname_NeedsFourLetters()
     {
         await using var app = new AversApp();
