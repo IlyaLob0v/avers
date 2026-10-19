@@ -38,6 +38,11 @@ public interface IAversStore
     Task<int> AcceptTicketAsync(CreateTicketRequest request, AppUser user);
 
     Task SaveTicketAsync(int ticketId, string fault, string mechanic, string workDone);
+
+    Task MarkPprAsync(int houseId, int year, int month, PprStatus status);
+
+    /// <summary>Переносит план ППР года на следующий и возвращает число работ.</summary>
+    Task<int> CopyPprAsync(int year);
 }
 
 public sealed class StoreException(string message) : Exception(message);
