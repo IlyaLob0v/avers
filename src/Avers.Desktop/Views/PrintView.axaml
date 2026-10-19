@@ -18,12 +18,16 @@
         <TextBlock Grid.Row="1" Classes="label" Text="Лиц. счёт" /><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedSubscriber.Account}" />
         <TextBlock Grid.Row="2" Classes="label" Text="Индекс" /><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedSubscriber.PzhreuIndex}" />
         <TextBlock Grid.Row="3" Classes="label" Text="Договор" /><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ContractDateText}" />
-        <TextBlock Grid.Row="4" Classes="label" Text="Период" /><TextBlock Grid.Row="4" Grid.Column="1" Text="июль 2026" />
-        <TextBlock Grid.Row="5" Classes="label" Text="Сумма" /><TextBlock Grid.Row="5" Grid.Column="1" Text="95,00 ₽" />
+        <TextBlock Grid.Row="4" Classes="label" Text="Период" /><TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding ReceiptMonthsText}" />
+        <TextBlock Grid.Row="5" Classes="label" Text="К оплате" /><TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding ReceiptSumText}" />
         <TextBlock Grid.Row="6" Classes="label" Text="Дата оплаты" /><TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding LastPayCell}" />
       </Grid>
-      <TextBlock Classes="hint" TextWrapping="Wrap" Text="Печать квитанции выбранной квартиры. Лицевой счёт — с датой оплаты или без." />
-      <Button Classes="primary" HorizontalAlignment="Right" Margin="0" Content="Печать" Command="{Binding NotReadyCommand}" CommandParameter="Печать" />
+      <CheckBox Content="Лицевой счёт с датой оплаты" IsChecked="{Binding PrintWithPayDate}" />
+      <TextBlock Classes="hint" TextWrapping="Wrap" Text="Документ откроется в PDF, печать — из программы просмотра." />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+        <Button Content="Лицевой счёт" Command="{Binding PrintAccountCommand}" />
+        <Button Classes="primary" Margin="0" Content="Квитанция" Command="{Binding PrintReceiptCommand}" />
+      </StackPanel>
     </StackPanel>
   </HeaderedContentControl>
 </UserControl>
