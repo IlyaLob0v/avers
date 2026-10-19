@@ -1,12 +1,59 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Avers.Desktop.ViewModels"
+             xmlns:ctl="using:Avers.Desktop.Controls"
              x:Class="Avers.Desktop.Views.AccessView"
              x:DataType="vm:MainViewModel">
   <StackPanel Margin="16,0,16,12">
-    <TextBlock Classes="hint" TextWrapping="Wrap"
+    <Grid ColumnDefinitions="*,320">
+      <HeaderedContentControl Classes="group" Margin="0,0,10,0" Header="Сотрудники">
+        <DataGrid ctl:GridTone.Enabled="True" Height="250" ItemsSource="{Binding Employees}" SelectedItem="{Binding SelectedEmployee}"
+                  AutoGenerateColumns="False" IsReadOnly="True">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Логин" Binding="{Binding Login}" Width="90" />
+            <DataGridTextColumn Header="Фамилия И.О." Binding="{Binding DisplayName}" Width="150" />
+            <DataGridTextColumn Header="Роль" Binding="{Binding RoleTitle}" Width="215" />
+            <DataGridTextColumn Header="Отдел" Binding="{Binding Department}" Width="140" />
+            <DataGridTextColumn Header="Л/с" Binding="{Binding Account}" Width="50" />
+            <DataGridTextColumn Header="Состояние" Binding="{Binding State}" Width="*" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </HeaderedContentControl>
+
+      <HeaderedContentControl Grid.Column="1" Classes="group" Header="{Binding EmployeeCaption}">
+        <StackPanel>
+          <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+            <TextBlock Classes="label" Text="Логин" VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" Classes="cell" Text="{Binding EditUserLogin}" />
+            <TextBlock Grid.Row="1" Classes="label" Text="Фамилия И.О." VerticalAlignment="Center" />
+            <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding EditUserName}" />
+            <TextBlock Grid.Row="2" Classes="label" Text="Роль" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="2" Grid.Column="1" Classes="cell" ItemsSource="{Binding RoleOptions}" SelectedItem="{Binding EditUserRole}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:RoleOption">
+                  <TextBlock Text="{Binding Title}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Grid.Row="3" Classes="label" Text="Отдел" VerticalAlignment="Center" />
+            <TextBox Grid.Row="3" Grid.Column="1" Classes="cell" Text="{Binding EditUserDepartment}" />
+            <TextBlock Grid.Row="4" Classes="label" Text="Новый пароль" VerticalAlignment="Center" />
+            <TextBox Grid.Row="4" Grid.Column="1" Classes="cell" PasswordChar="●" Text="{Binding EditUserPassword}" />
+          </Grid>
+          <TextBlock Classes="hint" Margin="100,0,0,4" Text="{Binding PasswordHint}" />
+          <CheckBox Content="Может править лицевой счёт" IsChecked="{Binding EditUserCanEditAccount}" />
+          <CheckBox Content="Отключён (войти не может)" IsChecked="{Binding EditUserDisabled}" />
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button Content="Новый сотрудник" Command="{Binding NewEmployeeCommand}" />
+            <Button Classes="primary" Content="Сохранить" Command="{Binding SaveEmployeeCommand}" />
+          </StackPanel>
+        </StackPanel>
+      </HeaderedContentControl>
+    </Grid>
+
+    <TextBlock Classes="hint" Margin="0,10,0,0" TextWrapping="Wrap"
                Text="Вместо скрытого режима «Администратор» (Alt+Backspace) — явные права. Редактирование лицевого счёта выдаётся отдельно." />
-    <DataGrid Margin="0,8,0,0" Height="320" ItemsSource="{Binding AccessRows}" AutoGenerateColumns="False" IsReadOnly="True">
+    <DataGrid Margin="0,8,0,0" Height="220" ItemsSource="{Binding AccessRows}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Роль" Binding="{Binding Role}" Width="220" />
         <DataGridTextColumn Header="Платежи" Binding="{Binding Pay}" Width="100" />

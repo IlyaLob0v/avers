@@ -17,13 +17,13 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db) : IAversSto
     public IReadOnlyList<AppUser> LoginUsers()
     {
         using var ctx = db.CreateDbContext();
-        return ctx.Users.AsNoTracking().OrderBy(x => x.Login).ToList();
+        return ctx.Users.AsNoTracking().Where(x => !x.IsDisabled).OrderBy(x => x.Login).ToList();
     }
 
     public Task<AppUser> SignInAsync(string login, string password)
     {
         using var ctx = db.CreateDbContext();
-        var user = ctx.Users.AsNoTracking().FirstOrDefault(u => u.Login == login)
+        var user = ctx.Users.AsNoTracking().FirstOrDefault(u => u.Login == login && !u.IsDisabled)
                    ?? throw new StoreException("Выберите пользователя.");
         if (!Password.Verify(user, password))
             throw new StoreException("Неверный пароль. Для учебной базы пароль у всех: avers");
@@ -139,5 +139,18 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db) : IAversSto
         return copied > 0
             ? Task.FromResult(copied)
             : throw new StoreException($"План на {year + 1} год уже есть или план {year} года пуст.");
+    }
+
+    public Task<IReadOnlyList<AppUser>> LoadUsersAsync()
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult<IReadOnlyList<AppUser>>(UserAccounts.List(ctx));
+    }
+
+    public Task SaveUserAsync(AppUser draft, string password, AppUser admin)
+    {
+        using var ctx = db.CreateDbContext();
+        var error = UserAccounts.Save(ctx, draft, password, admin.Id);
+        return error is null ? Task.CompletedTask : throw new StoreException(error);
     }
 }

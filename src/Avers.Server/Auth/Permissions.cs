@@ -34,6 +34,7 @@ public static class Policies
     public const string SubscribersEdit = "subscribers.edit";
     public const string SettingsEdit = "settings.edit";
     public const string HousesEdit = "houses.edit";
+    public const string UsersManage = "users.manage";
 
     public static void Add(AuthorizationOptions options)
     {
@@ -53,6 +54,7 @@ public static class Policies
         // Общие настройки (порог жёлтой подсветки) — администратор и начальник АДС.
         options.AddPolicy(SettingsEdit, p => p.RequireAuthenticatedUser()
             .RequireRole(nameof(UserRole.Administrator), nameof(UserRole.AdsHead)));
+        options.AddPolicy(UsersManage, p => p.RequireAuthenticatedUser().RequireRole(nameof(UserRole.Administrator)));
     }
 
     /// <summary>

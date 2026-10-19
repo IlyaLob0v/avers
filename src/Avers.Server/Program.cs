@@ -44,6 +44,7 @@ if (app.Environment.IsDevelopment())
 
 app.MapHealthChecks("/health").AllowAnonymous();
 app.MapAuth();
+app.MapUsers();
 app.MapSubscribers();
 app.MapTickets();
 app.MapDesktop();

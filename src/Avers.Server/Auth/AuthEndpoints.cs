@@ -28,7 +28,7 @@ public static class AuthEndpoints
         if (login.Length == 0 || string.IsNullOrEmpty(request.Password))
             return TypedResults.Unauthorized();
         var user = await db.Users.FirstOrDefaultAsync(u => u.Login == login, ct);
-        if (user is null || !Password.Verify(user, request.Password))
+        if (user is null || user.IsDisabled || !Password.Verify(user, request.Password))
             return TypedResults.Unauthorized();
         if (Password.NeedsRehash(user.PasswordHash))
         {
@@ -52,7 +52,7 @@ public static class AuthEndpoints
     {
         var login = principal.Identity?.Name;
         var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Login == login, ct);
-        if (user is null)
+        if (user is null || user.IsDisabled)
             return TypedResults.Unauthorized();
 
         return TypedResults.Ok(new CurrentUserDto(
