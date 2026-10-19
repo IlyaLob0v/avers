@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Каждую ночь (cron.daily): копия базы Аверса в /var/backups/avers, хранится 30 дней.
+set -euo pipefail
+
+file=/var/backups/avers/avers-$(date +%Y-%m-%d).dump
+su postgres -c "pg_dump --format=custom --file=$file avers"
+find /var/backups/avers -name 'avers-*.dump' -mtime +30 -delete

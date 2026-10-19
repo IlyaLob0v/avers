@@ -48,7 +48,10 @@ app.MapTickets();
 app.MapDesktop();
 
 await app.InitializeDatabaseAsync();
+if (AdminCommands.TryRun(args, out var command))
+    return await command(app.Services);
 await app.RunAsync();
+return 0;
 
 /// <summary>Точка входа; открыта для интеграционных тестов (WebApplicationFactory).</summary>
 public partial class Program;

@@ -23,6 +23,10 @@ dotnet user-secrets --project src/Avers.Server set "ConnectionStrings:Avers" "Ho
 dotnet run --project src/Avers.Server -- --Avers:Database:Provider=Postgres
 ```
 
+Рабочий сервер в офисе ставится скриптом `deploy/server/install.sh` (служба systemd, PostgreSQL, ночные копии) —
+инструкция в [docs/09-server.md](../../docs/09-server.md). Сменить пароль пользователя:
+`Avers.Server set-password <логин>`, новый пароль — из стандартного ввода (на сервере — `sudo avers-password <логин>`).
+
 ## Настройки (`appsettings.json`, раздел `Avers:Database`)
 
 | Ключ | По умолчанию | Development | Смысл |
