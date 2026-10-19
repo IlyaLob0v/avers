@@ -1,3 +1,5 @@
+using Avers.Data;
+using Avers.Desktop.Data;
 using Avers.Desktop.Reports;
 using Avers.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -59,7 +61,7 @@ public sealed partial class MainViewModel
         yield return ("Выполнено заявок", hs => Tickets(hs).Count(t => t.Status == TicketStatus.Done));
         yield return ("Неустранённые неисправности СКПТ", hs => hs.Count(h => h.OpenFault != null));
         yield return ("Сумма дебиторской задолженности", hs =>
-            _subscribers.Where(s => hs.Any(h => h.Id == s.HouseId)).Sum(s => Billing.Debt(Billing.Due(s.Payments, _today))));
+            hs.Sum(h => _debtByHouse.GetValueOrDefault(h.Id)));
     }
 
     [RelayCommand]
@@ -89,15 +91,23 @@ public sealed partial class MainViewModel
         Export("должники", "отчёт по должникам", path => XlsxTable.Write(path,
             $"Должники на {_today:dd.MM.yyyy}",
             ["ФИО", "Адрес", "Лиц. счёт", "Долг, руб.", "Неоплачено мес.", "Последняя оплата", "Дело-Аверс"],
-            Debtors.Select(d => new object?[] { d.FullName, d.Address, d.Subscriber.Account, d.Debt, d.Unpaid, d.LastPay, d.Case })));
+            Debtors.Select(d => new object?[] { d.FullName, d.Address, d.Account, d.Debt, d.Unpaid, d.LastPay, d.Case })));
 
     /// <summary>Итоги месяца начальной даты для 1С: отгрузка по тарифам и поступления по источникам.</summary>
     [RelayCommand]
-    private void ExportForOneC()
+    private async Task ExportForOneC()
     {
-        var payments = _subscribers.SelectMany(s => s.Payments).ToList();
-        var shipment = AccountingMonth.Shipment(payments, ReportFrom.Year, ReportFrom.Month);
-        var receipts = AccountingMonth.Receipts(payments, ReportFrom.Year, ReportFrom.Month);
+        AccountingReport report;
+        try
+        {
+            report = await _store.LoadAccountingAsync(ReportFrom.Year, ReportFrom.Month);
+        }
+        catch (StoreException e)
+        {
+            Status = e.Message;
+            return;
+        }
+        var (shipment, receipts) = (report.Shipment, report.Receipts);
         var rows = shipment.Select(l => new object?[] { "Отгрузка", "Абонентская плата", l.Count, l.Tariff, l.Sum })
             .Append(["Отгрузка", "Итого", shipment.Sum(l => l.Count), null, shipment.Sum(l => l.Sum)])
             .Concat(receipts.Select(l => new object?[] { "Поступления", l.Source, l.Count, null, l.Sum }))

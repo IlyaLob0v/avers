@@ -6,7 +6,8 @@ namespace Avers.Data;
 /// <summary>
 /// Всё, что настольная программа держит в памяти после входа. Таблицы читаются плоско, по сети
 /// уходят без связей, а связываются по ключам в <see cref="Link"/> уже на месте.
-/// Абонентов и заявки получает только тот, кому они положены по роли.
+/// Абонентов со счетами здесь нет: их грузят по дому (<see cref="HouseSubscribers"/>).
+/// Заявки получает только тот, кому они положены по роли, вместе с абонентами этих заявок.
 /// </summary>
 public sealed class AversSnapshot
 {
@@ -19,9 +20,6 @@ public sealed class AversSnapshot
     public List<IntercomPanel> Intercoms { get; set; } = [];
     public List<IntercomTicket> IntercomTickets { get; set; } = [];
     public List<Subscriber> Subscribers { get; set; } = [];
-    public List<YearPayment> Payments { get; set; } = [];
-    public List<CourtCase> CourtCases { get; set; } = [];
-    public List<UnifiedReceipt> Receipts { get; set; } = [];
     public List<WorkTicket> Tickets { get; set; } = [];
     public List<Mechanic> Mechanics { get; set; } = [];
     public List<Material> Materials { get; set; } = [];
@@ -41,15 +39,12 @@ public sealed class AversSnapshot
             Mechanics = db.Mechanics.AsNoTracking().OrderBy(x => x.FullName).ToList(),
             Materials = db.Materials.AsNoTracking().ToList()
         };
-        if (RoleCatalog.Can(role, AppModule.Abon, out _))
-        {
-            snapshot.Subscribers = db.Subscribers.AsNoTracking().ToList();
-            snapshot.Payments = db.Payments.AsNoTracking().ToList();
-            snapshot.CourtCases = db.CourtCases.AsNoTracking().ToList();
-            snapshot.Receipts = db.UnifiedReceipts.AsNoTracking().ToList();
-        }
         if (RoleCatalog.Can(role, AppModule.Disp, out _))
+        {
             snapshot.Tickets = db.Tickets.AsNoTracking().ToList();
+            if (RoleCatalog.Can(role, AppModule.Abon, out _))
+                snapshot.Subscribers = db.Subscribers.AsNoTracking().Where(s => s.Tickets.Any()).ToList();
+        }
         return snapshot;
     }
 
@@ -72,17 +67,8 @@ public sealed class AversSnapshot
             h.Ppr = ppr[h.Id].OrderBy(x => x.Year).ThenBy(x => x.Month).ToList();
             h.Intercoms = intercoms[h.Id].OrderBy(x => x.Entrance).ToList();
         }
-
-        var payments = Payments.ToLookup(x => x.SubscriberId);
-        var cases = CourtCases.ToLookup(x => x.SubscriberId);
-        var receipts = Receipts.ToLookup(x => x.SubscriberId);
         foreach (var s in Subscribers)
-        {
             s.House = houses[s.HouseId];
-            s.Payments = payments[s.Id].OrderBy(x => x.Year).ThenBy(x => x.Month).ToList();
-            s.CourtCases = cases[s.Id].ToList();
-            s.Receipts = receipts[s.Id].ToList();
-        }
 
         foreach (var t in Tickets)
         {
