@@ -26,8 +26,6 @@ public sealed record NavEntry(
 /// </summary>
 public static class NavCatalog
 {
-    public const string StubSummary = "Пока не работает";
-
     public static IReadOnlyList<NavEntry> All { get; } =
     [
         new(AppModule.Abon, "Абоненты и оплаты", "Абоненты", "Аб", "AversAbon",
