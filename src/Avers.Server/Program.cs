@@ -9,6 +9,7 @@ using Avers.Server.Subscribers;
 using Avers.Server.Tickets;
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +35,9 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+// Из интернета запросы приходят через Caddy на этом же сервере (deploy/server/avers-internet):
+// адрес телефона берём из X-Forwarded-For, иначе лимит попыток входа был бы один на всех.
+app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedFor });
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseDefaultFiles();
