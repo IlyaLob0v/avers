@@ -51,16 +51,16 @@ public sealed class ServerModeTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task Find_ShortSurname_ShowsServerAnswer()
+    public async Task Find_EmptySurname_ShowsServerAnswer()
     {
         var vm = await SignIn("orlov");
         var before = vm.SelectedSubscriber!.Id;
 
         vm.SearchMode = SearchMode.Surname;
-        vm.FindQuery = "Пет";
+        vm.FindQuery = " ";
         await vm.FindCommand.ExecuteAsync(null);
 
-        Assert.Equal("Фамилию ищем от 4 букв.", vm.Status);
+        Assert.Equal("Введите фамилию.", vm.Status);
         Assert.Equal(before, vm.SelectedSubscriber!.Id);
     }
 

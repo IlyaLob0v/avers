@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using Avers.Contracts;
+using Avers.Domain;
+using Microsoft.EntityFrameworkCore;
 
 namespace Avers.Server.Tests;
 
@@ -61,14 +63,25 @@ public class SubscriberTests
     }
 
     [Fact]
-    public async Task Search_BySurname_NeedsFourLetters()
+    public async Task Search_ShortSurname_MatchesWholeSurnameOnly()
     {
         await using var app = new AversApp();
         var client = await app.LoginAsync("admin");
+        await app.WithDbAsync(async db =>
+        {
+            var house = await db.Houses.Select(h => h.Id).FirstAsync();
+            db.Subscribers.Add(new Subscriber { HouseId = house, Account = "9000001", InnerCode = "9000001", LastName = "Ли", Apartment = "1" });
+            db.Subscribers.Add(new Subscriber { HouseId = house, Account = "9000002", InnerCode = "9000002", LastName = "Лиханов", Apartment = "2" });
+            return await db.SaveChangesAsync();
+        });
 
-        var response = await client.GetAsync("/api/subscribers?mode=Surname&q=Ива");
+        var li = await client.GetFromJsonAsync<List<SubscriberListItem>>("/api/subscribers?mode=Surname&q=ли");
+        var prefix = await client.GetFromJsonAsync<List<SubscriberListItem>>("/api/subscribers?mode=Surname&q=Лиха");
+        var empty = await client.GetAsync("/api/subscribers?mode=Surname&q=%20");
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("Ли", Assert.Single(li!).FullName);
+        Assert.Equal("Лиханов", Assert.Single(prefix!).FullName);
+        Assert.Equal(HttpStatusCode.BadRequest, empty.StatusCode);
     }
 
     [Fact]

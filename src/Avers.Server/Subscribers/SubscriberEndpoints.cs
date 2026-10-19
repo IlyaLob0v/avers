@@ -44,7 +44,7 @@ public static class SubscriberEndpoints
 
     /// <summary>
     /// Поиск как на «Рабочем столе» оболочки: <c>mode</c> = address (street, house, apartment),
-    /// account, innerCode, pzhreu, surname (от 4 букв). Не больше <see cref="MaxResults"/> строк.
+    /// account, innerCode, pzhreu, surname (короче 4 букв — фамилия целиком). Не больше <see cref="MaxResults"/> строк.
     /// </summary>
     private static async Task<Results<Ok<List<SubscriberListItem>>, ValidationProblem>> Search(
         AversDbContext db, TimeProvider time, CancellationToken ct,

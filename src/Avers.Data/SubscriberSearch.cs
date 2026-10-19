@@ -4,7 +4,7 @@ namespace Avers.Data;
 
 /// <summary>
 /// Поиск абонента как на «Рабочем столе» оболочки: по адресу (улица с начала названия, дом, квартира),
-/// лицевому счёту, внутреннему коду, ПЖРЭУ или фамилии (от 4 букв). Выполняется в СУБД.
+/// лицевому счёту, внутреннему коду, ПЖРЭУ или фамилии. Выполняется в СУБД.
 /// </summary>
 public static class SubscriberSearch
 {
@@ -28,9 +28,12 @@ public static class SubscriberSearch
                 }
                 return (query, "", "");
             case SearchMode.Surname:
-                if (text.Length < 4)
-                    return (null, "q", "Фамилию ищем от 4 букв.");
-                return (query.Where(s => s.LastName.ToLower().StartsWith(text)), "", "");
+                if (text.Length == 0)
+                    return (null, "q", "Введите фамилию.");
+                // Короткую фамилию (Ли, Ким) ищем целиком, иначе по трём буквам нашлись бы сотни.
+                return (text.Length < 4
+                    ? query.Where(s => s.LastName.ToLower() == text)
+                    : query.Where(s => s.LastName.ToLower().StartsWith(text)), "", "");
             default:
                 if (text.Length == 0)
                     return (null, "q", "Введите, что искать.");
