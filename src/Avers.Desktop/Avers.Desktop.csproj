@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.1" />
     <ProjectReference Include="..\Avers.Contracts\Avers.Contracts.csproj" />
     <ProjectReference Include="..\Avers.Data\Avers.Data.csproj" />
     <PackageReference Include="Avalonia" Version="12.1.4" />

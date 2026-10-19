@@ -51,7 +51,7 @@ public static class NavCatalog
         new(AppModule.Ppr, "Графики ППР", "ППР", "ПР", "AversAnten · Сервис",
             "Планово-предупредительные работы по домам", "План и выполнение по домам", AppModule.Anten, []),
         new(AppModule.Reports, "Отчёты", "Отчёты", "От", "Отчёты",
-            "Отчёты в XLSX и PDF", StubSummary, AppModule.Legal, [], IsStub: true),
+            "Отчёты в Excel", "Итоги по заявкам, должники", AppModule.Legal, []),
         new(AppModule.Phonebook, "Словарь", "Словарь", "Сл", "phonebook",
             "Улицы, дома, материалы, радиомеханики", "Телефоны и справочники", AppModule.Phonebook, []),
         new(AppModule.Reader, "Просмотр дома", "Просмотр", "Чт", "Читатель",
