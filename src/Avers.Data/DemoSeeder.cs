@@ -89,7 +89,7 @@ public static class DemoSeeder
 
         AddPpr(hVol19d, "DDDDPEEEPEEE");
         AddPpr(hAv12, "DDEEEPEEEPEE");
-        AddPpr(hBr18, "OEEEEPEEEDDE");
+        AddPpr(hBr18, "PEEEEPEEEDDE");
         AddPpr(hLen44, "EEEEEDEEPEEE");
 
         var ivanova = Sub(hVol19d, "104412", "1932068", "Иванова", "Мария", "Петровна", "8-983-623-3122", "68", "2",
@@ -364,7 +364,6 @@ public static class DemoSeeder
                 {
                     'D' => PprStatus.Done,
                     'P' => PprStatus.Planned,
-                    'O' => PprStatus.Overdue,
                     _ => PprStatus.Empty
                 }
             });
