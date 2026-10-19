@@ -124,4 +124,20 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db) : IAversSto
         ctx.SaveChanges();
         return Task.CompletedTask;
     }
+
+    public Task MarkPprAsync(int houseId, int year, int month, PprStatus status)
+    {
+        using var ctx = db.CreateDbContext();
+        PprPlan.Mark(ctx, houseId, year, month, status, Today);
+        return Task.CompletedTask;
+    }
+
+    public Task<int> CopyPprAsync(int year)
+    {
+        using var ctx = db.CreateDbContext();
+        var copied = PprPlan.CopyToNextYear(ctx, year);
+        return copied > 0
+            ? Task.FromResult(copied)
+            : throw new StoreException($"План на {year + 1} год уже есть или план {year} года пуст.");
+    }
 }
