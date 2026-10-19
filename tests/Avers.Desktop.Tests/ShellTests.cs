@@ -138,4 +138,15 @@ public class ShellTests
         app.Vm.SelectedTicket = app.Vm.Tickets.First(t => t.AcceptedByUserId != ticket.AcceptedByUserId);
         Assert.False(app.Vm.CanEditSelectedTicket);
     }
+
+    [AvaloniaFact]
+    public void LegalCalculator_ShowsDaysLeft()
+    {
+        using var app = new DesktopApp("lawyer");
+        app.Go(AppModule.Legal);
+
+        app.Vm.LegalStart = new DateTime(2026, 8, 3);
+
+        Assert.Equal("осталось 2 дн. (до 02.09.2026)", app.Vm.LegalRemaining);
+    }
 }

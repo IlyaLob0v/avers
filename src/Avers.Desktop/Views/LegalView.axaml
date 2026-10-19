@@ -9,12 +9,10 @@
     <Border DockPanel.Dock="Bottom" Classes="card" Margin="0">
       <StackPanel Orientation="Horizontal" Spacing="8">
         <TextBlock Classes="legend" Margin="0,0,8,0" Text="Калькулятор обратного отсчёта" VerticalAlignment="Center" />
-        <TextBlock Classes="label" Margin="0" Text="Дата претензии" />
-        <TextBox Width="104" Text="01.08.2026" />
-        <TextBlock Classes="label" Margin="8,0,0,0" Text="Срок исполнения" />
-        <TextBox Width="104" Text="31.08.2026" />
-        <TextBlock Classes="label" Margin="8,0,0,0" Text="Осталось" />
-        <TextBox Width="180" Text="0 дней (на 31.08.2026)" IsReadOnly="True" />
+        <ComboBox Classes="cell" Width="250" ItemsSource="{Binding LegalStages}" SelectedItem="{Binding LegalStage}" DisplayMemberBinding="{Binding Title, x:DataType=d:LegalStage}" />
+        <TextBlock Classes="label" Margin="8,0,0,0" VerticalAlignment="Center" Text="Дата события" />
+        <CalendarDatePicker Width="110" SelectedDate="{Binding LegalStart}" />
+        <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Medium" Text="{Binding LegalRemaining}" />
       </StackPanel>
     </Border>
     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,0,0,10">
