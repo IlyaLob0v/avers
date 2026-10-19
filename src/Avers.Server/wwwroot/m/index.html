@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Аверс · дома</title>
+<style>
+  :root { --navy: #0a246a; --blue: #316ac5; --face: #ece9d8; --line: #aca899; --warn: #fff4c2; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.4 "Segoe UI", Tahoma, sans-serif; background: var(--face); color: #000; }
+  header { background: var(--navy); color: #fff; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
+  header b { font-size: 17px; }
+  header button { background: none; border: 1px solid #fff; color: #fff; padding: 4px 10px; border-radius: 3px; font: inherit; font-size: 14px; }
+  main { padding: 12px 16px 32px; max-width: 640px; margin: 0 auto; }
+  label { display: block; font-size: 14px; margin: 10px 0 4px; }
+  input { width: 100%; padding: 10px; font: inherit; border: 1px solid var(--line); border-radius: 3px; background: #fff; }
+  .row { display: flex; gap: 8px; }
+  .row > div:first-child { flex: 3; }
+  .row > div:last-child { flex: 1; }
+  .primary { width: 100%; margin-top: 14px; padding: 12px; font: inherit; color: #fff; background: var(--blue); border: 0; border-radius: 3px; }
+  .error { color: #b00020; margin-top: 10px; }
+  .muted { color: #555; font-size: 14px; }
+  ul.houses { list-style: none; padding: 0; margin: 12px 0 0; }
+  ul.houses button { width: 100%; text-align: left; padding: 12px; margin-bottom: 6px; font: inherit; background: #fff; border: 1px solid var(--line); border-radius: 3px; }
+  section { background: #fff; border: 1px solid var(--line); border-radius: 3px; padding: 10px 12px; margin-top: 10px; }
+  section h2 { font-size: 15px; margin: 0 0 6px; color: var(--navy); }
+  section.fault { background: var(--warn); }
+  dl { margin: 0; }
+  dt { font-size: 13px; color: #555; margin-top: 6px; }
+  dd { margin: 0; white-space: pre-wrap; }
+  a { color: var(--blue); }
+  .back { background: none; border: 0; color: var(--blue); font: inherit; padding: 8px 0; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header><b>Аверс · дома</b><button id="logout" hidden>Выйти</button></header>
+<main>
+  <form id="login" hidden>
+    <label for="user">Логин</label>
+    <input id="user" autocomplete="username" autocapitalize="none" required>
+    <label for="pass">Пароль</label>
+    <input id="pass" type="password" autocomplete="current-password" required>
+    <button class="primary">Войти</button>
+    <div class="error" id="login-error"></div>
+  </form>
+
+  <div id="search" hidden>
+    <div class="row">
+      <div><label for="street">Улица</label><input id="street" placeholder="Начало названия"></div>
+      <div><label for="number">Дом</label><input id="number" inputmode="numeric"></div>
+    </div>
+    <ul class="houses" id="houses"></ul>
+    <div class="muted" id="search-note"></div>
+  </div>
+
+  <div id="house" hidden>
+    <button class="back" id="back">← К поиску</button>
+    <div id="house-body"></div>
+  </div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let token = sessionStorage.getItem("avers-token");
+
+function show(id) {
+  for (const s of ["login", "search", "house"]) $(s).hidden = s !== id;
+  $("logout").hidden = id === "login";
+}
+
+async function api(path) {
+  const r = await fetch(path, { headers: { Authorization: "Bearer " + token } });
+  if (r.status === 401) { logout(); throw new Error("Нужно войти заново."); }
+  if (r.status === 403) throw new Error("Нет доступа к сведениям о домах.");
+  if (!r.ok) throw new Error("Ошибка сервера: " + r.status);
+  return r.json();
+}
+
+function logout() {
+  token = null;
+  sessionStorage.removeItem("avers-token");
+  show("login");
+}
+
+$("login").onsubmit = async e => {
+  e.preventDefault();
+  $("login-error").textContent = "";
+  const r = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ login: $("user").value, password: $("pass").value })
+  });
+  if (!r.ok) { $("login-error").textContent = r.status === 429 ? "Слишком много попыток, подождите минуту." : "Неверный логин или пароль."; return; }
+  token = (await r.json()).accessToken;
+  sessionStorage.setItem("avers-token", token);
+  $("pass").value = "";
+  show("search");
+  $("street").focus();
+};
+
+$("logout").onclick = logout;
+$("back").onclick = () => show("search");
+
+let timer;
+for (const id of ["street", "number"]) $(id).oninput = () => { clearTimeout(timer); timer = setTimeout(search, 300); };
+
+async function search() {
+  const street = $("street").value.trim(), number = $("number").value.trim();
+  const list = $("houses");
+  list.replaceChildren();
+  $("search-note").textContent = "";
+  if (!street) return;
+  try {
+    const houses = await api(`/api/mobile/houses?street=${encodeURIComponent(street)}&house=${encodeURIComponent(number)}`);
+    if (houses.length === 0) $("search-note").textContent = "Ничего не найдено.";
+    for (const h of houses) {
+      const b = document.createElement("button");
+      b.textContent = h.address;
+      b.onclick = () => openHouse(h.id);
+      const li = document.createElement("li");
+      li.append(b);
+      list.append(li);
+    }
+  } catch (err) { $("search-note").textContent = err.message; }
+}
+
+function section(title, rows, cls) {
+  const s = document.createElement("section");
+  if (cls) s.className = cls;
+  const h = document.createElement("h2");
+  h.textContent = title;
+  const dl = document.createElement("dl");
+  for (const [name, value, phone] of rows) {
+    if (!value) continue;
+    const dt = document.createElement("dt"), dd = document.createElement("dd");
+    dt.textContent = name;
+    if (phone) {
+      value.split(/[,;]/).map(p => p.trim()).filter(p => p).forEach((p, i) => {
+        const a = document.createElement("a");
+        a.href = "tel:" + p.replace(/[^\d+]/g, "");
+        a.textContent = p;
+        dd.append(...(i ? [", ", a] : [a]));
+      });
+    } else dd.textContent = value;
+    dl.append(dt, dd);
+  }
+  s.append(h, dl.children.length ? dl : Object.assign(document.createElement("div"), { className: "muted", textContent: "Нет сведений." }));
+  return s;
+}
+
+async function openHouse(id) {
+  const body = $("house-body");
+  body.replaceChildren();
+  show("house");
+  try {
+    const h = await api(`/api/mobile/houses/${id}`);
+    const title = document.createElement("h1");
+    title.style.fontSize = "19px";
+    title.textContent = h.address;
+    const facts = document.createElement("div");
+    facts.className = "muted";
+    facts.textContent = `Этажей ${h.floors} · подъездов ${h.entrances} · квартир ${h.apartments}`;
+    body.append(title, facts);
+    if (h.openFault)
+      body.append(section("Неустранённая неисправность", [
+        ["Что", h.openFault], ["Почему не устранена", h.openFaultReason],
+        ["Плановая дата", h.openFaultPlannedFix && new Date(h.openFaultPlannedFix).toLocaleDateString("ru-RU")]
+      ], "fault"));
+    body.append(section("Управляющая компания", [
+      ["Название", h.homeowner], ["Филиал", h.homeownerBranch], ["Адрес", h.homeownerAddress],
+      ["Телефоны", h.homeownerPhones, true], ["Руководитель", h.headName], ["Телефон руководителя", h.headPhone, true],
+      ["Инженер", h.engineerName], ["Телефон инженера", h.engineerPhone, true]
+    ]));
+    body.append(section("Техника дома", [
+      ["Антенны", h.antennas], ["Воздушные кабельные линии", h.aerialCables], ["Усилители", h.amplifiers],
+      ["Блоки питания", h.powerSupplies], ["Ключ от техэтажа", h.techFloorKey], ["Прочее", h.otherNotes]
+    ]));
+    body.append(section("Схемы СКПТ", h.schemes.map(s =>
+      [s.name, `${s.format}, обновлена ${new Date(s.updatedAt).toLocaleDateString("ru-RU")}`])));
+  } catch (err) {
+    body.append(Object.assign(document.createElement("div"), { className: "error", textContent: err.message }));
+  }
+}
+
+show(token ? "search" : "login");
+</script>
+</body>
+</html>
