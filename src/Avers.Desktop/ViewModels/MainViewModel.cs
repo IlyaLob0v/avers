@@ -198,6 +198,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowShell));
         OnPropertyChanged(nameof(CanEditCard));
         OnPropertyChanged(nameof(CanEditSettings));
+        OnPropertyChanged(nameof(CanEditPpr));
         NotifyTicketPanel();
         BindTicket();
         RebuildNavigation();
@@ -265,9 +266,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
         SelectedDebtor = Debtors.FirstOrDefault(d => d.Subscriber.Id == keepDebtor) ?? Debtors.FirstOrDefault();
 
-        PprRows.Clear();
-        foreach (var h in _houses.OrderBy(h => h.Street.Name).ThenBy(h => h.Number, NaturalOrder.Instance))
-            PprRows.Add(new PprRow(h));
+        LoadPprYears();
 
         RefreshReport();
     }
@@ -389,7 +388,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             AppModule.Ticket => AppModule.Disp,
             AppModule.Subscriber or AppModule.Print or AppModule.PrDubl => AppModule.Abon,
-            AppModule.Scheme or AppModule.AntenInfo => AppModule.Anten,
+            AppModule.Scheme or AppModule.AntenInfo or AppModule.Ppr => AppModule.Anten,
             AppModule.Claim => AppModule.Legal,
             _ => page
         };
@@ -529,34 +528,6 @@ public sealed class DebtorRow : IRowTone
     public bool IsDebt { get; }
     public bool IsOld { get; }
     public RowTone Tone => IsDebt ? RowTone.Debt : IsOld ? RowTone.Warn : RowTone.None;
-}
-
-public sealed class PprRow
-{
-    public PprRow(House h)
-    {
-        Address = h.AddressLine;
-        Floors = h.Floors.ToString();
-        Entrances = h.Entrances.ToString();
-        string Cell(int m) => Billing.PprTitle(h.Ppr.FirstOrDefault(p => p.Month == m)?.Status ?? PprStatus.Empty);
-        Jan = Cell(1); Feb = Cell(2); Mar = Cell(3); Apr = Cell(4); May = Cell(5); Jun = Cell(6);
-        Jul = Cell(7); Aug = Cell(8); Sep = Cell(9); Oct = Cell(10); Nov = Cell(11); Dec = Cell(12);
-    }
-    public string Address { get; }
-    public string Floors { get; }
-    public string Entrances { get; }
-    public string Jan { get; }
-    public string Feb { get; }
-    public string Mar { get; }
-    public string Apr { get; }
-    public string May { get; }
-    public string Jun { get; }
-    public string Jul { get; }
-    public string Aug { get; }
-    public string Sep { get; }
-    public string Oct { get; }
-    public string Nov { get; }
-    public string Dec { get; }
 }
 
 public sealed class AccessRow

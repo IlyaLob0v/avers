@@ -49,7 +49,7 @@ public static class NavCatalog
             "Должники, досудебные уведомления, суд", "Претензии, Дело-Аверс", AppModule.Legal,
             [AppModule.Claim]),
         new(AppModule.Ppr, "Графики ППР", "ППР", "ПР", "AversAnten · Сервис",
-            "Планово-предупредительные работы по домам", StubSummary, AppModule.Anten, [], IsStub: true),
+            "Планово-предупредительные работы по домам", "План и выполнение по домам", AppModule.Anten, []),
         new(AppModule.Reports, "Отчёты", "Отчёты", "От", "Отчёты",
             "Отчёты в Excel", "Итоги по заявкам, должники", AppModule.Legal, []),
         new(AppModule.Phonebook, "Словарь", "Словарь", "Сл", "phonebook",

@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using Avers.Server.Auth;
 using Avers.Server.Desktop;
 using Avers.Server.Hosting;
+using Avers.Server.Ppr;
 using Avers.Server.Subscribers;
 using Avers.Server.Tickets;
 using Microsoft.AspNetCore.Authentication.BearerToken;
@@ -46,6 +47,7 @@ app.MapAuth();
 app.MapSubscribers();
 app.MapTickets();
 app.MapDesktop();
+app.MapPpr();
 
 await app.InitializeDatabaseAsync();
 if (AdminCommands.TryRun(args, out var command))
