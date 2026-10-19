@@ -92,7 +92,7 @@ public sealed partial class MainViewModel : ObservableObject
         AppModule.Ppr => "Сервис → Графики ППР",
         AppModule.Legal => "Должники · юристы + Дело-Аверс",
         AppModule.Claim => "Досудебное уведомление",
-        AppModule.Reports => "Отчёты · XLSX / PDF",
+        AppModule.Reports => "Отчёты · Excel",
         AppModule.Phonebook => "Словарь",
         AppModule.Domofo => SelectedHouse is null ? "Домофон" : $"Домофон · {SelectedHouse.AddressLine}",
         AppModule.Reader => "Просмотр дома — без правки",
@@ -269,13 +269,7 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var h in _houses.OrderBy(h => h.Street.Name).ThenBy(h => h.Number, NaturalOrder.Instance))
             PprRows.Add(new PprRow(h));
 
-        var inPeriod = _tickets.Where(t => t.Date >= ReportFrom && t.Date <= ReportTo).ToList();
-        ReportMetrics.Clear();
-        ReportMetrics.Add(new("Принято заявок", inPeriod.Count.ToString(), true));
-        ReportMetrics.Add(new("Выполнено заявок", inPeriod.Count(t => t.Status == TicketStatus.Done).ToString(), true));
-        ReportMetrics.Add(new("Неустранённые неисправности СКПТ", _houses.Count(h => h.OpenFault != null).ToString(), true));
-        ReportMetrics.Add(new("Сумма дебиторской задолженности", Money(_subscribers.Sum(s => Billing.Debt(s.Payments))), true));
-        ReportMetrics.Add(new("Нагрузка на радиомехаников", "—", false));
+        RefreshReport();
     }
 
     /// <summary>Всё, что зависит от выбранного дома и квартиры.</summary>

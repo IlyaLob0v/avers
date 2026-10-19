@@ -154,4 +154,35 @@ public class ShellTests
         Assert.StartsWith("%PDF", File.ReadAllText(opened)[..4]);
         Assert.StartsWith("Открыт PDF", app.Vm.Status);
     }
+
+    [AvaloniaFact]
+    public void Report_ExportsCheckedMetricsByGroupToExcel()
+    {
+        using var app = new DesktopApp("lawyer");
+        string? opened = null;
+        app.Vm.OpenFile = path => opened = path;
+        app.Vm.ReportMetrics.Single(m => m.Name == "Домов на обслуживании").On = false;
+
+        app.Vm.ExportReportCommand.Execute(null);
+
+        using var book = new ClosedXML.Excel.XLWorkbook(opened!);
+        var sheet = book.Worksheet(1);
+        Assert.Equal("Обслуживающая организация", sheet.Cell(3, 1).GetString());
+        Assert.DoesNotContain(sheet.Row(3).CellsUsed(), c => c.GetString() == "Домов на обслуживании");
+        var total = sheet.Column(1).CellsUsed().Single(c => c.GetString() == "Итого").Address.RowNumber;
+        Assert.Equal(app.Vm.ReportMetrics.Single(m => m.Name == "Принято заявок").Value, sheet.Cell(total, 2).GetString());
+    }
+
+    [AvaloniaFact]
+    public void Debtors_ExportToExcel()
+    {
+        using var app = new DesktopApp("lawyer");
+        string? opened = null;
+        app.Vm.OpenFile = path => opened = path;
+
+        app.Vm.ExportDebtorsCommand.Execute(null);
+
+        using var book = new ClosedXML.Excel.XLWorkbook(opened!);
+        Assert.Equal(app.Vm.Debtors.Count, book.Worksheet(1).RowsUsed().Count() - 2);
+    }
 }

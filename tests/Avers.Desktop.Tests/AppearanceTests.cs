@@ -30,7 +30,7 @@ public class AppearanceTests
     public void Catalog_EveryModuleHasTileSummary_StubsSayNotReady()
     {
         Assert.All(NavCatalog.All, e => Assert.False(string.IsNullOrWhiteSpace(e.Summary)));
-        Assert.Equal([AppModule.Ppr, AppModule.Reports], NavCatalog.All.Where(e => e.IsStub).Select(e => e.Module));
+        Assert.Equal([AppModule.Ppr], NavCatalog.All.Where(e => e.IsStub).Select(e => e.Module));
         Assert.All(NavCatalog.All.Where(e => e.IsStub), e => Assert.Equal(NavCatalog.StubSummary, e.Summary));
     }
 

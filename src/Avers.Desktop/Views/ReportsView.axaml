@@ -7,15 +7,13 @@
     <HeaderedContentControl Classes="group" Margin="0,0,10,0" Header="Параметры">
       <StackPanel>
         <TextBlock Classes="hint" Text="Начальная дата" />
-        <TextBox Classes="cell" Text="01.01.2026" />
+        <CalendarDatePicker Width="130" SelectedDate="{Binding ReportFromDate}" />
         <TextBlock Classes="hint" Margin="0,6,0,0" Text="Конечная дата" />
-        <TextBox Classes="cell" Text="31.08.2026" />
-        <RadioButton Margin="0,8,0,0" IsChecked="True" Content="по обслуживающим организациям" />
-        <RadioButton Content="по зонам обслуживания" />
-        <TextBlock Classes="hint" Margin="0,8,0,0" Text="Формат" />
-        <TextBox Classes="cell" Text="XLSX" />
-        <TextBlock Classes="hint" Margin="0,6,0,0" TextWrapping="Wrap" Text="Метрики включаются и выключаются. XPS заменён на XLSX/PDF." />
-        <Button Classes="primary" HorizontalAlignment="Left" Margin="0,10,0,0" Content="Сформировать" Command="{Binding NotReadyCommand}" CommandParameter="Сформировать" />
+        <CalendarDatePicker Width="130" SelectedDate="{Binding ReportToDate}" />
+        <RadioButton Margin="0,8,0,0" Content="по обслуживающим организациям" IsChecked="{Binding !ReportByZone}" />
+        <RadioButton Content="по зонам обслуживания" IsChecked="{Binding ReportByZone}" />
+        <TextBlock Classes="hint" Margin="0,6,0,0" TextWrapping="Wrap" Text="В отчёт идут отмеченные метрики. Отчёт открывается в Excel." />
+        <Button Classes="primary" HorizontalAlignment="Left" Margin="0,10,0,0" Content="Сформировать" Command="{Binding ExportReportCommand}" />
       </StackPanel>
     </HeaderedContentControl>
     <DataGrid Grid.Column="1" VerticalAlignment="Top" ItemsSource="{Binding ReportMetrics}" AutoGenerateColumns="False">
