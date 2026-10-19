@@ -139,6 +139,22 @@ public class ShellTests
         Assert.False(app.Vm.CanEditSelectedTicket);
     }
 
+    [AvaloniaTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Print_ReceiptAndAccountOpenAsPdf(bool receipt)
+    {
+        using var app = new DesktopApp("orlov");
+        string? opened = null;
+        app.Vm.OpenFile = path => opened = path;
+
+        (receipt ? app.Vm.PrintReceiptCommand : app.Vm.PrintAccountCommand).Execute(null);
+
+        Assert.NotNull(opened);
+        Assert.StartsWith("%PDF", File.ReadAllText(opened)[..4]);
+        Assert.StartsWith("Открыт PDF", app.Vm.Status);
+    }
+
     [AvaloniaFact]
     public void Ppr_ClickOnMonthMarksItAndCountsPercent()
     {

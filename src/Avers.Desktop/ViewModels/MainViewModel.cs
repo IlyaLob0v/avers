@@ -233,7 +233,11 @@ public sealed partial class MainViewModel : ObservableObject
         RefreshDerived();
     }
 
-    partial void OnSelectedSubscriberChanged(Subscriber? value) => RefreshDerived();
+    partial void OnSelectedSubscriberChanged(Subscriber? value)
+    {
+        PrintWithPayDate = value?.PrintAccountWithPayDate ?? true;
+        RefreshDerived();
+    }
 
     partial void OnSelectedTicketChanged(WorkTicket? value) => BindTicket();
     partial void OnSelectedDebtorChanged(DebtorRow? value) => BuildClaim();
@@ -302,6 +306,8 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ChargedText));
         OnPropertyChanged(nameof(PaidText));
         OnPropertyChanged(nameof(DebtText));
+        OnPropertyChanged(nameof(ReceiptMonthsText));
+        OnPropertyChanged(nameof(ReceiptSumText));
         OnPropertyChanged(nameof(HasDebt));
         OnPropertyChanged(nameof(ToPayText));
         OnPropertyChanged(nameof(OekWarning));

@@ -9,7 +9,7 @@ src=${1:-$here/Avers}
 [ -f "$src/Avers" ] || { echo "В папке $src нет файла Avers"; exit 1; }
 
 apt-get update
-apt-get install -y xrdp xorgxrdp openbox locales fonts-dejavu-core
+apt-get install -y xrdp xorgxrdp openbox locales fonts-dejavu-core evince xdg-utils
 locale-gen ru_RU.UTF-8
 
 # avers.json (адрес сервера Аверса) переживает обновление.
