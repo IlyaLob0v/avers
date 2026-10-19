@@ -37,4 +37,22 @@ public class UsersTests
 
         Assert.Equal("Нельзя отключить себя или снять с себя роль администратора.", app.Vm.Status);
     }
+
+    [AvaloniaFact]
+    public void ChangeLog_ShowsEmployeeChange()
+    {
+        using var app = new DesktopApp();
+        app.Go(AppModule.Access);
+        app.Vm.SelectedEmployee = app.Vm.Employees.Single(e => e.Login == "orlova");
+        app.Vm.EditUserDepartment = "АДС";
+        app.Vm.SaveEmployeeCommand.Execute(null);
+        app.Pump();
+
+        app.Go(AppModule.ChangeLog);
+
+        var row = Assert.Single(app.Vm.ChangeLogRows);
+        Assert.Equal("Администратор (admin)", row.UserName);
+        Assert.Equal("Сотрудник orlova", row.Target);
+        Assert.Equal("Отдел: АДС, диспетчерская → АДС", row.Changes);
+    }
 }

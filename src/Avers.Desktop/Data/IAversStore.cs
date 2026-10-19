@@ -49,6 +49,9 @@ public interface IAversStore
 
     /// <summary>Сохраняет сотрудника (Id = 0 — новый); пустой пароль у существующего не меняется.</summary>
     Task SaveUserAsync(AppUser draft, string password, AppUser admin);
+
+    /// <summary>Последние записи журнала изменений, новые сверху. Только для администратора.</summary>
+    Task<IReadOnlyList<ChangeLogEntry>> LoadChangeLogAsync();
 }
 
 public sealed class StoreException(string message) : Exception(message);

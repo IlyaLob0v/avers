@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Avers.Server.Auth;
 
-/// <summary>Сотрудники, их роли и пароли — только администратор.</summary>
+/// <summary>Сотрудники, их роли и пароли, журнал изменений — только администратор.</summary>
 public static class UserEndpoints
 {
     public static void MapUsers(this IEndpointRouteBuilder app)
@@ -14,11 +14,14 @@ public static class UserEndpoints
         var api = app.MapGroup("/api/users").WithTags("Сотрудники").RequireAuthorization(Policies.UsersManage);
 
         api.MapGet("/", (AversDbContext db) => UserAccounts.List(db).Select(ToDto));
-        api.MapPost("/", (SaveUserRequest request, ClaimsPrincipal admin, AversDbContext db) => Save(0, request, admin, db));
-        api.MapPut("/{id:int}", (int id, SaveUserRequest request, ClaimsPrincipal admin, AversDbContext db) => Save(id, request, admin, db));
+        api.MapPost("/", (SaveUserRequest request, ClaimsPrincipal admin, AversDbContext db, TimeProvider time) => Save(0, request, admin, db, time));
+        api.MapPut("/{id:int}", (int id, SaveUserRequest request, ClaimsPrincipal admin, AversDbContext db, TimeProvider time) => Save(id, request, admin, db, time));
+
+        app.MapGet("/api/change-log", (AversDbContext db) => ChangeLog.Latest(db))
+            .WithTags("Журнал изменений").RequireAuthorization(Policies.UsersManage);
     }
 
-    private static Results<NoContent, ValidationProblem> Save(int id, SaveUserRequest request, ClaimsPrincipal admin, AversDbContext db)
+    private static Results<NoContent, ValidationProblem> Save(int id, SaveUserRequest request, ClaimsPrincipal admin, AversDbContext db, TimeProvider time)
     {
         var error = Enum.TryParse<UserRole>(request.Role, out var role) && Enum.IsDefined(role)
             ? UserAccounts.Save(db, new AppUser
@@ -30,7 +33,7 @@ public static class UserEndpoints
                 Department = request.Department ?? "",
                 CanEditAccount = request.CanEditAccount,
                 IsDisabled = request.IsDisabled
-            }, request.Password ?? "", admin.AppUserId())
+            }, request.Password ?? "", admin.AppUserId(), time.GetUtcNow())
             : "Выберите роль.";
         return error is null
             ? TypedResults.NoContent()

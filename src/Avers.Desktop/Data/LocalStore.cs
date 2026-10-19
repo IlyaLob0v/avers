@@ -14,6 +14,9 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db) : IAversSto
 
     public DateOnly Today => DemoSeeder.WorkDate;
 
+    /// <summary>Кто вошёл — для журнала изменений.</summary>
+    private int _userId;
+
     public IReadOnlyList<AppUser> LoginUsers()
     {
         using var ctx = db.CreateDbContext();
@@ -27,6 +30,7 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db) : IAversSto
                    ?? throw new StoreException("Выберите пользователя.");
         if (!Password.Verify(user, password))
             throw new StoreException("Неверный пароль. Для учебной базы пароль у всех: avers");
+        _userId = user.Id;
         return Task.FromResult(user);
     }
 
@@ -44,6 +48,10 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db) : IAversSto
         var next = ctx.Payments.Where(p => p.SubscriberId == subscriberId && p.Year == year && p.Amount == null)
                        .OrderBy(p => p.Month).FirstOrDefault()
                    ?? throw new StoreException($"Все месяцы {year} уже оплачены.");
+        var changes = ChangeLog.Diff(
+            ("Сумма", next.Amount, next.Tariff),
+            ("Дата оплаты", next.PaidAt, Today),
+            ("Источник", next.Source, "Касса"));
         next.Amount = next.Tariff;
         next.Source = "Касса";
         next.PaidAt = Today;
@@ -51,6 +59,8 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db) : IAversSto
         var subscriber = ctx.Subscribers.First(s => s.Id == subscriberId);
         if (subscriber.LastPaymentDate is null || subscriber.LastPaymentDate < Today)
             subscriber.LastPaymentDate = Today;
+        ChangeLog.Add(ctx, DateTimeOffset.UtcNow, ChangeLog.Who(ctx, user.Id), $"Оплата за {next.Month:00}.{next.Year}",
+            ChangeLog.Account(subscriber), changes);
         ctx.SaveChanges();
         return Task.FromResult(new PaymentDto(next.Id, next.Year, next.Month, next.Tariff, next.Amount, next.PaidAt,
             next.Source, true, next.RecordedBy));
@@ -60,6 +70,13 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db) : IAversSto
     {
         using var ctx = db.CreateDbContext();
         var s = ctx.Subscribers.First(x => x.Id == subscriberId);
+        var changes = ChangeLog.Diff(
+            ("Номер договора", s.ContractNumber, request.ContractNumber),
+            ("Заключён", s.ContractDate, request.ContractDate),
+            ("Расторгнут", s.ContractTerminated, request.ContractTerminated),
+            ("С кем заключён", s.ContractHolder, request.ContractHolder),
+            ("Примечание", s.Notes, request.Notes));
+        ChangeLog.Add(ctx, DateTimeOffset.UtcNow, ChangeLog.Who(ctx, _userId), "Договор и примечание", ChangeLog.Account(s), changes);
         s.ContractNumber = request.ContractNumber ?? "";
         s.ContractDate = request.ContractDate;
         s.ContractTerminated = request.ContractTerminated;
@@ -79,7 +96,14 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db) : IAversSto
     public Task SaveHousePassportAsync(int houseId, HousePassportRequest request)
     {
         using var ctx = db.CreateDbContext();
-        var h = ctx.Houses.First(x => x.Id == houseId);
+        var h = ctx.Houses.Include(x => x.Street).First(x => x.Id == houseId);
+        ChangeLog.Add(ctx, DateTimeOffset.UtcNow, ChangeLog.Who(ctx, _userId), "Паспорт дома", h.AddressLine, ChangeLog.Diff(
+            ("Антенны, подъезды", h.Antennas, request.Antennas),
+            ("Воздушные линии", h.AerialCables, request.AerialCables),
+            ("Усилители", h.Amplifiers, request.Amplifiers),
+            ("Блоки питания", h.PowerSupplies, request.PowerSupplies),
+            ("Ключ техэтажа", h.TechFloorKey, request.TechFloorKey),
+            ("Прочее", h.OtherNotes, request.OtherNotes)));
         h.Antennas = request.Antennas ?? "";
         h.AerialCables = request.AerialCables ?? "";
         h.Amplifiers = request.Amplifiers ?? "";
@@ -150,7 +174,13 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db) : IAversSto
     public Task SaveUserAsync(AppUser draft, string password, AppUser admin)
     {
         using var ctx = db.CreateDbContext();
-        var error = UserAccounts.Save(ctx, draft, password, admin.Id);
+        var error = UserAccounts.Save(ctx, draft, password, admin.Id, DateTimeOffset.UtcNow);
         return error is null ? Task.CompletedTask : throw new StoreException(error);
+    }
+
+    public Task<IReadOnlyList<ChangeLogEntry>> LoadChangeLogAsync()
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult<IReadOnlyList<ChangeLogEntry>>(ChangeLog.Latest(ctx));
     }
 }

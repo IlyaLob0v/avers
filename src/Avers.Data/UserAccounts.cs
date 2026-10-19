@@ -17,9 +17,9 @@ public static class UserAccounts
     /// <summary>
     /// Сохраняет сотрудника: <paramref name="draft"/> с Id = 0 — новый. Пустой <paramref name="password"/>
     /// у существующего — пароль не меняется. <paramref name="adminId"/> — кто сохраняет: себя он не отключает
-    /// и роль администратора с себя не снимает. Возвращает текст ошибки или null.
+    /// и роль администратора с себя не снимает. Правка попадает в журнал изменений. Возвращает текст ошибки или null.
     /// </summary>
-    public static string? Save(AversDbContext db, AppUser draft, string password, int adminId)
+    public static string? Save(AversDbContext db, AppUser draft, string password, int adminId, DateTimeOffset at)
     {
         var login = draft.Login.Trim();
         var name = draft.DisplayName.Trim();
@@ -40,6 +40,17 @@ public static class UserAccounts
             return "Сотрудник не найден.";
         if (isNew)
             db.Users.Add(user);
+
+        var changes = ChangeLog.Diff(
+            ("Логин", user.Login, login),
+            ("Фамилия И.О.", user.DisplayName, name),
+            ("Роль", isNew ? null : RoleCatalog.Title(user.Role), RoleCatalog.Title(draft.Role)),
+            ("Отдел", user.Department, draft.Department),
+            ("Может править лицевой счёт", isNew ? null : user.CanEditAccount, draft.CanEditAccount),
+            ("Отключён", isNew ? null : user.IsDisabled, draft.IsDisabled));
+        if (password.Length > 0)
+            changes.Add(isNew ? "Пароль: задан" : "Пароль: изменён");
+        ChangeLog.Add(db, at, ChangeLog.Who(db, adminId), isNew ? "Новый сотрудник" : "Изменение сотрудника", $"Сотрудник {login}", changes);
 
         user.Login = login;
         user.DisplayName = name;

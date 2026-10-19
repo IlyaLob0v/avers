@@ -23,15 +23,23 @@ public static class DesktopEndpoints
         user.Role() is { } role ? TypedResults.Ok(AversSnapshot.Load(db, role)) : TypedResults.Forbid();
 
     private static async Task<Results<NoContent, NotFound, ValidationProblem>> SavePassport(
-        int id, HousePassportRequest request, AversDbContext db, CancellationToken ct)
+        int id, HousePassportRequest request, ClaimsPrincipal user, AversDbContext db, TimeProvider time, CancellationToken ct)
     {
         var fields = new[] { request.Antennas, request.AerialCables, request.Amplifiers, request.PowerSupplies, request.TechFloorKey, request.OtherNotes };
         if (fields.Any(f => f is { Length: > 1000 }))
             return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["passport"] = ["Поле паспорта — не длиннее 1000 символов."] });
 
-        var house = await db.Houses.FirstOrDefaultAsync(h => h.Id == id, ct);
+        var house = await db.Houses.Include(h => h.Street).FirstOrDefaultAsync(h => h.Id == id, ct);
         if (house is null)
             return TypedResults.NotFound();
+
+        var changes = ChangeLog.Diff(
+            ("Антенны, подъезды", house.Antennas, request.Antennas),
+            ("Воздушные линии", house.AerialCables, request.AerialCables),
+            ("Усилители", house.Amplifiers, request.Amplifiers),
+            ("Блоки питания", house.PowerSupplies, request.PowerSupplies),
+            ("Ключ техэтажа", house.TechFloorKey, request.TechFloorKey),
+            ("Прочее", house.OtherNotes, request.OtherNotes));
 
         house.Antennas = request.Antennas?.Trim() ?? "";
         house.AerialCables = request.AerialCables?.Trim() ?? "";
@@ -39,6 +47,7 @@ public static class DesktopEndpoints
         house.PowerSupplies = request.PowerSupplies?.Trim() ?? "";
         house.TechFloorKey = request.TechFloorKey?.Trim() ?? "";
         house.OtherNotes = request.OtherNotes?.Trim() ?? "";
+        ChangeLog.Add(db, time.GetUtcNow(), ChangeLog.Who(db, user.AppUserId()), "Паспорт дома", house.AddressLine, changes);
         await db.SaveChangesAsync(ct);
         return TypedResults.NoContent();
     }

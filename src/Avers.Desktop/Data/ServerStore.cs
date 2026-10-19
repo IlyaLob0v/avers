@@ -99,6 +99,9 @@ public sealed class ServerStore(HttpClient http) : IAversStore
             : http.PutAsJsonAsync($"api/users/{draft.Id}", request, Json));
     }
 
+    public async Task<IReadOnlyList<ChangeLogEntry>> LoadChangeLogAsync() =>
+        await Read<List<ChangeLogEntry>>(() => http.GetAsync("api/change-log"));
+
     private async Task<T> Read<T>(Func<Task<HttpResponseMessage>> request)
     {
         using var response = await Send(request);

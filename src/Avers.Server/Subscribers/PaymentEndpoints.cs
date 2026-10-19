@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Avers.Contracts;
 using Avers.Data;
 using Avers.Domain;
+using Avers.Server.Auth;
 using Avers.Server.Hosting;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -78,10 +79,14 @@ public static class PaymentEndpoints
             return Conflict($"Месяц {target.Month:00}.{target.Year} уже оплачен.");
 
         if (subscriber.LastPaymentDate is null || subscriber.LastPaymentDate < paidAt)
-        {
             subscriber.LastPaymentDate = paidAt;
-            await db.SaveChangesAsync(ct);
-        }
+        ChangeLog.Add(db, time.GetUtcNow(), ChangeLog.Who(db, user.AppUserId()), $"Оплата за {target.Month:00}.{target.Year}",
+            ChangeLog.Account(subscriber), ChangeLog.Diff(
+                ("Сумма", target.Amount, amount),
+                ("Дата оплаты", target.PaidAt, paidAt),
+                ("Источник", target.Source, source),
+                ("Плательщик", target.PayerName, payer)));
+        await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
         target.Amount = amount;

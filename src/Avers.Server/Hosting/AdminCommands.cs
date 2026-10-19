@@ -41,6 +41,8 @@ public static class AdminCommands
         }
 
         user.PasswordHash = Password.Hash(password);
+        ChangeLog.Add(db, services.GetRequiredService<TimeProvider>().GetUtcNow(), "команда avers-password",
+            "Изменение сотрудника", $"Сотрудник {login}", ["Пароль: изменён"]);
         await db.SaveChangesAsync();
         Console.WriteLine($"Пароль пользователя {login} изменён.");
         return 0;
