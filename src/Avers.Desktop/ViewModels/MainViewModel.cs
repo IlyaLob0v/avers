@@ -332,11 +332,11 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void BuildClaim()
     {
-        var row = SelectedDebtor ?? Debtors.FirstOrDefault(d => d.Unpaid >= 3);
+        var row = SelectedDebtor ?? Debtors.FirstOrDefault(d => d.Unpaid >= Billing.ClaimUnpaidMonths);
         if (row is null) { ClaimText = ""; return; }
         ClaimText =
             $"Досудебное уведомление\n\n{row.FullName}, л/с {row.Subscriber.Account}, {row.Address}.\n\n" +
-            $"Задолженность за ТО СКПТ свыше трёх месяцев — {row.DebtText}. Предлагаем погасить долг в течение 30 дней. По истечении срока материалы будут направлены в суд.\n\n" +
+            $"Задолженность за ТО СКПТ за {row.Unpaid} мес. — {row.DebtText}. Предлагаем погасить долг в течение 30 дней. По истечении срока материалы будут направлены в суд.\n\n" +
             $"{_today:dd.MM.yyyy}, антенная служба";
         OnPropertyChanged(nameof(ClaimText));
     }

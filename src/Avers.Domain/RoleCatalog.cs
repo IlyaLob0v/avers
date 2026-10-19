@@ -32,9 +32,6 @@ public static class RoleCatalog
         _ => false
     };
 
-    /// <summary>Видит все заявки и правит любые: начальник АДС или администратор.</summary>
-    public static bool IsTicketSupervisor(UserRole role) => role is UserRole.Administrator or UserRole.AdsHead;
-
     public enum AccessLevel { None, View, Edit, ScreenOnly }
 
     private static readonly Dictionary<(UserRole, AppModule), AccessLevel> Matrix = new()

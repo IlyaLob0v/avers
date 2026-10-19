@@ -107,6 +107,18 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public void Claim_NamesUnpaidMonthsOfSelectedDebtor()
+    {
+        using var app = new DesktopApp("lawyer");
+
+        foreach (var debtor in app.Vm.Debtors.ToList())
+        {
+            app.Vm.SelectedDebtor = debtor;
+            Assert.Contains($"за {debtor.Unpaid} мес.", app.Vm.ClaimText);
+        }
+    }
+
+    [AvaloniaFact]
     public void Report_CountsDoneTicketsOfThePeriodOnly()
     {
         using var app = new DesktopApp();
