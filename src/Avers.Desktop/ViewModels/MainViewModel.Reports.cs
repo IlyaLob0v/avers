@@ -91,6 +91,24 @@ public sealed partial class MainViewModel
             ["ФИО", "Адрес", "Лиц. счёт", "Долг, руб.", "Неоплачено мес.", "Последняя оплата", "Дело-Аверс"],
             Debtors.Select(d => new object?[] { d.FullName, d.Address, d.Subscriber.Account, d.Debt, d.Unpaid, d.LastPay, d.Case })));
 
+    /// <summary>Итоги месяца начальной даты для 1С: отгрузка по тарифам и поступления по источникам.</summary>
+    [RelayCommand]
+    private void ExportForOneC()
+    {
+        var payments = _subscribers.SelectMany(s => s.Payments).ToList();
+        var shipment = AccountingMonth.Shipment(payments, ReportFrom.Year, ReportFrom.Month);
+        var receipts = AccountingMonth.Receipts(payments, ReportFrom.Year, ReportFrom.Month);
+        var rows = shipment.Select(l => new object?[] { "Отгрузка", "Абонентская плата", l.Count, l.Tariff, l.Sum })
+            .Append(["Отгрузка", "Итого", shipment.Sum(l => l.Count), null, shipment.Sum(l => l.Sum)])
+            .Concat(receipts.Select(l => new object?[] { "Поступления", l.Source, l.Count, null, l.Sum }))
+            .Append(["Поступления", "Итого", receipts.Sum(l => l.Count), null, receipts.Sum(l => l.Sum)]);
+
+        Export("для-1с", "итоги месяца для 1С", path => XlsxTable.Write(path,
+            $"Для 1С: отгрузка и поступления за {ReportFrom:MM.yyyy}",
+            ["Раздел", "Услуга / источник", "Количество", "Цена", "Сумма"],
+            rows));
+    }
+
     private void Export(string file, string title, Action<string> write)
     {
         var dir = Path.Combine(Path.GetTempPath(), "Avers");

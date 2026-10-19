@@ -14,6 +14,8 @@
         <RadioButton Content="по зонам обслуживания" IsChecked="{Binding ReportByZone}" />
         <TextBlock Classes="hint" Margin="0,6,0,0" TextWrapping="Wrap" Text="В отчёт идут отмеченные метрики. Отчёт открывается в Excel." />
         <Button Classes="primary" HorizontalAlignment="Left" Margin="0,10,0,0" Content="Сформировать" Command="{Binding ExportReportCommand}" />
+        <TextBlock Classes="hint" Margin="0,12,0,0" TextWrapping="Wrap" Text="Для 1С: отгрузка и поступления за месяц начальной даты." />
+        <Button HorizontalAlignment="Left" Margin="0,6,0,0" Content="Для 1С" Command="{Binding ExportForOneCCommand}" />
       </StackPanel>
     </HeaderedContentControl>
     <DataGrid Grid.Column="1" VerticalAlignment="Top" ItemsSource="{Binding ReportMetrics}" AutoGenerateColumns="False">
