@@ -3,36 +3,74 @@
              xmlns:vm="using:Avers.Desktop.ViewModels"
              x:Class="Avers.Desktop.Views.PprView"
              x:DataType="vm:MainViewModel">
-  <StackPanel Margin="16,0,16,12">
-    <Border Classes="card" Padding="12,6">
-      <StackPanel Orientation="Horizontal">
-        <TextBlock Classes="label" Text="Год" />
-        <TextBox Width="70" Margin="0,0,16,0" Text="2026" />
-        <TextBlock Classes="label" Text="Зона" />
-        <TextBox Width="120" Margin="0,0,16,0" Text="все" />
-        <Button Content="Применить" Command="{Binding NotReadyCommand}" CommandParameter="Применить" />
-        <Button Content="Копировать план на 2027" Command="{Binding NotReadyCommand}" CommandParameter="Копировать план на 2027" />
-      </StackPanel>
+  <UserControl.Styles>
+    <Style Selector="Button.ppr">
+      <Setter Property="Margin" Value="1" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="CornerRadius" Value="2" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.ppr.plan"><Setter Property="Background" Value="{StaticResource InfoBg}" /><Setter Property="Foreground" Value="{StaticResource InfoInk}" /></Style>
+    <Style Selector="Button.ppr.done"><Setter Property="Background" Value="{StaticResource OkBg}" /><Setter Property="Foreground" Value="{StaticResource OkInk}" /></Style>
+    <Style Selector="Button.ppr.late"><Setter Property="Background" Value="{StaticResource DebtBg}" /><Setter Property="Foreground" Value="{StaticResource DebtInk}" /></Style>
+  </UserControl.Styles>
+  <DockPanel Margin="16,0,16,12">
+    <Border DockPanel.Dock="Top" Classes="card" Padding="10,4,0,6">
+      <WrapPanel>
+        <StackPanel Classes="f">
+          <TextBlock Text="Год ППР" />
+          <ComboBox Classes="cell" Width="84" ItemsSource="{Binding PprYears}" SelectedItem="{Binding PprYear}" />
+        </StackPanel>
+        <StackPanel Classes="f">
+          <TextBlock Text="Показать по" />
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <RadioButton Content="обслуживающей организации" IsChecked="{Binding !PprByZone}" />
+            <RadioButton Content="зоне" IsChecked="{Binding PprByZone}" />
+          </StackPanel>
+        </StackPanel>
+        <StackPanel Classes="f">
+          <TextBlock Text="Отбор" />
+          <ComboBox Classes="cell" Width="200" ItemsSource="{Binding PprFilters}" SelectedItem="{Binding PprFilter}" />
+        </StackPanel>
+        <CheckBox VerticalAlignment="Bottom" Margin="0,0,10,2" Content="Только просроченные (долги ППР)" IsChecked="{Binding PprOnlyOverdue}" />
+        <Button VerticalAlignment="Bottom" Margin="0,0,0,2" Content="{Binding PprCopyTitle}" Command="{Binding CopyPprCommand}" IsVisible="{Binding CanEditPpr}" />
+      </WrapPanel>
     </Border>
-    <DataGrid Height="360" ItemsSource="{Binding PprRows}" AutoGenerateColumns="False" IsReadOnly="True">
+
+    <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+      <TextBlock Classes="section" Text="{Binding PprSummary}" />
+      <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,6,0,0">
+        <StackPanel Orientation="Horizontal"><Border Classes="swatch info" /><TextBlock Classes="hint" VerticalAlignment="Center" Text="в плане" /></StackPanel>
+        <StackPanel Orientation="Horizontal"><Border Classes="swatch ok" /><TextBlock Classes="hint" VerticalAlignment="Center" Text="выполнено" /></StackPanel>
+        <StackPanel Orientation="Horizontal"><Border Classes="swatch debt" /><TextBlock Classes="hint" VerticalAlignment="Center" Text="план прошлого месяца не выполнен" /></StackPanel>
+      </StackPanel>
+      <TextBlock Classes="hint" Margin="0,6,0,0" TextWrapping="Wrap" IsVisible="{Binding CanEditPpr}"
+                 Text="Щелчок по месяцу: пусто → в плане → выполнено → пусто. Отметка «выполнено» ставит дату последнего ППР в паспорте дома." />
+    </StackPanel>
+
+    <DataGrid x:Name="Totals" DockPanel.Dock="Bottom" Margin="0,6,0,0" ItemsSource="{Binding PprTotals}" AutoGenerateColumns="False" IsReadOnly="True"
+              HeadersVisibility="None" RowHeight="22">
       <DataGrid.Columns>
-        <DataGridTextColumn Header="Адрес" Binding="{Binding Address}" Width="220" />
-        <DataGridTextColumn Header="Эт." Binding="{Binding Floors}" Width="50" />
-        <DataGridTextColumn Header="П." Binding="{Binding Entrances}" Width="50" />
-        <DataGridTextColumn Header="Янв" Binding="{Binding Jan}" Width="*" MinWidth="56" />
-        <DataGridTextColumn Header="Фев" Binding="{Binding Feb}" Width="*" MinWidth="56" />
-        <DataGridTextColumn Header="Мар" Binding="{Binding Mar}" Width="*" MinWidth="56" />
-        <DataGridTextColumn Header="Апр" Binding="{Binding Apr}" Width="*" MinWidth="56" />
-        <DataGridTextColumn Header="Май" Binding="{Binding May}" Width="*" MinWidth="56" />
-        <DataGridTextColumn Header="Июн" Binding="{Binding Jun}" Width="*" MinWidth="56" />
-        <DataGridTextColumn Header="Июл" Binding="{Binding Jul}" Width="*" MinWidth="56" />
-        <DataGridTextColumn Header="Авг" Binding="{Binding Aug}" Width="*" MinWidth="56" />
-        <DataGridTextColumn Header="Сен" Binding="{Binding Sep}" Width="*" MinWidth="56" />
-        <DataGridTextColumn Header="Окт" Binding="{Binding Oct}" Width="*" MinWidth="56" />
-        <DataGridTextColumn Header="Ноя" Binding="{Binding Nov}" Width="*" MinWidth="56" />
-        <DataGridTextColumn Header="Дек" Binding="{Binding Dec}" Width="*" MinWidth="56" />
+        <DataGridTextColumn Binding="{Binding Title}" Width="364" FontWeight="Medium" />
+        <DataGridTextColumn Binding="{Binding Year}" Width="96" />
       </DataGrid.Columns>
     </DataGrid>
-    <TextBlock Classes="hint" Margin="0,8,0,0" Text="Цвет: план / выполнено / просрочено. Дата последнего ППР — в паспорте дома." />
-  </StackPanel>
+
+    <DataGrid x:Name="Plan" ItemsSource="{Binding PprRows}" AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Адрес" Binding="{Binding Address}" Width="220" />
+        <DataGridTextColumn Header="Эт." Binding="{Binding Floors}" Width="46" />
+        <DataGridTextColumn Header="П." Binding="{Binding Entrances}" Width="46" />
+        <DataGridTextColumn Header="Кв." Binding="{Binding Apartments}" Width="52" />
+        <DataGridTextColumn Header="Выполнено" Binding="{Binding Done}" Width="96" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
 </UserControl>

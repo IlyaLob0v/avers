@@ -154,4 +154,60 @@ public class ShellTests
         Assert.StartsWith("%PDF", File.ReadAllText(opened)[..4]);
         Assert.StartsWith("Открыт PDF", app.Vm.Status);
     }
+
+    [AvaloniaFact]
+    public void Ppr_ClickOnMonthMarksItAndCountsPercent()
+    {
+        using var app = new DesktopApp("engineer");
+        app.Go(AppModule.Ppr);
+        var row = app.Vm.PprRows.First(r => r.Cells[7].Status == PprStatus.Empty);
+        var houseId = row.House.Id;
+
+        app.Vm.MarkPprCommand.Execute(row.Cells[7]);
+        app.Pump();
+        app.Vm.MarkPprCommand.Execute(app.Vm.PprRows.Single(r => r.House.Id == houseId).Cells[7]);
+        app.Pump();
+
+        var marked = app.Vm.PprRows.Single(r => r.House.Id == houseId);
+        Assert.Equal(PprStatus.Done, marked.Cells[7].Status);
+        Assert.Equal(DemoSeeder.WorkDate, marked.House.LastPpr);
+        Assert.StartsWith($"Выполнено на {DemoSeeder.WorkDate:dd.MM.yyyy}:", app.Vm.PprSummary);
+        Assert.Equal(app.Vm.PprRows.Count(r => r.Cells[7].Status != PprStatus.Empty), app.Vm.PprTotals[0].Values[7]);
+    }
+
+    [AvaloniaFact]
+    public void Ppr_OnlyOverdueShowsHousesWithMissedPlan()
+    {
+        using var app = new DesktopApp("engineer");
+        app.Go(AppModule.Ppr);
+
+        app.Vm.PprOnlyOverdue = true;
+
+        Assert.NotEmpty(app.Vm.PprRows);
+        Assert.All(app.Vm.PprRows, r => Assert.True(r.HasOverdue));
+    }
+
+    [AvaloniaFact]
+    public void Ppr_DispatcherSeesPlanButCannotMark()
+    {
+        using var app = new DesktopApp("sokolova");
+        app.Go(AppModule.Ppr);
+        var cell = app.Vm.PprRows.First().Cells[11];
+
+        app.Vm.MarkPprCommand.Execute(cell);
+
+        Assert.False(app.Vm.CanEditPpr);
+        Assert.Equal(cell.Status, app.Vm.PprRows.First().Cells[11].Status);
+    }
+
+    [AvaloniaFact]
+    public void LegalCalculator_ShowsDaysLeft()
+    {
+        using var app = new DesktopApp("lawyer");
+        app.Go(AppModule.Legal);
+
+        app.Vm.LegalStart = new DateTime(2026, 8, 3);
+
+        Assert.Equal("осталось 2 дн. (до 02.09.2026)", app.Vm.LegalRemaining);
+    }
 }
