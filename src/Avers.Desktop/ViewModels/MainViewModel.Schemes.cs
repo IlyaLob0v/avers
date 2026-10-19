@@ -11,19 +11,30 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace Avers.Desktop.ViewModels;
 
-/// <summary>Схемы СКПТ дома: просмотр картинки, добавление схемы и замена файла (главный инженер, администратор).</summary>
+/// <summary>
+/// Схемы СКПТ дома: просмотр картинки; добавление, замена файла, переименование и удаление (главный инженер, администратор).
+/// </summary>
 public sealed partial class MainViewModel
 {
     [ObservableProperty] private HouseScheme? _selectedScheme;
     [ObservableProperty] private Bitmap? _schemeImage;
     [ObservableProperty] private string _schemeNote = "";
+    [ObservableProperty] private string _schemeName = "";
+
+    /// <summary>Схема, которую попросили удалить: удаляется вторым нажатием «Удалить».</summary>
+    private int? _deleteSchemeId;
 
     public bool CanEditSchemes => User is { } u && RoleCatalog.Can(u.Role, AppModule.Scheme, out var level) && level == RoleCatalog.AccessLevel.Edit;
 
     /// <summary>Выбор картинки на диске; в тестах подменяется.</summary>
     public Func<Task<string?>> PickSchemeFile { get; set; } = PickImageAsync;
 
-    partial void OnSelectedSchemeChanged(HouseScheme? value) => _ = ShowSchemeAsync();
+    partial void OnSelectedSchemeChanged(HouseScheme? value)
+    {
+        SchemeName = value?.Name ?? "";
+        _deleteSchemeId = null;
+        _ = ShowSchemeAsync();
+    }
 
     /// <summary>Картинку читаем только на экране схем: файл может весить мегабайты.</summary>
     private async Task ShowSchemeAsync()
@@ -76,6 +87,43 @@ public sealed partial class MainViewModel
             await ReloadAsync();
             SelectedScheme = Schemes.FirstOrDefault(s => s.Id == scheme.Id);
             Status = $"Файл схемы «{scheme.Name}» заменён.";
+        });
+    }
+
+    [RelayCommand]
+    private async Task RenameScheme()
+    {
+        if (SelectedScheme is not { } scheme) return;
+        if (SchemeFiles.CheckName(SchemeName) is { } error)
+        {
+            Status = error;
+            return;
+        }
+        var name = SchemeName.Trim();
+        await Save(async () =>
+        {
+            await _store.RenameSchemeAsync(scheme.Id, name);
+            await ReloadAsync();
+            SelectedScheme = Schemes.FirstOrDefault(s => s.Id == scheme.Id);
+            Status = $"Схема переименована: «{name}».";
+        });
+    }
+
+    [RelayCommand]
+    private async Task DeleteScheme()
+    {
+        if (SelectedScheme is not { } scheme) return;
+        if (_deleteSchemeId != scheme.Id)
+        {
+            _deleteSchemeId = scheme.Id;
+            Status = $"Удалить схему «{scheme.Name}» вместе с картинкой? Нажмите «Удалить» ещё раз.";
+            return;
+        }
+        await Save(async () =>
+        {
+            await _store.DeleteSchemeAsync(scheme.Id);
+            await ReloadAsync();
+            Status = $"Схема «{scheme.Name}» удалена.";
         });
     }
 

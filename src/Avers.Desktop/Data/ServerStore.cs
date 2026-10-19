@@ -81,6 +81,12 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public Task ReplaceSchemeFileAsync(int schemeId, byte[] content) =>
         Write(() => http.PutAsJsonAsync($"api/schemes/{schemeId}/file", new SchemeFileRequest(content), Json));
 
+    public Task RenameSchemeAsync(int schemeId, string name) =>
+        Write(() => http.PutAsJsonAsync($"api/schemes/{schemeId}/name", new RenameSchemeRequest(name), Json));
+
+    public Task DeleteSchemeAsync(int schemeId) =>
+        Write(() => http.DeleteAsync($"api/schemes/{schemeId}"));
+
     public async Task<int> AcceptTicketAsync(CreateTicketRequest request, AppUser user) =>
         (await Read<TicketDto>(() => http.PostAsJsonAsync("api/tickets", request, Json))).Number;
 

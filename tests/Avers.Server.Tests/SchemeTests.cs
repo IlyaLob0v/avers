@@ -61,6 +61,38 @@ public class SchemeTests
     }
 
     [Fact]
+    public async Task RenameAndDelete_AreLogged()
+    {
+        await using var app = new AversApp();
+        var engineer = await app.LoginAsync("engineer");
+        var house = await HouseAsync(engineer, "Ленина", "44");
+        (await engineer.PostAsJsonAsync($"/api/houses/{house.Id}/schemes", new AddSchemeRequest("IMG_2031", Png))).EnsureSuccessStatusCode();
+        var id = (await HouseAsync(engineer, "Ленина", "44")).Schemes.Single(s => s.Name == "IMG_2031").Id;
+
+        (await engineer.PutAsJsonAsync($"/api/schemes/{id}/name", new RenameSchemeRequest("Стояки, подъезд 1"))).EnsureSuccessStatusCode();
+        Assert.Contains((await HouseAsync(engineer, "Ленина", "44")).Schemes, s => s.Name == "Стояки, подъезд 1");
+
+        (await engineer.DeleteAsync($"/api/schemes/{id}")).EnsureSuccessStatusCode();
+        Assert.DoesNotContain((await HouseAsync(engineer, "Ленина", "44")).Schemes, s => s.Id == id);
+        Assert.Equal(HttpStatusCode.NotFound, (await engineer.GetAsync($"/api/schemes/{id}/file")).StatusCode);
+
+        var log = await (await app.LoginAsync("admin")).GetFromJsonAsync<List<ChangeLogEntry>>("/api/change-log");
+        Assert.Equal(["Удалена: Стояки, подъезд 1", "Название: IMG_2031 → Стояки, подъезд 1"], log!.Take(2).Select(e => e.Changes));
+    }
+
+    [Fact]
+    public async Task EmptyName_IsRejected()
+    {
+        await using var app = new AversApp();
+        var engineer = await app.LoginAsync("engineer");
+        var scheme = (await HouseAsync(engineer, "Ленина", "44")).Schemes.Single();
+
+        var response = await engineer.PutAsJsonAsync($"/api/schemes/{scheme.Id}/name", new RenameSchemeRequest(" "));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task NotAnImage_IsRejected()
     {
         await using var app = new AversApp();
@@ -73,14 +105,16 @@ public class SchemeTests
     }
 
     [Fact]
-    public async Task Dispatcher_CannotUpload()
+    public async Task Dispatcher_CannotChangeSchemes()
     {
         await using var app = new AversApp();
         var dispatcher = await app.LoginAsync("orlova");
         var house = await HouseAsync(await app.LoginAsync("novikov"), "Ленина", "44");
 
-        var response = await dispatcher.PostAsJsonAsync($"/api/houses/{house.Id}/schemes", new AddSchemeRequest("Схема", Png));
+        var upload = await dispatcher.PostAsJsonAsync($"/api/houses/{house.Id}/schemes", new AddSchemeRequest("Схема", Png));
+        var delete = await dispatcher.DeleteAsync($"/api/schemes/{house.Schemes.Single().Id}");
 
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, upload.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, delete.StatusCode);
     }
 }

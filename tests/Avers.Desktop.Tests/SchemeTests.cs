@@ -59,6 +59,37 @@ public class SchemeTests
     }
 
     [AvaloniaFact]
+    public async Task Engineer_RenamesAndDeletesScheme()
+    {
+        using var app = new DesktopApp("engineer");
+        app.Go(AppModule.Scheme);
+        var count = app.Vm.Schemes.Count;
+        var file = Path.Combine(Path.GetTempPath(), $"IMG-{Guid.NewGuid():N}.png");
+        await File.WriteAllBytesAsync(file, Png);
+        try
+        {
+            app.Vm.PickSchemeFile = () => Task.FromResult<string?>(file);
+            await app.Vm.AddSchemeCommand.ExecuteAsync(null);
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+
+        app.Vm.SchemeName = "Стояки, подъезд 1";
+        await app.Vm.RenameSchemeCommand.ExecuteAsync(null);
+        Assert.Equal("Стояки, подъезд 1", app.Vm.SelectedScheme?.Name);
+
+        await app.Vm.DeleteSchemeCommand.ExecuteAsync(null);
+        Assert.Equal(count + 1, app.Vm.Schemes.Count);
+        await app.Vm.DeleteSchemeCommand.ExecuteAsync(null);
+        app.Pump();
+
+        Assert.Equal("Схема «Стояки, подъезд 1» удалена.", app.Vm.Status);
+        Assert.Equal(count, app.Vm.Schemes.Count);
+    }
+
+    [AvaloniaFact]
     public void Reader_CannotEditSchemes()
     {
         using var app = new DesktopApp("novikov");

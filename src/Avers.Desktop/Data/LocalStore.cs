@@ -136,6 +136,22 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db) : IAversSto
         return Task.CompletedTask;
     }
 
+    public Task RenameSchemeAsync(int schemeId, string name)
+    {
+        using var ctx = db.CreateDbContext();
+        var scheme = ctx.HouseSchemes.Include(x => x.House).ThenInclude(h => h.Street).First(x => x.Id == schemeId);
+        SchemeFiles.Rename(ctx, scheme, name, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteSchemeAsync(int schemeId)
+    {
+        using var ctx = db.CreateDbContext();
+        var scheme = ctx.HouseSchemes.Include(x => x.House).ThenInclude(h => h.Street).First(x => x.Id == schemeId);
+        SchemeFiles.Delete(ctx, scheme, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
+        return Task.CompletedTask;
+    }
+
     public Task<int> AcceptTicketAsync(CreateTicketRequest request, AppUser user)
     {
         using var ctx = db.CreateDbContext();

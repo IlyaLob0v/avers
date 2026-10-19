@@ -26,9 +26,16 @@
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
-        <StackPanel Orientation="Horizontal" Margin="0,8,0,0" IsVisible="{Binding CanEditSchemes}">
-          <Button Classes="primary" Content="Заменить файл" Command="{Binding ReplaceSchemeFileCommand}" />
-          <Button Content="Добавить схему" Margin="0" Command="{Binding AddSchemeCommand}" />
+        <StackPanel IsVisible="{Binding CanEditSchemes}">
+          <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+            <Button Classes="primary" Content="Заменить файл" Command="{Binding ReplaceSchemeFileCommand}" />
+            <Button Content="Добавить схему" Margin="0" Command="{Binding AddSchemeCommand}" />
+          </StackPanel>
+          <TextBox Margin="0,8,0,0" Text="{Binding SchemeName}" />
+          <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+            <Button Content="Переименовать" Command="{Binding RenameSchemeCommand}" />
+            <Button Content="Удалить" Margin="0" Command="{Binding DeleteSchemeCommand}" />
+          </StackPanel>
         </StackPanel>
       </StackPanel>
     </HeaderedContentControl>

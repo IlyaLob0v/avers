@@ -27,3 +27,6 @@ public sealed record AddSchemeRequest(string Name, byte[] Content);
 
 /// <summary>Новая картинка для существующей схемы.</summary>
 public sealed record SchemeFileRequest(byte[] Content);
+
+/// <summary>Новое название схемы.</summary>
+public sealed record RenameSchemeRequest(string Name);

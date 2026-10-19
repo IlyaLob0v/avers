@@ -21,6 +21,9 @@ public static class SchemeFiles
         : ImageFormat(content) is null ? "Схема должна быть картинкой JPG или PNG."
         : null;
 
+    public static string? CheckName(string? name) =>
+        string.IsNullOrWhiteSpace(name) || name.Trim().Length > 200 ? "Название схемы — от 1 до 200 символов." : null;
+
     public static string ContentType(string format) => format == "PNG" ? "image/png" : "image/jpeg";
 
     public static byte[]? Content(AversDbContext db, int schemeId) =>
@@ -44,6 +47,21 @@ public static class SchemeFiles
         scheme.Format = ImageFormat(content)!;
         scheme.UpdatedAt = today;
         ChangeLog.Add(db, at, who, "Схема СКПТ", scheme.House.AddressLine, [$"Заменён файл: {scheme.Name}"]);
+        db.SaveChanges();
+    }
+
+    public static void Rename(AversDbContext db, HouseScheme scheme, string name, string who, DateTimeOffset at)
+    {
+        ChangeLog.Add(db, at, who, "Схема СКПТ", scheme.House.AddressLine, ChangeLog.Diff(("Название", scheme.Name, name)));
+        scheme.Name = name.Trim();
+        db.SaveChanges();
+    }
+
+    /// <summary>Удаляет схему вместе с картинкой.</summary>
+    public static void Delete(AversDbContext db, HouseScheme scheme, string who, DateTimeOffset at)
+    {
+        db.HouseSchemes.Remove(scheme);
+        ChangeLog.Add(db, at, who, "Схема СКПТ", scheme.House.AddressLine, [$"Удалена: {scheme.Name}"]);
         db.SaveChanges();
     }
 }

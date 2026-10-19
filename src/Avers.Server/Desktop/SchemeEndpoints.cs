@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Avers.Contracts;
 using Avers.Data;
+using Avers.Domain;
 using Avers.Server.Auth;
 using Avers.Server.Hosting;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -18,6 +19,8 @@ public static class SchemeEndpoints
         api.MapGet("/schemes/{id:int}/file", File).RequireAuthorization(Policies.SchemesView);
         api.MapPost("/houses/{id:int}/schemes", Add).RequireAuthorization(Policies.SchemesEdit);
         api.MapPut("/schemes/{id:int}/file", Replace).RequireAuthorization(Policies.SchemesEdit);
+        api.MapPut("/schemes/{id:int}/name", Rename).RequireAuthorization(Policies.SchemesEdit);
+        api.MapDelete("/schemes/{id:int}", Delete).RequireAuthorization(Policies.SchemesEdit);
     }
 
     public static async Task<Results<FileContentHttpResult, NotFound>> File(int id, AversDbContext db, CancellationToken ct)
@@ -32,9 +35,7 @@ public static class SchemeEndpoints
     private static async Task<Results<NoContent, NotFound, ValidationProblem>> Add(
         int id, AddSchemeRequest request, ClaimsPrincipal user, AversDbContext db, TimeProvider time, CancellationToken ct)
     {
-        var error = string.IsNullOrWhiteSpace(request.Name) || request.Name.Trim().Length > 200
-            ? "Название схемы — от 1 до 200 символов."
-            : SchemeFiles.Check(request.Content);
+        var error = SchemeFiles.CheckName(request.Name) ?? SchemeFiles.Check(request.Content);
         if (error is not null)
             return Invalid(error);
 
@@ -52,13 +53,37 @@ public static class SchemeEndpoints
         if (SchemeFiles.Check(request.Content) is { } error)
             return Invalid(error);
 
-        var scheme = await db.HouseSchemes.Include(s => s.House).ThenInclude(h => h.Street).FirstOrDefaultAsync(s => s.Id == id, ct);
-        if (scheme is null)
+        if (await FindAsync(db, id, ct) is not { } scheme)
             return TypedResults.NotFound();
 
         SchemeFiles.Replace(db, scheme, request.Content, time.Today(), ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
         return TypedResults.NoContent();
     }
+
+    private static async Task<Results<NoContent, NotFound, ValidationProblem>> Rename(
+        int id, RenameSchemeRequest request, ClaimsPrincipal user, AversDbContext db, TimeProvider time, CancellationToken ct)
+    {
+        if (SchemeFiles.CheckName(request.Name) is { } error)
+            return Invalid(error);
+        if (await FindAsync(db, id, ct) is not { } scheme)
+            return TypedResults.NotFound();
+
+        SchemeFiles.Rename(db, scheme, request.Name, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
+        return TypedResults.NoContent();
+    }
+
+    private static async Task<Results<NoContent, NotFound>> Delete(
+        int id, ClaimsPrincipal user, AversDbContext db, TimeProvider time, CancellationToken ct)
+    {
+        if (await FindAsync(db, id, ct) is not { } scheme)
+            return TypedResults.NotFound();
+
+        SchemeFiles.Delete(db, scheme, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
+        return TypedResults.NoContent();
+    }
+
+    private static Task<HouseScheme?> FindAsync(AversDbContext db, int id, CancellationToken ct) =>
+        db.HouseSchemes.Include(s => s.House).ThenInclude(h => h.Street).FirstOrDefaultAsync(s => s.Id == id, ct);
 
     private static ValidationProblem Invalid(string error) =>
         TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["scheme"] = [error] });
