@@ -5,44 +5,30 @@
              x:Class="Avers.Desktop.Views.SchemeView"
              x:DataType="vm:MainViewModel">
   <Grid ColumnDefinitions="*,290" Margin="16,0,16,12" VerticalAlignment="Top">
-    <HeaderedContentControl Classes="group" Margin="0,0,10,0" Header="Схема стояков · JPEG / PNG / SVG / XLSX">
+    <HeaderedContentControl Classes="group" Margin="0,0,10,0" Header="Схема стояков · JPG / PNG">
       <StackPanel>
-        <!-- Условная схема-образец: антенна, усилители по подъездам, отводы -->
-        <Border Background="{StaticResource AccentSoft}" Height="280" BorderBrush="{StaticResource Edge}" BorderThickness="1" CornerRadius="3">
-          <Canvas>
-            <TextBlock Canvas.Left="12" Canvas.Top="10" Text="{Binding HouseCaption}" Foreground="{StaticResource AccentDark}" />
-            <Ellipse Canvas.Left="170" Canvas.Top="36" Width="12" Height="12" Fill="{StaticResource Accent}" />
-            <TextBlock Canvas.Left="188" Canvas.Top="34" Text="Антенна" Foreground="{StaticResource Accent}" FontSize="12" />
-            <Rectangle Canvas.Left="40" Canvas.Top="70" Width="70" Height="22" Fill="{StaticResource Panel}" Stroke="{StaticResource Accent}" StrokeThickness="1" />
-            <Rectangle Canvas.Left="120" Canvas.Top="70" Width="70" Height="22" Fill="{StaticResource Panel}" Stroke="{StaticResource Accent}" StrokeThickness="1" />
-            <Rectangle Canvas.Left="200" Canvas.Top="70" Width="70" Height="22" Fill="{StaticResource Panel}" Stroke="{StaticResource Accent}" StrokeThickness="1" />
-            <Rectangle Canvas.Left="280" Canvas.Top="70" Width="70" Height="22" Fill="{StaticResource Panel}" Stroke="{StaticResource Accent}" StrokeThickness="1" />
-            <Rectangle Canvas.Left="50" Canvas.Top="230" Width="50" Height="14" Fill="{StaticResource Accent}" />
-            <Rectangle Canvas.Left="130" Canvas.Top="230" Width="50" Height="14" Fill="{StaticResource Accent}" />
-            <Rectangle Canvas.Left="210" Canvas.Top="230" Width="50" Height="14" Fill="{StaticResource Accent}" />
-            <Rectangle Canvas.Left="290" Canvas.Top="230" Width="50" Height="14" Fill="{StaticResource Accent}" />
-            <TextBlock Canvas.Left="54" Canvas.Top="250" FontSize="12" Text="под. 1" />
-            <TextBlock Canvas.Left="134" Canvas.Top="250" FontSize="12" Text="под. 2" />
-            <TextBlock Canvas.Left="214" Canvas.Top="250" FontSize="12" Text="под. 3" />
-            <TextBlock Canvas.Left="294" Canvas.Top="250" FontSize="12" Text="под. 4" />
-          </Canvas>
+        <Border Background="{StaticResource AccentSoft}" Height="420" BorderBrush="{StaticResource Edge}" BorderThickness="1" CornerRadius="3">
+          <Panel>
+            <Image Source="{Binding SchemeImage}" Stretch="Uniform" Margin="4" />
+            <TextBlock Text="{Binding SchemeNote}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource AccentDark}" />
+          </Panel>
         </Border>
         <TextBlock Classes="hint" Margin="0,8,0,0" TextWrapping="Wrap"
-                   Text="Главный инженер пополняет базу схем. Читатель открывает на экране без сохранения файла." />
+                   Text="Главный инженер пополняет базу схем: картинки JPG или PNG до 10 МБ, название — имя файла. Радиомеханик видит схему на телефоне." />
       </StackPanel>
     </HeaderedContentControl>
     <HeaderedContentControl Grid.Column="1" Classes="group" Margin="0" Header="Файлы в базе">
       <StackPanel>
-        <ListBox Height="180" ItemsSource="{Binding Schemes}">
+        <ListBox Height="180" ItemsSource="{Binding Schemes}" SelectedItem="{Binding SelectedScheme}">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="d:HouseScheme">
               <TextBlock Text="{Binding Name}" />
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
-        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-          <Button Classes="primary" Content="Заменить файл" Command="{Binding NotReadyCommand}" CommandParameter="Заменить файл" />
-          <Button Content="Добавить схему" Margin="0" Command="{Binding NotReadyCommand}" CommandParameter="Добавить схему" />
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0" IsVisible="{Binding CanEditSchemes}">
+          <Button Classes="primary" Content="Заменить файл" Command="{Binding ReplaceSchemeFileCommand}" />
+          <Button Content="Добавить схему" Margin="0" Command="{Binding AddSchemeCommand}" />
         </StackPanel>
       </StackPanel>
     </HeaderedContentControl>

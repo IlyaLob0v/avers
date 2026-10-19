@@ -201,6 +201,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanEditCard));
         OnPropertyChanged(nameof(CanEditSettings));
         OnPropertyChanged(nameof(CanEditPpr));
+        OnPropertyChanged(nameof(CanEditSchemes));
         NotifyTicketPanel();
         BindTicket();
         RebuildNavigation();
@@ -220,6 +221,8 @@ public sealed partial class MainViewModel : ObservableObject
             _ = LoadEmployeesAsync();
         if (value == AppModule.ChangeLog)
             _ = LoadChangeLogAsync();
+        if (value == AppModule.Scheme)
+            _ = ShowSchemeAsync();
     }
 
     partial void OnSelectedStreetChanged(Street? value)
@@ -299,6 +302,7 @@ public sealed partial class MainViewModel : ObservableObject
                 foreach (var t in _intercomTickets.Where(x => x.HouseId == SelectedHouse.Id))
                     IntercomTickets.Add(t);
             }
+            SelectedScheme = Schemes.FirstOrDefault();
         }
         Intercom = SelectedHouse?.Intercoms.FirstOrDefault();
 

@@ -21,3 +21,9 @@ public sealed record HousePassportRequest(
     string? PowerSupplies,
     string? TechFloorKey,
     string? OtherNotes);
+
+/// <summary>Новая схема СКПТ дома: название и картинка JPG или PNG.</summary>
+public sealed record AddSchemeRequest(string Name, byte[] Content);
+
+/// <summary>Новая картинка для существующей схемы.</summary>
+public sealed record SchemeFileRequest(byte[] Content);

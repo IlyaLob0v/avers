@@ -114,6 +114,28 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db) : IAversSto
         return Task.CompletedTask;
     }
 
+    public Task<byte[]?> LoadSchemeFileAsync(int schemeId)
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(SchemeFiles.Content(ctx, schemeId));
+    }
+
+    public Task AddSchemeAsync(int houseId, AddSchemeRequest request)
+    {
+        using var ctx = db.CreateDbContext();
+        var house = ctx.Houses.Include(x => x.Street).First(x => x.Id == houseId);
+        SchemeFiles.Add(ctx, house, request.Name, request.Content, Today, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
+        return Task.CompletedTask;
+    }
+
+    public Task ReplaceSchemeFileAsync(int schemeId, byte[] content)
+    {
+        using var ctx = db.CreateDbContext();
+        var scheme = ctx.HouseSchemes.Include(x => x.House).ThenInclude(h => h.Street).First(x => x.Id == schemeId);
+        SchemeFiles.Replace(ctx, scheme, content, Today, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
+        return Task.CompletedTask;
+    }
+
     public Task<int> AcceptTicketAsync(CreateTicketRequest request, AppUser user)
     {
         using var ctx = db.CreateDbContext();

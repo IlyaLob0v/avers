@@ -2,6 +2,7 @@ using Avers.Contracts;
 using Avers.Data;
 using Avers.Domain;
 using Avers.Server.Auth;
+using Avers.Server.Desktop;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,6 +22,7 @@ public static class MobileEndpoints
 
         api.MapGet("/houses", Search);
         api.MapGet("/houses/{id:int}", Get);
+        api.MapGet("/schemes/{id:int}", SchemeEndpoints.File);
     }
 
     private static async Task<Ok<List<HouseDto>>> Search(
@@ -47,12 +49,14 @@ public static class MobileEndpoints
         if (h is null)
             return TypedResults.NotFound();
 
+        var schemeIds = h.Schemes.Select(s => s.Id).ToList();
+        var withImage = await db.HouseSchemeFiles.Where(f => schemeIds.Contains(f.HouseSchemeId)).Select(f => f.HouseSchemeId).ToListAsync(ct);
         var org = h.Organization ?? new Organization();
         return TypedResults.Ok(new MobileHouseDto(
             h.Id, h.AddressLine, h.Floors, h.Entrances, h.Apartments,
             org.Name, org.Branch, org.Address, org.Phones, org.HeadName, org.HeadPhone, org.EngineerName, org.EngineerPhone,
             h.Antennas, h.AerialCables, h.Amplifiers, h.PowerSupplies, h.TechFloorKey, h.OtherNotes,
             h.OpenFault, h.OpenFaultReason, h.OpenFaultPlannedFix,
-            h.Schemes.OrderBy(s => s.Name).Select(s => new MobileSchemeDto(s.Name, s.Format, s.UpdatedAt)).ToList()));
+            h.Schemes.OrderBy(s => s.Name).Select(s => new MobileSchemeDto(s.Id, s.Name, s.Format, s.UpdatedAt, withImage.Contains(s.Id))).ToList()));
     }
 }

@@ -66,6 +66,21 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public Task SaveHousePassportAsync(int houseId, HousePassportRequest request) =>
         Write(() => http.PutAsJsonAsync($"api/houses/{houseId}/passport", request, Json));
 
+    public async Task<byte[]?> LoadSchemeFileAsync(int schemeId)
+    {
+        using var response = await Send(() => http.GetAsync($"api/schemes/{schemeId}/file"));
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return null;
+        await EnsureSuccess(response);
+        return await response.Content.ReadAsByteArrayAsync();
+    }
+
+    public Task AddSchemeAsync(int houseId, AddSchemeRequest request) =>
+        Write(() => http.PostAsJsonAsync($"api/houses/{houseId}/schemes", request, Json));
+
+    public Task ReplaceSchemeFileAsync(int schemeId, byte[] content) =>
+        Write(() => http.PutAsJsonAsync($"api/schemes/{schemeId}/file", new SchemeFileRequest(content), Json));
+
     public async Task<int> AcceptTicketAsync(CreateTicketRequest request, AppUser user) =>
         (await Read<TicketDto>(() => http.PostAsJsonAsync("api/tickets", request, Json))).Number;
 

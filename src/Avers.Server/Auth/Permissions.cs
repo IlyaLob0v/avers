@@ -35,6 +35,8 @@ public static class Policies
     public const string SettingsEdit = "settings.edit";
     public const string HousesView = "houses.view";
     public const string HousesEdit = "houses.edit";
+    public const string SchemesView = "schemes.view";
+    public const string SchemesEdit = "schemes.edit";
     public const string UsersManage = "users.manage";
 
     public static void Add(AuthorizationOptions options)
@@ -54,6 +56,10 @@ public static class Policies
             .AddRequirements(new ModuleAccessRequirement(AppModule.Anten, AccessLevel.View)));
         options.AddPolicy(HousesEdit, p => p.RequireAuthenticatedUser()
             .AddRequirements(new ModuleAccessRequirement(AppModule.Anten, AccessLevel.Edit)));
+        options.AddPolicy(SchemesView, p => p.RequireAuthenticatedUser()
+            .AddRequirements(new ModuleAccessRequirement(AppModule.Scheme, AccessLevel.View)));
+        options.AddPolicy(SchemesEdit, p => p.RequireAuthenticatedUser()
+            .AddRequirements(new ModuleAccessRequirement(AppModule.Scheme, AccessLevel.Edit)));
         // Общие настройки (порог жёлтой подсветки) — администратор и начальник АДС.
         options.AddPolicy(SettingsEdit, p => p.RequireAuthenticatedUser()
             .RequireRole(nameof(UserRole.Administrator), nameof(UserRole.AdsHead)));

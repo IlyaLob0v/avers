@@ -30,6 +30,11 @@
   dd { margin: 0; white-space: pre-wrap; }
   a { color: var(--blue); }
   .back { background: none; border: 0; color: var(--blue); font: inherit; padding: 8px 0; }
+  .scheme { display: block; width: 100%; text-align: left; margin-top: 6px; padding: 10px; font: inherit; background: #fff; border: 1px solid var(--blue); border-radius: 3px; color: var(--blue); }
+  #viewer { position: fixed; inset: 0; background: #000; overflow: auto; z-index: 10; }
+  #viewer canvas { display: block; width: 100%; }
+  #viewer.full canvas { width: auto; }
+  #viewer button { position: fixed; top: 8px; right: 8px; padding: 8px 14px; font: inherit; background: #fff; border: 0; border-radius: 3px; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -59,6 +64,7 @@
     <div id="house-body"></div>
   </div>
 </main>
+<div id="viewer" hidden><canvas id="viewer-canvas"></canvas><button id="viewer-close">Закрыть</button></div>
 <script>
 const $ = id => document.getElementById(id);
 let token = sessionStorage.getItem("avers-token");
@@ -79,6 +85,8 @@ async function api(path) {
 function logout() {
   token = null;
   sessionStorage.removeItem("avers-token");
+  sessionStorage.removeItem("avers-login");
+  $("viewer").hidden = true;
   show("login");
 }
 
@@ -93,6 +101,7 @@ $("login").onsubmit = async e => {
   if (!r.ok) { $("login-error").textContent = r.status === 429 ? "Слишком много попыток, подождите минуту." : "Неверный логин или пароль."; return; }
   token = (await r.json()).accessToken;
   sessionStorage.setItem("avers-token", token);
+  sessionStorage.setItem("avers-login", $("user").value.trim());
   $("pass").value = "";
   show("search");
   $("street").focus();
@@ -175,12 +184,53 @@ async function openHouse(id) {
       ["Антенны", h.antennas], ["Воздушные кабельные линии", h.aerialCables], ["Усилители", h.amplifiers],
       ["Блоки питания", h.powerSupplies], ["Ключ от техэтажа", h.techFloorKey], ["Прочее", h.otherNotes]
     ]));
-    body.append(section("Схемы СКПТ", h.schemes.map(s =>
-      [s.name, `${s.format}, обновлена ${new Date(s.updatedAt).toLocaleDateString("ru-RU")}`])));
+    const schemes = section("Схемы СКПТ", h.schemes.filter(s => !s.hasImage).map(s =>
+      [s.name, `${s.format}, обновлена ${new Date(s.updatedAt).toLocaleDateString("ru-RU")}, файла нет в базе`]));
+    for (const s of h.schemes.filter(s => s.hasImage)) {
+      const b = document.createElement("button");
+      b.className = "scheme";
+      b.textContent = `${s.name} · обновлена ${new Date(s.updatedAt).toLocaleDateString("ru-RU")}`;
+      b.onclick = () => openScheme(s.id, b);
+      schemes.querySelector("h2").after(b);
+    }
+    if (h.schemes.some(s => s.hasImage)) schemes.querySelector(".muted")?.remove();
+    body.append(schemes);
   } catch (err) {
     body.append(Object.assign(document.createElement("div"), { className: "error", textContent: err.message }));
   }
 }
+
+// REQ-MECH-02: схему не скачать — картинка рисуется на холсте с водяным знаком (логин и дата), прямой ссылки нет.
+// Нажатие переключает «по ширине экрана» и «в натуральную величину».
+async function openScheme(id, button) {
+  const text = button.textContent;
+  button.textContent = "Загрузка…";
+  try {
+    const r = await fetch(`/api/mobile/schemes/${id}`, { headers: { Authorization: "Bearer " + token } });
+    if (r.status === 401) { logout(); return; }
+    if (!r.ok) throw new Error();
+    const image = await createImageBitmap(await r.blob());
+    const canvas = $("viewer-canvas"), g = canvas.getContext("2d");
+    canvas.width = image.width;
+    canvas.height = image.height;
+    g.drawImage(image, 0, 0);
+    const size = Math.max(16, Math.round(image.width / 25));
+    g.font = `${size}px sans-serif`;
+    g.fillStyle = "rgba(200, 0, 0, 0.25)";
+    g.rotate(-Math.PI / 6);
+    const mark = `Аверс · ${sessionStorage.getItem("avers-login") ?? ""} · ${new Date().toLocaleDateString("ru-RU")}`;
+    for (let y = 0; y < image.height * 1.6; y += size * 5)
+      for (let x = -image.width; x < image.width * 1.2; x += g.measureText(mark).width + size * 2)
+        g.fillText(mark, x, y);
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    $("viewer").className = "";
+    $("viewer").hidden = false;
+  } catch { alert("Не удалось открыть схему."); }
+  button.textContent = text;
+}
+
+$("viewer-canvas").onclick = () => $("viewer").classList.toggle("full");
+$("viewer-close").onclick = () => $("viewer").hidden = true;
 
 show(token ? "search" : "login");
 </script>
