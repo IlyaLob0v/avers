@@ -183,4 +183,15 @@ public class ShellTests
         Assert.False(app.Vm.CanEditPpr);
         Assert.Equal(cell.Status, app.Vm.PprRows.First().Cells[11].Status);
     }
+
+    [AvaloniaFact]
+    public void LegalCalculator_ShowsDaysLeft()
+    {
+        using var app = new DesktopApp("lawyer");
+        app.Go(AppModule.Legal);
+
+        app.Vm.LegalStart = new DateTime(2026, 8, 3);
+
+        Assert.Equal("осталось 2 дн. (до 02.09.2026)", app.Vm.LegalRemaining);
+    }
 }
