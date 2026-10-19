@@ -5,7 +5,7 @@ public sealed record LegalStage(string Title, int Days = 0, int Months = 0, int 
 
 /// <summary>
 /// Калькулятор обратного отсчёта для юристов. Срок считается по ГК РФ (ст. 191–193): со следующего дня после события;
-/// окончание в субботу или воскресенье переносится на понедельник. Праздничные дни не учитываются.
+/// окончание в нерабочий день переносится на ближайший рабочий день по <see cref="WorkCalendar"/>.
 /// </summary>
 public static class LegalDeadline
 {
@@ -20,22 +20,22 @@ public static class LegalDeadline
     public static DateOnly Due(LegalStage stage, DateOnly start)
     {
         var due = start.AddDays(stage.Days).AddMonths(stage.Months).AddYears(stage.Years);
-        return due.DayOfWeek switch
-        {
-            DayOfWeek.Saturday => due.AddDays(2),
-            DayOfWeek.Sunday => due.AddDays(1),
-            _ => due
-        };
+        while (!WorkCalendar.IsWorkingDay(due))
+            due = due.AddDays(1);
+        return due;
     }
 
     public static string Remaining(DateOnly due, DateOnly today)
     {
         var days = due.DayNumber - today.DayNumber;
-        return days switch
+        var text = days switch
         {
             > 0 => $"осталось {days} дн. (до {due:dd.MM.yyyy})",
             0 => $"последний день — сегодня, {due:dd.MM.yyyy}",
             _ => $"срок истёк {due:dd.MM.yyyy}, {-days} дн. назад"
         };
+        return WorkCalendar.HasTransfers(due.Year)
+            ? text
+            : $"{text}; переносы выходных на {due.Year} г. не внесены, проверьте по календарю";
     }
 }
