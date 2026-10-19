@@ -66,5 +66,6 @@ public enum AppModule
     Phonebook,
     Domofo,
     Reader,
-    Access
+    Access,
+    ChangeLog
 }

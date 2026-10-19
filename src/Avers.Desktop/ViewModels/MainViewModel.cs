@@ -97,6 +97,7 @@ public sealed partial class MainViewModel : ObservableObject
         AppModule.Domofo => SelectedHouse is null ? "Домофон" : $"Домофон · {SelectedHouse.AddressLine}",
         AppModule.Reader => "Просмотр дома — без правки",
         AppModule.Access => "Права доступа",
+        AppModule.ChangeLog => "Журнал изменений",
         _ => "Аверс"
     };
 
@@ -217,6 +218,8 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(IsOnDesktop));
         if (value == AppModule.Access)
             _ = LoadEmployeesAsync();
+        if (value == AppModule.ChangeLog)
+            _ = LoadChangeLogAsync();
     }
 
     partial void OnSelectedStreetChanged(Street? value)

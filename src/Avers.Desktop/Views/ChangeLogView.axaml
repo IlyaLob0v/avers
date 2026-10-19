@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Avers.Desktop.ViewModels"
+             x:Class="Avers.Desktop.Views.ChangeLogView"
+             x:DataType="vm:MainViewModel">
+  <DockPanel Margin="16,0,16,12">
+    <TextBlock DockPanel.Dock="Top" Classes="hint" Margin="0,0,0,8" Text="{Binding ChangeLogHint}" />
+    <DataGrid ItemsSource="{Binding ChangeLogRows}" AutoGenerateColumns="False" IsReadOnly="True" RowHeight="NaN">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Когда" Binding="{Binding At}" Width="130" />
+        <DataGridTextColumn Header="Сотрудник" Binding="{Binding UserName}" Width="170" />
+        <DataGridTextColumn Header="Действие" Binding="{Binding Action}" Width="160" />
+        <DataGridTextColumn Header="Объект" Binding="{Binding Target}" Width="260" />
+        <DataGridTemplateColumn Header="Было → стало" Width="*">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="vm:ChangeLogRow">
+              <TextBlock Text="{Binding Changes}" TextWrapping="Wrap" Margin="4,2" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

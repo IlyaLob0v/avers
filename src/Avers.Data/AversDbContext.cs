@@ -23,6 +23,7 @@ public sealed class AversDbContext : DbContext
     public DbSet<IntercomTicket> IntercomTickets => Set<IntercomTicket>();
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<AppSetting> Settings => Set<AppSetting>();
+    public DbSet<ChangeLogEntry> ChangeLog => Set<ChangeLogEntry>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -124,6 +125,13 @@ public sealed class AversDbContext : DbContext
             e.HasKey(x => x.Key);
             e.Property(x => x.Key).HasMaxLength(80);
             e.Property(x => x.Value).HasMaxLength(400).IsRequired();
+        });
+
+        model.Entity<ChangeLogEntry>(e =>
+        {
+            e.Property(x => x.UserName).HasMaxLength(200);
+            e.Property(x => x.Action).HasMaxLength(100);
+            e.Property(x => x.Target).HasMaxLength(400);
         });
 
         model.Entity<Mechanic>().Property(x => x.FullName).HasMaxLength(120).IsRequired();
