@@ -69,6 +69,15 @@ jobs:
           name: Avers-linux-x64
           path: out/
           retention-days: 30
+      - name: Publish server
+        run: |
+          dotnet publish src/Avers.Server/Avers.Server.csproj -c Release -r linux-x64 --self-contained -o out-server/avers-server
+          cp deploy/server/* out-server/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Avers-server-linux-x64
+          path: out-server/
+          retention-days: 30
 
   migration:
     runs-on: ubuntu-latest
@@ -92,7 +101,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Shellcheck
-        run: shellcheck db/stand/stand.sh db/migration/reconcile/test/run-tests.sh deploy/xrdp/install.sh deploy/xrdp/startwm.sh
+        run: shellcheck db/stand/stand.sh db/migration/reconcile/test/run-tests.sh deploy/xrdp/install.sh deploy/xrdp/startwm.sh deploy/server/install.sh deploy/server/avers-password deploy/server/avers-backup
       - name: Docker Compose config
         run: docker compose -f db/docker-compose.yml --profile legacy config -q
       - name: Reconcile tests
