@@ -105,10 +105,11 @@ public sealed partial class MainViewModel : ObservableObject
         ? $"Неустранённая неисправность СКПТ: {h.OpenFault}. Причина: {h.OpenFaultReason}. План устранения: {h.OpenFaultPlannedFix:dd.MM.yyyy}."
         : "";
     public bool HasFault => !string.IsNullOrWhiteSpace(FaultBanner);
-    public string ChargedText => Money(SelectedSubscriber is null ? 0 : Billing.Charged(SelectedSubscriber.Payments));
-    public string PaidText => Money(SelectedSubscriber is null ? 0 : Billing.Paid(SelectedSubscriber.Payments));
-    public string DebtText => Money(SelectedSubscriber is null ? 0 : Billing.Debt(SelectedSubscriber.Payments));
-    public bool HasDebt => SelectedSubscriber is not null && Billing.Debt(SelectedSubscriber.Payments) > 0;
+    public string ChargedText => Money(SelectedSubscriber is null ? 0 : Billing.Charged(DuePayments));
+    public string PaidText => Money(SelectedSubscriber is null ? 0 : Billing.Paid(DuePayments));
+    public string DebtText => Money(SelectedSubscriber is null ? 0 : Billing.Debt(DuePayments));
+    public bool HasDebt => SelectedSubscriber is not null && Billing.Debt(DuePayments) > 0;
+    private List<YearPayment> DuePayments => Billing.Due(SelectedSubscriber?.Payments ?? [], _today);
     public string ToPayText => SelectedSubscriber?.Payments.FirstOrDefault(p => p.Year == _today.Year && p.Month == _today.Month) is { } p
         ? Money(p.Tariff)
         : "";
@@ -258,8 +259,9 @@ public sealed partial class MainViewModel : ObservableObject
         Debtors.Clear();
         foreach (var s in _subscribers)
         {
-            var debt = Billing.Debt(s.Payments);
-            var unpaid = Billing.UnpaidMonths(s.Payments);
+            var due = Billing.Due(s.Payments, _today);
+            var debt = Billing.Debt(due);
+            var unpaid = Billing.UnpaidMonths(due);
             var old = Billing.IsOldPayer(s.LastPaymentDate, _today);
             if (debt >= Billing.DebtHighlight || old)
                 Debtors.Add(new DebtorRow(s, debt, unpaid, old));

@@ -63,6 +63,17 @@ public class BillingTests
     }
 
     [Fact]
+    public void Due_SkipsMonthsAfterToday()
+    {
+        // Начисления на весь год заводятся заранее: сентябрь–декабрь на 31.08 ещё не долг.
+        var payments = Enumerable.Range(1, 12).Select(m => Month(m, 95m, m <= 7 ? 95m : null)).ToList();
+        var due = Billing.Due(payments, new DateOnly(2026, 8, 31));
+
+        Assert.Equal(95m, Billing.Debt(due));
+        Assert.Equal(1, Billing.UnpaidMonths(due));
+    }
+
+    [Fact]
     public void IsOldPayer_TrueWhenNeverPaid()
     {
         Assert.True(Billing.IsOldPayer(null, new DateOnly(2026, 8, 31)));
