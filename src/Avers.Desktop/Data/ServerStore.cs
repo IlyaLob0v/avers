@@ -78,6 +78,27 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public async Task<int> CopyPprAsync(int year) =>
         (await Read<PprCopyResult>(() => http.PostAsync($"api/ppr/{year}/copy", null))).Copied;
 
+    public async Task<IReadOnlyList<AppUser>> LoadUsersAsync() =>
+        (await Read<List<UserDto>>(() => http.GetAsync("api/users"))).Select(u => new AppUser
+        {
+            Id = u.Id,
+            Login = u.Login,
+            DisplayName = u.DisplayName,
+            Role = Enum.Parse<UserRole>(u.Role),
+            Department = u.Department,
+            CanEditAccount = u.CanEditAccount,
+            IsDisabled = u.IsDisabled
+        }).ToList();
+
+    public Task SaveUserAsync(AppUser draft, string password, AppUser admin)
+    {
+        var request = new SaveUserRequest(draft.Login, draft.DisplayName, draft.Role.ToString(), draft.Department,
+            draft.CanEditAccount, draft.IsDisabled, password);
+        return Write(() => draft.Id == 0
+            ? http.PostAsJsonAsync("api/users", request, Json)
+            : http.PutAsJsonAsync($"api/users/{draft.Id}", request, Json));
+    }
+
     private async Task<T> Read<T>(Func<Task<HttpResponseMessage>> request)
     {
         using var response = await Send(request);

@@ -215,6 +215,8 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ModuleTitle));
         OnPropertyChanged(nameof(ModuleLegacyName));
         OnPropertyChanged(nameof(IsOnDesktop));
+        if (value == AppModule.Access)
+            _ = LoadEmployeesAsync();
     }
 
     partial void OnSelectedStreetChanged(Street? value)
@@ -394,7 +396,7 @@ public sealed partial class MainViewModel : ObservableObject
             AppModule.Claim => AppModule.Legal,
             _ => page
         };
-        if (page is not AppModule.Desktop && !RoleCatalog.Can(User.Role, check, out _))
+        if (page is not AppModule.Desktop && User.Role != UserRole.Administrator && !RoleCatalog.Can(User.Role, check, out _))
             Status = $"Макет окна открыт. Для роли «{RoleCatalog.Title(User.Role)}» это место в работе будет с ограниченными правами.";
         else
             Status = WindowTitle;

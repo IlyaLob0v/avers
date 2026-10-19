@@ -43,6 +43,12 @@ public interface IAversStore
 
     /// <summary>Переносит план ППР года на следующий и возвращает число работ.</summary>
     Task<int> CopyPprAsync(int year);
+
+    /// <summary>Все сотрудники, отключённые в конце. Только для администратора.</summary>
+    Task<IReadOnlyList<AppUser>> LoadUsersAsync();
+
+    /// <summary>Сохраняет сотрудника (Id = 0 — новый); пустой пароль у существующего не меняется.</summary>
+    Task SaveUserAsync(AppUser draft, string password, AppUser admin);
 }
 
 public sealed class StoreException(string message) : Exception(message);

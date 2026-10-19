@@ -9,7 +9,7 @@ namespace Avers.Server.Hosting;
 /// </summary>
 public static class AdminCommands
 {
-    public const int MinPasswordLength = 6;
+    public const int MinPasswordLength = UserAccounts.MinPasswordLength;
 
     public static bool TryRun(string[] args, out Func<IServiceProvider, Task<int>> command)
     {
