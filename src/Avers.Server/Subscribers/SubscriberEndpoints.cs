@@ -19,6 +19,9 @@ public static class SubscriberEndpoints
         api.MapGet("/streets", Streets);
         api.MapGet("/streets/{streetId:int}/houses", Houses);
         api.MapGet("/subscribers", Search);
+        api.MapGet("/houses/{houseId:int}/subscribers", (int houseId, AversDbContext db) => TypedResults.Ok(HouseSubscribers.Load(db, houseId)));
+        api.MapGet("/debts", (AversDbContext db, TimeProvider time) => TypedResults.Ok(Debts.Load(db, time.Today())));
+        api.MapGet("/reports/accounting", Accounting);
         api.MapGet("/subscribers/{id:int}", Card);
         api.MapGet("/subscribers/{id:int}/payments", Payments);
         api.MapPost("/subscribers/{id:int}/payments", PaymentEndpoints.Record).RequireAuthorization(Policies.PaymentsCreate);
@@ -41,46 +44,16 @@ public static class SubscriberEndpoints
 
     /// <summary>
     /// Поиск как на «Рабочем столе» оболочки: <c>mode</c> = address (street, house, apartment),
-    /// account, innerCode, pzhreu, surname (от 4 букв). Не больше <see cref="MaxResults"/> строк.
+    /// account, innerCode, pzhreu, surname (короче 4 букв — фамилия целиком). Не больше <see cref="MaxResults"/> строк.
     /// </summary>
     private static async Task<Results<Ok<List<SubscriberListItem>>, ValidationProblem>> Search(
         AversDbContext db, TimeProvider time, CancellationToken ct,
         SearchMode mode = SearchMode.Address, string? q = null,
         string? street = null, string? house = null, string? apartment = null)
     {
-        var text = (q ?? "").Trim().ToLower();
-        var query = db.Subscribers.AsNoTracking();
-
-        switch (mode)
-        {
-            case SearchMode.Address:
-                var streetName = (street ?? "").Trim().ToLower();
-                var houseNumber = (house ?? "").Trim().ToLower();
-                if (streetName.Length == 0 || houseNumber.Length == 0)
-                    return Invalid("street", "Для поиска по адресу нужны улица и дом.");
-                query = query.Where(s => s.House.Street.Name.ToLower().StartsWith(streetName) && s.House.Number.ToLower() == houseNumber);
-                if (!string.IsNullOrWhiteSpace(apartment))
-                {
-                    var apt = apartment.Trim();
-                    query = query.Where(s => s.Apartment == apt);
-                }
-                break;
-            case SearchMode.Surname:
-                if (text.Length < 4)
-                    return Invalid("q", "Фамилию ищем от 4 букв.");
-                query = query.Where(s => s.LastName.ToLower().StartsWith(text));
-                break;
-            default:
-                if (text.Length == 0)
-                    return Invalid("q", "Введите, что искать.");
-                query = mode switch
-                {
-                    SearchMode.Account => query.Where(s => s.Account.ToLower().Contains(text)),
-                    SearchMode.InnerCode => query.Where(s => s.InnerCode.ToLower().Contains(text)),
-                    _ => query.Where(s => s.PzhreuIndex.ToLower().Contains(text) || s.PzhreuAccount.ToLower().Contains(text))
-                };
-                break;
-        }
+        var (query, field, error) = SubscriberSearch.Where(db.Subscribers.AsNoTracking(), mode, q, street, house, apartment);
+        if (query is null)
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { [field] = [error] });
 
         var today = time.Today();
         var dueMonth = today.Year * 12 + today.Month;
@@ -103,10 +76,12 @@ public static class SubscriberEndpoints
         return TypedResults.Ok(found.Select(x => new SubscriberListItem(
             x.Subscriber.Id, x.Subscriber.Account, x.Subscriber.InnerCode, x.Subscriber.FullName, x.Subscriber.HouseId,
             x.House.AddressLine, x.Subscriber.Apartment, Math.Max(0, x.Charged - x.Paid))).ToList());
-
-        static ValidationProblem Invalid(string field, string message) =>
-            TypedResults.ValidationProblem(new Dictionary<string, string[]> { [field] = [message] });
     }
+
+    private static Results<Ok<AccountingReport>, ValidationProblem> Accounting(AversDbContext db, int year, int month) =>
+        month is >= 1 and <= 12 && year is >= 2000 and <= 2100
+            ? TypedResults.Ok(AccountingReport.Load(db, year, month))
+            : TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["month"] = ["Неверный месяц."] });
 
     private static async Task<Results<Ok<SubscriberCard>, NotFound>> Card(
         int id, AversDbContext db, TimeProvider time, CancellationToken ct)

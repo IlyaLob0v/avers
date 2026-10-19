@@ -1,9 +1,12 @@
+using Avers.Data;
 using Avers.Desktop.Data;
 using Avers.Desktop.ViewModels;
 using Avers.Domain;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Avers.Desktop.Tests;
 
@@ -23,9 +26,42 @@ public sealed class ServerModeTests : IAsyncDisposable
         var admin = await SignIn("admin");
 
         Assert.StartsWith("Внесена оплата", cashier.Status);
-        var seen = admin.Debtors.Select(d => d.Subscriber).Append(admin.SelectedSubscriber!).First(s => s.Id == subscriber.Id);
+        var seen = admin.SelectedSubscriber!;
+        Assert.Equal(subscriber.Id, seen.Id);
         Assert.Equal(paidBefore + 1, seen.Payments.Count(p => p.Amount is not null));
         Assert.Contains(seen.Payments, p => p.RecordedBy == "Орлов С.А.");
+    }
+
+    [Fact]
+    public async Task Find_LoadsHouseOfFoundSubscriber()
+    {
+        var vm = await SignIn("orlov");
+        var houseId = vm.SelectedHouse!.Id;
+        var other = _server.WithDb(db => db.Subscribers.Include(s => s.House).First(s => s.HouseId != houseId));
+
+        vm.SearchMode = SearchMode.Account;
+        vm.FindQuery = other.Account;
+        await vm.FindCommand.ExecuteAsync(null);
+
+        Assert.Equal(other.Id, vm.SelectedSubscriber!.Id);
+        Assert.Equal(other.HouseId, vm.SelectedHouse!.Id);
+        Assert.Equal(other.House.StreetId, vm.SelectedStreet!.Id);
+        Assert.NotEmpty(vm.SelectedSubscriber.Payments);
+        Assert.All(vm.ContractRows, r => Assert.Equal(other.HouseId, r.Subscriber.HouseId));
+    }
+
+    [Fact]
+    public async Task Find_EmptySurname_ShowsServerAnswer()
+    {
+        var vm = await SignIn("orlov");
+        var before = vm.SelectedSubscriber!.Id;
+
+        vm.SearchMode = SearchMode.Surname;
+        vm.FindQuery = " ";
+        await vm.FindCommand.ExecuteAsync(null);
+
+        Assert.Equal("Введите фамилию.", vm.Status);
+        Assert.Equal(before, vm.SelectedSubscriber!.Id);
     }
 
     [Fact]
@@ -76,6 +112,12 @@ public sealed class ServerModeTests : IAsyncDisposable
             builder.UseSetting("Avers:Database:Provider", "Sqlite");
             builder.UseSetting("Avers:Database:EnsureCreated", "true");
             builder.UseSetting("Avers:Database:SeedDemo", "true");
+        }
+
+        public T WithDb<T>(Func<AversDbContext, T> action)
+        {
+            using var scope = Services.CreateScope();
+            return action(scope.ServiceProvider.GetRequiredService<AversDbContext>());
         }
 
         public override async ValueTask DisposeAsync()

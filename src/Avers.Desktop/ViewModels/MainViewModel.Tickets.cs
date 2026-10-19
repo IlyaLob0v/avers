@@ -117,7 +117,7 @@ public sealed partial class MainViewModel
 
 
     public House? TicketHouse => SelectedTicket is null ? null : _houses.FirstOrDefault(h => h.Id == SelectedTicket.HouseId);
-    public Subscriber? TicketSubscriber => SelectedTicket?.SubscriberId is { } id ? _subscribers.FirstOrDefault(s => s.Id == id) : null;
+    public Subscriber? TicketSubscriber => SelectedTicket?.Subscriber;
     public bool HasTicketSubscriber => TicketSubscriber is not null;
 
     public string TicketHeader => SelectedTicket is null ? "Заявка не выбрана"
@@ -311,18 +311,18 @@ public sealed partial class MainViewModel
     }
 
     [RelayCommand]
-    private void OpenTicketSubscriber()
+    private async Task OpenTicketSubscriber()
     {
         if (TicketSubscriber is not { } s) { Status = "У заявки нет лицевого счёта."; return; }
-        SelectSubscriberOf(s);
+        await SelectSubscriberOf(s);
         Go(AppModule.Subscriber);
     }
 
     [RelayCommand]
-    private void OpenTicketContract()
+    private async Task OpenTicketContract()
     {
         if (TicketSubscriber is not { } s) { Status = "У заявки нет лицевого счёта, договора не найти."; return; }
-        SelectSubscriberOf(s);
+        await SelectSubscriberOf(s);
         OpenContract();
     }
 
@@ -343,12 +343,10 @@ public sealed partial class MainViewModel
         Go(AppModule.Ticket);
     }
 
-    private void SelectSubscriberOf(Subscriber s)
+    private async Task SelectSubscriberOf(Subscriber s)
     {
         var keep = SelectedTicket;
-        SelectedStreet = Streets.FirstOrDefault(x => x.Id == s.House.StreetId);
-        SelectedHouse = HousesOnStreet.FirstOrDefault(x => x.Id == s.HouseId);
-        SelectedSubscriber = s;
+        await ShowSubscriberAsync(s.Id, s.HouseId);
         SelectedTicket = keep;
     }
 

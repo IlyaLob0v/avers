@@ -14,7 +14,10 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly IAversStore _store;
     private readonly DateOnly _today;
     private List<House> _houses = [];
+    /// <summary>Абоненты выбранного дома: грузятся при выборе дома, вся база в память не читается.</summary>
     private List<Subscriber> _subscribers = [];
+    private bool _seesSubscribers;
+    private Dictionary<int, decimal> _debtByHouse = [];
     private List<WorkTicket> _tickets = [];
     private List<IntercomTicket> _intercomTickets = [];
     private bool _holdRefresh;
@@ -152,11 +155,13 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>Перечитать данные после записи: своя запись и чужие изменения в общей базе.</summary>
-    private async Task ReloadAsync() => Apply(await _store.LoadAsync(User!));
+    private async Task ReloadAsync() => await Apply(await _store.LoadAsync(User!), User!);
 
-    private void Apply(AversSnapshot data)
+    private async Task Apply(AversSnapshot data, AppUser user)
     {
         var keepSubscriberId = SelectedSubscriber?.Id;
+        var keepHouseId = SelectedHouse?.Id;
+        _seesSubscribers = RoleCatalog.Can(user.Role, AppModule.Abon, out _);
         PaymentWarningMonths = data.PaymentWarningMonths;
 
         Streets.Clear();
@@ -164,7 +169,6 @@ public sealed partial class MainViewModel : ObservableObject
             Streets.Add(s);
 
         _houses = data.Houses;
-        _subscribers = data.Subscribers;
         _tickets = data.Tickets;
         _intercomTickets = data.IntercomTickets;
         LoadTicketYears();
@@ -176,20 +180,81 @@ public sealed partial class MainViewModel : ObservableObject
 
         RefreshTotals();
 
-        // После записи остаёмся на той же квартире; экраны пересчитываем один раз, в конце.
-        var keep = _subscribers.FirstOrDefault(s => s.Id == keepSubscriberId);
+        // После записи остаёмся на том же доме и квартире; экраны пересчитываем один раз, в конце.
+        var keep = _houses.FirstOrDefault(h => h.Id == keepHouseId);
         _holdRefresh = true;
-        SelectedStreet = Streets.FirstOrDefault(s => s.Id == keep?.House.StreetId)
+        SelectedStreet = Streets.FirstOrDefault(s => s.Id == keep?.StreetId)
                          ?? Streets.FirstOrDefault(s => s.Name == DemoSeeder.StartStreet) ?? Streets.FirstOrDefault();
         RefreshHouses();
-        SelectedHouse = HousesOnStreet.FirstOrDefault(h => h.Id == keep?.HouseId)
+        SelectedHouse = HousesOnStreet.FirstOrDefault(h => h.Id == keep?.Id)
                         ?? HousesOnStreet.FirstOrDefault(h => h.Number == DemoSeeder.StartHouse) ?? HousesOnStreet.FirstOrDefault();
-        SelectedSubscriber = keep ?? _subscribers.FirstOrDefault(s => s.Account == DemoSeeder.StartAccount);
         SelectedTicket = _tickets.FirstOrDefault(t => t.Number == DemoSeeder.StartTicket);
         _holdRefresh = false;
         _intercomHouseId = null;
         BindTicket();
+        await ShowHouseAsync(keepSubscriberId);
+    }
+
+    /// <summary>Загружает абонентов выбранного дома и выбирает квартиру: нужную, учебную стартовую или первую.</summary>
+    private async Task ShowHouseAsync(int? subscriberId)
+    {
+        var house = SelectedHouse;
+        List<Subscriber> list = [];
+        if (house is not null && _seesSubscribers)
+        {
+            try
+            {
+                list = await _store.LoadHouseAsync(house);
+            }
+            catch (StoreException e)
+            {
+                Status = e.Message;
+            }
+        }
+        // Пока грузили, сотрудник мог выбрать другой дом.
+        if (SelectedHouse != house) return;
+
+        _subscribers = list;
+        _holdRefresh = true;
+        SelectedSubscriber = list.FirstOrDefault(s => s.Id == subscriberId)
+                             ?? list.FirstOrDefault(s => s.Account == DemoSeeder.StartAccount) ?? list.FirstOrDefault();
+        _holdRefresh = false;
         RefreshDerived();
+    }
+
+    /// <summary>Переходит к дому абонента и выбирает его квартиру.</summary>
+    private async Task ShowSubscriberAsync(int subscriberId, int houseId)
+    {
+        var house = _houses.First(h => h.Id == houseId);
+        _holdRefresh = true;
+        SelectedStreet = Streets.First(s => s.Id == house.StreetId);
+        SelectedHouse = house;
+        _holdRefresh = false;
+        await ShowHouseAsync(subscriberId);
+    }
+
+    /// <summary>Должники и долги по домам: сервер считает их по всей базе, когда открывают юристов или отчёты.</summary>
+    private async Task LoadDebtsAsync()
+    {
+        if (!_seesSubscribers) return;
+        Debts debts;
+        try
+        {
+            debts = await _store.LoadDebtsAsync();
+        }
+        catch (StoreException e)
+        {
+            Status = e.Message;
+            return;
+        }
+        var houses = _houses.ToDictionary(h => h.Id);
+        var keepDebtor = SelectedDebtor?.SubscriberId;
+        Debtors.Clear();
+        foreach (var d in debts.Debtors)
+            Debtors.Add(new DebtorRow(d, houses[d.HouseId]));
+        SelectedDebtor = Debtors.FirstOrDefault(d => d.SubscriberId == keepDebtor) ?? Debtors.FirstOrDefault();
+        _debtByHouse = debts.ByHouse;
+        RefreshReport();
     }
 
     partial void OnLoginUserChanged(AppUser? value) => OnPropertyChanged(nameof(LoginRoleTitle));
@@ -223,6 +288,8 @@ public sealed partial class MainViewModel : ObservableObject
             _ = LoadChangeLogAsync();
         if (value == AppModule.Scheme)
             _ = ShowSchemeAsync();
+        if (value is AppModule.Legal or AppModule.Claim or AppModule.Reports)
+            _ = LoadDebtsAsync();
     }
 
     partial void OnSelectedStreetChanged(Street? value)
@@ -233,13 +300,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnSelectedHouseChanged(House? value)
     {
-        if (value is not null)
-        {
-            var match = _subscribers.FirstOrDefault(s => s.HouseId == value.Id);
-            if (match is not null && SelectedSubscriber?.HouseId != value.Id)
-                SelectedSubscriber = match;
-        }
-        RefreshDerived();
+        if (!_holdRefresh)
+            _ = ShowHouseAsync(null);
     }
 
     partial void OnSelectedSubscriberChanged(Subscriber? value)
@@ -260,22 +322,9 @@ public sealed partial class MainViewModel : ObservableObject
             HousesOnStreet.Add(h);
     }
 
-    /// <summary>Сводки по всей базе (должники, ППР, отчёт): меняются только после записи, считаем их в <see cref="Load"/>.</summary>
+    /// <summary>Сводки по всей базе (ППР, отчёт): меняются только после записи, считаем их в <see cref="Apply"/>.</summary>
     private void RefreshTotals()
     {
-        var keepDebtor = SelectedDebtor?.Subscriber.Id;
-        Debtors.Clear();
-        foreach (var s in _subscribers)
-        {
-            var due = Billing.Due(s.Payments, _today);
-            var debt = Billing.Debt(due);
-            var unpaid = Billing.UnpaidMonths(due);
-            var old = Billing.IsOldPayer(s.LastPaymentDate, _today);
-            if (debt >= Billing.DebtHighlight || old)
-                Debtors.Add(new DebtorRow(s, debt, unpaid, old));
-        }
-        SelectedDebtor = Debtors.FirstOrDefault(d => d.Subscriber.Id == keepDebtor) ?? Debtors.FirstOrDefault();
-
         LoadPprYears();
 
         RefreshReport();
@@ -344,7 +393,7 @@ public sealed partial class MainViewModel : ObservableObject
         var row = SelectedDebtor ?? Debtors.FirstOrDefault(d => d.Unpaid >= Billing.ClaimUnpaidMonths);
         if (row is null) { ClaimText = ""; return; }
         ClaimText =
-            $"Досудебное уведомление\n\n{row.FullName}, л/с {row.Subscriber.Account}, {row.Address}.\n\n" +
+            $"Досудебное уведомление\n\n{row.FullName}, л/с {row.Account}, {row.Address}.\n\n" +
             $"Задолженность за ТО СКПТ за {row.Unpaid} мес. — {row.DebtText}. Предлагаем погасить долг в течение 30 дней. По истечении срока материалы будут направлены в суд.\n\n" +
             $"{_today:dd.MM.yyyy}, антенная служба";
         OnPropertyChanged(nameof(ClaimText));
@@ -359,7 +408,7 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             var user = await _store.SignInAsync(login, Password);
-            Apply(await _store.LoadAsync(user));
+            await Apply(await _store.LoadAsync(user), user);
             User = user;
         }
         catch (StoreException e)
@@ -386,6 +435,8 @@ public sealed partial class MainViewModel : ObservableObject
     {
         _store.SignOut();
         User = null;
+        Debtors.Clear();
+        _debtByHouse = [];
         Module = AppModule.Desktop;
         Status = "Сеанс завершён.";
     }
@@ -412,27 +463,23 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void SetSearch(SearchMode mode) => SearchMode = mode;
 
+    /// <summary>Ищет сервер (или учебная база); программа переходит к дому найденного абонента.</summary>
     [RelayCommand]
-    private void Find()
+    private async Task Find()
     {
-        IEnumerable<Subscriber> q = _subscribers;
-        q = SearchMode switch
+        try
         {
-            SearchMode.Account => q.Where(s => s.Account.Contains(FindQuery.Trim(), StringComparison.OrdinalIgnoreCase)),
-            SearchMode.InnerCode => q.Where(s => s.InnerCode.Contains(FindQuery.Trim(), StringComparison.OrdinalIgnoreCase)),
-            SearchMode.Pzhreu => q.Where(s => s.PzhreuIndex.Contains(FindQuery.Trim(), StringComparison.OrdinalIgnoreCase) || s.PzhreuAccount.Contains(FindQuery.Trim(), StringComparison.OrdinalIgnoreCase)),
-            SearchMode.Surname => q.Where(s => s.LastName.StartsWith(FindQuery.Trim(), StringComparison.OrdinalIgnoreCase) && FindQuery.Trim().Length >= 4),
-            _ => q.Where(s =>
-                s.House.Street.Name.StartsWith(FindStreet.Trim(), StringComparison.OrdinalIgnoreCase) &&
-                s.House.Number.Equals(FindHouse.Trim(), StringComparison.OrdinalIgnoreCase) &&
-                s.Apartment == FindApartment.Trim())
-        };
-        var found = q.FirstOrDefault();
-        if (found is null) { Status = "Абонент не найден."; return; }
-        SelectedStreet = Streets.First(s => s.Id == found.House.StreetId);
-        SelectedHouse = HousesOnStreet.FirstOrDefault(h => h.Id == found.HouseId);
-        SelectedSubscriber = found;
-        Status = $"Найден {found.FullName}, кв. {found.Apartment}.";
+            var hit = await _store.FindSubscriberAsync(SearchMode, FindQuery, FindStreet, FindHouse, FindApartment);
+            if (hit is null) { Status = "Абонент не найден."; return; }
+            await ShowSubscriberAsync(hit.Value.Id, hit.Value.HouseId);
+        }
+        catch (StoreException e)
+        {
+            Status = e.Message;
+            return;
+        }
+        if (SelectedSubscriber is { } found)
+            Status = $"Найден {found.FullName}, кв. {found.Apartment}.";
     }
 
     [RelayCommand]
@@ -515,20 +562,22 @@ public sealed class PaymentGridRow
 /// <summary>Строка списка должников: красная — долг от <see cref="Billing.DebtHighlight"/> ₽, жёлтая — давно не платил.</summary>
 public sealed class DebtorRow : IRowTone
 {
-    public DebtorRow(Subscriber s, decimal debt, int unpaid, bool old)
+    public DebtorRow(Debtor d, House house)
     {
-        Subscriber = s;
-        FullName = s.FullName;
-        Address = $"{s.House.AddressLine}, кв. {s.Apartment}";
-        Debt = debt;
-        DebtText = debt.ToString("N2") + " ₽";
-        Unpaid = unpaid;
-        LastPay = s.LastPaymentDate is { } d ? d.ToString("dd.MM.yyyy") + (old ? " (≥ 3 лет)" : "") : "нет";
-        Case = s.CourtCases.FirstOrDefault() is { } c ? $"{c.DelaAversId} · {c.OrderNumber}" : "—";
-        IsDebt = debt >= Billing.DebtHighlight;
-        IsOld = old && !IsDebt;
+        SubscriberId = d.SubscriberId;
+        Account = d.Account;
+        FullName = d.FullName;
+        Address = $"{house.AddressLine}, кв. {d.Apartment}";
+        Debt = d.Debt;
+        DebtText = d.Debt.ToString("N2") + " ₽";
+        Unpaid = d.Unpaid;
+        LastPay = d.LastPaymentDate is { } date ? date.ToString("dd.MM.yyyy") + (d.IsOld ? " (≥ 3 лет)" : "") : "нет";
+        Case = d.Case ?? "—";
+        IsDebt = d.Debt >= Billing.DebtHighlight;
+        IsOld = d.IsOld && !IsDebt;
     }
-    public Subscriber Subscriber { get; }
+    public int SubscriberId { get; }
+    public string Account { get; }
     public string FullName { get; }
     public string Address { get; }
     public decimal Debt { get; }

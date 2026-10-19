@@ -26,6 +26,16 @@ public interface IAversStore
 
     Task<AversSnapshot> LoadAsync(AppUser user);
 
+    /// <summary>Абоненты дома с оплатами, делами и квитанциями, связанные с этим домом.</summary>
+    Task<List<Subscriber>> LoadHouseAsync(House house);
+
+    /// <summary>Первый найденный абонент; null — не найден. Неверный запрос — <see cref="StoreException"/>.</summary>
+    Task<(int Id, int HouseId)?> FindSubscriberAsync(SearchMode mode, string query, string street, string house, string apartment);
+
+    Task<Debts> LoadDebtsAsync();
+
+    Task<AccountingReport> LoadAccountingAsync(int year, int month);
+
     Task<PaymentDto> RecordPaymentAsync(int subscriberId, int year, AppUser user);
 
     Task SaveContractAsync(int subscriberId, UpdateContractRequest request);

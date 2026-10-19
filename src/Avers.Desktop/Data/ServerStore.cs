@@ -54,6 +54,22 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public async Task<AversSnapshot> LoadAsync(AppUser user) =>
         (await Read<AversSnapshot>(() => http.GetAsync("api/desktop/snapshot"))).Link();
 
+    public async Task<List<Subscriber>> LoadHouseAsync(House house) =>
+        (await Read<HouseSubscribers>(() => http.GetAsync($"api/houses/{house.Id}/subscribers"))).Link(house);
+
+    public async Task<(int Id, int HouseId)?> FindSubscriberAsync(SearchMode mode, string query, string street, string house, string apartment)
+    {
+        var url = $"api/subscribers?mode={mode}&q={Uri.EscapeDataString(query)}&street={Uri.EscapeDataString(street)}" +
+                  $"&house={Uri.EscapeDataString(house)}&apartment={Uri.EscapeDataString(apartment)}";
+        var found = await Read<List<SubscriberListItem>>(() => http.GetAsync(url));
+        return found.FirstOrDefault() is { } s ? (s.Id, s.HouseId) : null;
+    }
+
+    public Task<Debts> LoadDebtsAsync() => Read<Debts>(() => http.GetAsync("api/debts"));
+
+    public Task<AccountingReport> LoadAccountingAsync(int year, int month) =>
+        Read<AccountingReport>(() => http.GetAsync($"api/reports/accounting?year={year}&month={month}"));
+
     public Task<PaymentDto> RecordPaymentAsync(int subscriberId, int year, AppUser user) =>
         Read<PaymentDto>(() => http.PostAsJsonAsync($"api/subscribers/{subscriberId}/payments", new RecordPaymentRequest(year), Json));
 

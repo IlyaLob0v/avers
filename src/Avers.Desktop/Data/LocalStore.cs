@@ -42,6 +42,34 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db) : IAversSto
         return Task.FromResult(AversSnapshot.Load(ctx, user.Role).Link());
     }
 
+    public Task<List<Subscriber>> LoadHouseAsync(House house)
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(HouseSubscribers.Load(ctx, house.Id).Link(house));
+    }
+
+    public Task<(int Id, int HouseId)?> FindSubscriberAsync(SearchMode mode, string query, string street, string house, string apartment)
+    {
+        using var ctx = db.CreateDbContext();
+        var (found, _, error) = SubscriberSearch.Where(ctx.Subscribers.AsNoTracking(), mode, query, street, house, apartment);
+        if (found is null)
+            throw new StoreException(error);
+        var hit = found.OrderBy(s => s.LastName).ThenBy(s => s.Id).Select(s => new { s.Id, s.HouseId }).FirstOrDefault();
+        return Task.FromResult(hit is null ? ((int, int)?)null : (hit.Id, hit.HouseId));
+    }
+
+    public Task<Debts> LoadDebtsAsync()
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(Debts.Load(ctx, Today));
+    }
+
+    public Task<AccountingReport> LoadAccountingAsync(int year, int month)
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(AccountingReport.Load(ctx, year, month));
+    }
+
     public Task<PaymentDto> RecordPaymentAsync(int subscriberId, int year, AppUser user)
     {
         using var ctx = db.CreateDbContext();
