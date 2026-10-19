@@ -11,6 +11,7 @@ public sealed class AversDbContext : DbContext
     public DbSet<Street> Streets => Set<Street>();
     public DbSet<House> Houses => Set<House>();
     public DbSet<HouseScheme> HouseSchemes => Set<HouseScheme>();
+    public DbSet<HouseSchemeFile> HouseSchemeFiles => Set<HouseSchemeFile>();
     public DbSet<PprEntry> PprEntries => Set<PprEntry>();
     public DbSet<Subscriber> Subscribers => Set<Subscriber>();
     public DbSet<YearPayment> Payments => Set<YearPayment>();
@@ -50,6 +51,12 @@ public sealed class AversDbContext : DbContext
             e.HasIndex(x => new { x.StreetId, x.Number }).IsUnique();
             e.HasIndex(x => x.PzhreuAccount);
             e.Ignore(x => x.AddressLine);
+        });
+
+        model.Entity<HouseSchemeFile>(e =>
+        {
+            e.HasKey(x => x.HouseSchemeId);
+            e.HasOne(x => x.Scheme).WithOne().HasForeignKey<HouseSchemeFile>(x => x.HouseSchemeId).OnDelete(DeleteBehavior.Cascade);
         });
 
         model.Entity<Subscriber>(e =>

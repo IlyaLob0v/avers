@@ -284,6 +284,20 @@ namespace Avers.Data.Migrations
                     b.ToTable("HouseSchemes");
                 });
 
+            modelBuilder.Entity("Avers.Domain.HouseSchemeFile", b =>
+                {
+                    b.Property<int>("HouseSchemeId")
+                        .HasColumnType("integer");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("HouseSchemeId");
+
+                    b.ToTable("HouseSchemeFiles");
+                });
+
             modelBuilder.Entity("Avers.Domain.IntercomPanel", b =>
                 {
                     b.Property<int>("Id")
@@ -845,6 +859,17 @@ namespace Avers.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("House");
+                });
+
+            modelBuilder.Entity("Avers.Domain.HouseSchemeFile", b =>
+                {
+                    b.HasOne("Avers.Domain.HouseScheme", "Scheme")
+                        .WithOne()
+                        .HasForeignKey("Avers.Domain.HouseSchemeFile", "HouseSchemeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Scheme");
                 });
 
             modelBuilder.Entity("Avers.Domain.IntercomPanel", b =>

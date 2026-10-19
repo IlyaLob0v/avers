@@ -55,6 +55,7 @@ app.MapUsers();
 app.MapSubscribers();
 app.MapTickets();
 app.MapDesktop();
+app.MapSchemes();
 app.MapPpr();
 app.MapMobile();
 

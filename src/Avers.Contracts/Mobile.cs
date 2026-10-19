@@ -26,4 +26,5 @@ public sealed record MobileHouseDto(
     DateOnly? OpenFaultPlannedFix,
     List<MobileSchemeDto> Schemes);
 
-public sealed record MobileSchemeDto(string Name, string Format, DateOnly UpdatedAt);
+/// <summary>Схема дома; картинку отдаёт <c>/api/mobile/schemes/{Id}</c>, если <see cref="HasImage"/>.</summary>
+public sealed record MobileSchemeDto(int Id, string Name, string Format, DateOnly UpdatedAt, bool HasImage);

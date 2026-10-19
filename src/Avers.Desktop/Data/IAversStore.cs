@@ -34,6 +34,17 @@ public interface IAversStore
 
     Task SaveHousePassportAsync(int houseId, HousePassportRequest request);
 
+    /// <summary>Картинка схемы СКПТ; null — файл не загружен.</summary>
+    Task<byte[]?> LoadSchemeFileAsync(int schemeId);
+
+    Task AddSchemeAsync(int houseId, AddSchemeRequest request);
+
+    Task ReplaceSchemeFileAsync(int schemeId, byte[] content);
+
+    Task RenameSchemeAsync(int schemeId, string name);
+
+    Task DeleteSchemeAsync(int schemeId);
+
     /// <summary>Принимает заявку и возвращает её номер.</summary>
     Task<int> AcceptTicketAsync(CreateTicketRequest request, AppUser user);
 
