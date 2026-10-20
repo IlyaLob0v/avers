@@ -72,7 +72,7 @@
                 <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                   <Button Classes="primary" Content="Найти" Command="{Binding FindCommand}" />
                   <TextBlock Classes="hint" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="200"
-                             Text="Улица · Дом · Секция · Кв. Фамилия — более 4 букв." />
+                             Text="Улица · Дом · Секция · Кв." />
                 </StackPanel>
               </StackPanel>
             </HeaderedContentControl>
