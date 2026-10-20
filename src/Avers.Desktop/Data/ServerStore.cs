@@ -103,6 +103,21 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public Task DeleteSchemeAsync(int schemeId) =>
         Write(() => http.DeleteAsync($"api/schemes/{schemeId}"));
 
+    public Task SaveIntercomPanelAsync(int houseId, IntercomPanel draft)
+    {
+        var request = new IntercomPanelRequest(draft.Entrance, draft.PanelType, draft.SwitchBlock, draft.Keys, draft.Power);
+        return Write(() => draft.Id == 0
+            ? http.PostAsJsonAsync($"api/houses/{houseId}/intercoms", request, Json)
+            : http.PutAsJsonAsync($"api/houses/{houseId}/intercoms/{draft.Id}", request, Json));
+    }
+
+    public Task AddIntercomTicketAsync(int houseId, IntercomTicket draft) =>
+        Write(() => http.PostAsJsonAsync($"api/houses/{houseId}/intercom-tickets",
+            new IntercomTicketRequest(draft.Entrance, draft.Fault, draft.Mechanic), Json));
+
+    public Task CloseIntercomTicketAsync(int ticketId) =>
+        Write(() => http.PutAsync($"api/intercom-tickets/{ticketId}/done", null));
+
     public async Task<int> AcceptTicketAsync(CreateTicketRequest request, AppUser user) =>
         (await Read<TicketDto>(() => http.PostAsJsonAsync("api/tickets", request, Json))).Number;
 

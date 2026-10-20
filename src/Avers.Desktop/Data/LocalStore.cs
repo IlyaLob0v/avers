@@ -180,6 +180,26 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db) : IAversSto
         return Task.CompletedTask;
     }
 
+    public Task SaveIntercomPanelAsync(int houseId, IntercomPanel draft)
+    {
+        using var ctx = db.CreateDbContext();
+        return Check(Intercoms.SavePanel(ctx, houseId, draft, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow));
+    }
+
+    public Task AddIntercomTicketAsync(int houseId, IntercomTicket draft)
+    {
+        using var ctx = db.CreateDbContext();
+        return Check(Intercoms.AddTicket(ctx, houseId, draft, Today));
+    }
+
+    public Task CloseIntercomTicketAsync(int ticketId)
+    {
+        using var ctx = db.CreateDbContext();
+        return Check(Intercoms.MarkDone(ctx, ticketId));
+    }
+
+    private static Task Check(string? error) => error is null ? Task.CompletedTask : throw new StoreException(error);
+
     public Task<int> AcceptTicketAsync(CreateTicketRequest request, AppUser user)
     {
         using var ctx = db.CreateDbContext();

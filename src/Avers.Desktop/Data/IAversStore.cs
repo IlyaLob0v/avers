@@ -55,6 +55,13 @@ public interface IAversStore
 
     Task DeleteSchemeAsync(int schemeId);
 
+    /// <summary>Панель подъезда; Id = 0 — новая.</summary>
+    Task SaveIntercomPanelAsync(int houseId, IntercomPanel draft);
+
+    Task AddIntercomTicketAsync(int houseId, IntercomTicket draft);
+
+    Task CloseIntercomTicketAsync(int ticketId);
+
     /// <summary>Принимает заявку и возвращает её номер.</summary>
     Task<int> AcceptTicketAsync(CreateTicketRequest request, AppUser user);
 
