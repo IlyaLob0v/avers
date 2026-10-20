@@ -36,21 +36,23 @@ if $row_counts; then
   exit 0
 fi
 
-command -v expdp >/dev/null || die "не найден expdp. Задайте окружение Oracle (например, '. oraenv') и запустите снова."
-
 echo "=== Шаг 1. Структура и код"
 sql @00-run-all.sql || die "не удалось подключиться к базе, см. сообщения выше."
 
-echo "=== Шаг 2. Data Pump (expdp снова спросит пароль)"
-expdp "$login" parfile=expdp-metadata.par || echo "expdp завершился с ошибкой: пришлите jack_metadata.log и текст ошибки."
+if command -v expdp >/dev/null; then
+  echo "=== Шаг 2. Data Pump (expdp снова спросит пароль)"
+  expdp "$login" parfile=expdp-metadata.par || echo "expdp завершился с ошибкой: пришлите jack_metadata.log и текст ошибки."
 
-dir=$(sql "set heading off feedback off pagesize 0
+  dir=$(sql "set heading off feedback off pagesize 0
 select directory_path from dba_directories where directory_name = 'DATA_PUMP_DIR';
 exit" | tr -d '[:space:]')
-for f in jack_metadata.dmp jack_metadata.log; do
-  if [[ -r $dir/$f ]]; then cp "$dir/$f" .
-  else echo "Файл $f не скопирован: заберите его с сервера базы из каталога $dir"; fi
-done
+  for f in jack_metadata.dmp jack_metadata.log; do
+    if [[ -r $dir/$f ]]; then cp "$dir/$f" .
+    else echo "Файл $f не скопирован: заберите его с сервера базы из каталога $dir"; fi
+  done
+else
+  echo "=== Шаг 2 пропущен: на этом компьютере нет expdp. Его можно выполнить позже на сервере базы (README.md)."
+fi
 
 archive=jack-structure-$(date +%F).tar.gz
 tar czf "$archive" jack_*

@@ -22,6 +22,13 @@ unzip для-администратора-oracle.zip && cd jack-structure
 ./jack-export.sh system@avers102
 ```
 
+Запускать именно `./jack-export.sh`. Файлы `*.sql` — не программы для терминала: их выполняет SQL*Plus,
+и скрипт сам передаёт их ему.
+
+Можно запустить и с другого компьютера с Linux, где стоит только Oracle Instant Client (`sqlplus`).
+Тогда базу указывают адресом сервера: `./jack-export.sh system@//servora:1521/<имя службы>`.
+Если `expdp` на этом компьютере нет, скрипт выполнит шаг 1 и пропустит шаг 2.
+
 Скрипт спросит пароль `SYSTEM`, а на шаге Data Pump `expdp` спросит его ещё раз. Если схема называется не `JACK`,
 поправьте строку `define owner = JACK` в `00-run-all.sql` и `SCHEMAS=JACK` в `expdp-metadata.par`.
 Кодировку (`NLS_LANG`, UTF-8) скрипт задаёт сам, чтобы русские комментарии к таблицам не исказились.
