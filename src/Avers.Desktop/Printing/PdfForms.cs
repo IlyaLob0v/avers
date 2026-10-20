@@ -5,7 +5,7 @@ using SkiaSharp;
 namespace Avers.Desktop.Printing;
 
 /// <summary>
-/// Печатные формы в PDF: квитанция и лицевой счёт абонента, наряд-заказ радиомеханику. PDF рисует SkiaSharp, который уже есть в Avalonia;
+/// Печатные формы в PDF: квитанция и лицевой счёт абонента, наряд-заказ радиомеханику, домофоны дома. PDF рисует SkiaSharp, который уже есть в Avalonia;
 /// файл открывается программой просмотра PDF и печатается оттуда на любой принтер.
 /// </summary>
 public static class PdfForms
@@ -62,6 +62,27 @@ public static class PdfForms
         pdf.Gap();
         pdf.Field("Задолженность", Money(Billing.Debt(Billing.Due(months, today))) + " руб.");
         pdf.Field("Дата выписки", today.ToString("dd.MM.yyyy"));
+    }
+
+    /// <summary>Домофоны дома: панели подъездов и невыполненные заявки — для радиомеханика.</summary>
+    public static void Intercom(House house, IEnumerable<IntercomTicket> open, DateOnly today, string path)
+    {
+        using var pdf = new Page(path);
+        pdf.Title($"Домофоны · {house.AddressLine}");
+        foreach (var p in house.Intercoms)
+        {
+            pdf.Field($"Подъезд {p.Entrance}", p.PanelType);
+            pdf.Field("Блок коммутации", p.SwitchBlock);
+            pdf.Field("Ключи / ключницы", p.Keys);
+            pdf.Field("Питание", p.Power);
+            pdf.Gap();
+        }
+        pdf.Row(true, ("Невыполненные заявки", 0));
+        pdf.Row(true, ("Дата", 0), ("Под.", 80), ("Неисправность", 120), ("Механик", 380));
+        foreach (var t in open)
+            pdf.Row(false, (t.Date.ToString("dd.MM.yyyy"), 0), (t.Entrance.ToString(Ru), 80), (t.Fault.Length > 45 ? t.Fault[..44] + "…" : t.Fault, 120), (t.Mechanic, 380));
+        pdf.Gap();
+        pdf.Field("Дата печати", today.ToString("dd.MM.yyyy"));
     }
 
     /// <summary>Наряд-заказ по заявке: радиомеханик берёт его на выезд и заполняет от руки, что сделано.</summary>

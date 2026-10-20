@@ -1,35 +1,92 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Avers.Desktop.ViewModels"
+             xmlns:d="using:Avers.Domain"
              x:Class="Avers.Desktop.Views.DomofoView"
              x:DataType="vm:MainViewModel">
-  <Grid ColumnDefinitions="*,*" Margin="16,0,16,12" VerticalAlignment="Top">
-    <HeaderedContentControl Classes="group" Margin="0,0,5,0" Header="Панель подъезда">
-      <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
-        <TextBlock Classes="label" Text="Улица / дом" /><TextBox Grid.Column="1" Classes="cell" Text="{Binding HouseCaption, Mode=OneWay}" IsReadOnly="True"/>
-        <TextBlock Grid.Row="1" Classes="label" Text="Подъезд" /><TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding Intercom.Entrance, Mode=OneWay}" IsReadOnly="True"/>
-        <TextBlock Grid.Row="2" Classes="label" Text="Тип панели" /><TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding Intercom.PanelType}"/>
-        <TextBlock Grid.Row="3" Classes="label" Text="Блок коммутации" /><TextBox Grid.Row="3" Grid.Column="1" Classes="cell" Text="{Binding Intercom.SwitchBlock}"/>
-        <TextBlock Grid.Row="4" Classes="label" Text="Ключи / ключницы" /><TextBox Grid.Row="4" Grid.Column="1" Classes="cell" Text="{Binding Intercom.Keys}"/>
-        <TextBlock Grid.Row="5" Classes="label" Text="Питание" /><TextBox Grid.Row="5" Grid.Column="1" Classes="cell" Text="{Binding Intercom.Power}"/>
-      </Grid>
-    </HeaderedContentControl>
-    <HeaderedContentControl Grid.Column="1" Classes="group" Margin="5,0,0,0" Header="Заявки по домофону">
-      <StackPanel>
-        <DataGrid Height="220" ItemsSource="{Binding IntercomTickets}" AutoGenerateColumns="False" IsReadOnly="True">
-          <DataGrid.Columns>
-            <DataGridTextColumn Header="Дата" Binding="{Binding Date}" Width="110" />
-            <DataGridTextColumn Header="Под." Binding="{Binding Entrance}" Width="56" />
-            <DataGridTextColumn Header="Неисправность" Binding="{Binding Fault}" Width="*" />
-            <DataGridTextColumn Header="Механик" Binding="{Binding Mechanic}" Width="120" />
-            <DataGridCheckBoxColumn Header="Выполн." Binding="{Binding Done}" Width="76" />
-          </DataGrid.Columns>
-        </DataGrid>
-        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-          <Button Classes="primary" Content="Принять заявку" Command="{Binding NotReadyCommand}" CommandParameter="Принять заявку" />
-          <Button Content="Печать" Command="{Binding NotReadyCommand}" CommandParameter="Печать" />
-        </StackPanel>
+  <StackPanel Margin="16,0,16,12">
+    <Border Classes="card" Padding="12,6" Margin="0,0,0,10">
+      <StackPanel Orientation="Horizontal">
+        <TextBlock Classes="label" Text="Улица" />
+        <ComboBox Classes="cell" Width="190" Margin="0,0,12,0" ItemsSource="{Binding Streets}" SelectedItem="{Binding SelectedStreet}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="d:Street">
+              <TextBlock Text="{Binding Name}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <TextBlock Classes="label" Text="Дом" />
+        <ComboBox Classes="cell" Width="90" Margin="0,0,12,0" ItemsSource="{Binding HousesOnStreet}" SelectedItem="{Binding SelectedHouse}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="d:House">
+              <TextBlock Text="{Binding Number}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <Button Content="Печать" Command="{Binding PrintIntercomCommand}" ToolTip.Tip="Панели подъездов и невыполненные заявки, PDF" />
       </StackPanel>
-    </HeaderedContentControl>
-  </Grid>
+    </Border>
+    <Grid ColumnDefinitions="*,*" VerticalAlignment="Top">
+      <HeaderedContentControl Classes="group" Margin="0,0,5,0" Header="Панель подъезда">
+        <StackPanel>
+          <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+            <TextBlock Classes="label" Text="Подъезд" VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" Classes="cell" HorizontalAlignment="Stretch" ItemsSource="{Binding SelectedHouse.Intercoms}" SelectedItem="{Binding SelectedIntercomPanel}"
+                      PlaceholderText="нет панелей">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="d:IntercomPanel">
+                  <TextBlock Text="{Binding Entrance, StringFormat='Подъезд {0}'}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Grid.Row="1" Classes="label" Text="Номер подъезда" VerticalAlignment="Center" />
+            <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding Intercom.Entrance}" IsReadOnly="{Binding !CanEditIntercoms}" />
+            <TextBlock Grid.Row="2" Classes="label" Text="Тип панели" VerticalAlignment="Center" />
+            <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding Intercom.PanelType}" IsReadOnly="{Binding !CanEditIntercoms}" />
+            <TextBlock Grid.Row="3" Classes="label" Text="Блок коммутации" VerticalAlignment="Center" />
+            <TextBox Grid.Row="3" Grid.Column="1" Classes="cell" Text="{Binding Intercom.SwitchBlock}" IsReadOnly="{Binding !CanEditIntercoms}" />
+            <TextBlock Grid.Row="4" Classes="label" Text="Ключи / ключницы" VerticalAlignment="Center" />
+            <TextBox Grid.Row="4" Grid.Column="1" Classes="cell" Text="{Binding Intercom.Keys}" IsReadOnly="{Binding !CanEditIntercoms}" />
+            <TextBlock Grid.Row="5" Classes="label" Text="Питание" VerticalAlignment="Center" />
+            <TextBox Grid.Row="5" Grid.Column="1" Classes="cell" Text="{Binding Intercom.Power}" IsReadOnly="{Binding !CanEditIntercoms}" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0" IsVisible="{Binding CanEditIntercoms}">
+            <Button Content="Новая панель" Command="{Binding NewIntercomPanelCommand}" />
+            <Button Classes="primary" Margin="0" Content="Сохранить панель" Command="{Binding SaveIntercomPanelCommand}" />
+          </StackPanel>
+        </StackPanel>
+      </HeaderedContentControl>
+      <HeaderedContentControl Grid.Column="1" Classes="group" Margin="5,0,0,0" Header="Заявки по домофону">
+        <StackPanel>
+          <DataGrid Height="220" ItemsSource="{Binding IntercomTickets}" SelectedItem="{Binding SelectedIntercomTicket}" AutoGenerateColumns="False" IsReadOnly="True">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Дата" Binding="{Binding Date}" Width="100" />
+              <DataGridTextColumn Header="Под." Binding="{Binding Entrance}" Width="56" />
+              <DataGridTextColumn Header="Неисправность" Binding="{Binding Fault}" Width="*" />
+              <DataGridTextColumn Header="Механик" Binding="{Binding Mechanic}" Width="150" />
+              <DataGridCheckBoxColumn Header="Выполн." Binding="{Binding Done}" Width="76" />
+            </DataGrid.Columns>
+          </DataGrid>
+          <StackPanel IsVisible="{Binding CanAcceptIntercomTickets}">
+            <Grid ColumnDefinitions="70,*" RowDefinitions="Auto,Auto" Margin="0,8,0,0">
+              <TextBox Classes="cell" Margin="0,0,8,6" Watermark="Под." Text="{Binding IntercomEntrance}" />
+              <TextBox Grid.Column="1" Classes="cell" Margin="0,0,0,6" Watermark="Неисправность" Text="{Binding IntercomFault}" />
+              <ComboBox Grid.Row="1" Grid.ColumnSpan="2" Classes="cell" HorizontalAlignment="Stretch" PlaceholderText="Радиомеханик"
+                        ItemsSource="{Binding Mechanics}" SelectedItem="{Binding IntercomMechanic}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="d:Mechanic">
+                    <TextBlock Text="{Binding FullName}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </Grid>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+              <Button Content="Выполнена" Command="{Binding CloseIntercomTicketCommand}" ToolTip.Tip="Отметить выбранную заявку выполненной" />
+              <Button Classes="primary" Margin="0" Content="Принять заявку" Command="{Binding AcceptIntercomTicketCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </StackPanel>
+      </HeaderedContentControl>
+    </Grid>
+  </StackPanel>
 </UserControl>
