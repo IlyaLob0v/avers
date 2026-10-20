@@ -7,6 +7,7 @@
         x:Class="Avers.Desktop.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="{Binding WindowTitle}"
+        Icon="/Assets/avers.ico"
         Width="1280" Height="840" MinWidth="1000" MinHeight="680"
         WindowStartupLocation="CenterScreen">
   <Grid>
@@ -106,7 +107,7 @@
             </MenuItem>
             <MenuItem Header="_Справка">
               <MenuItem Header="Образцы оформления" Click="OnStyleGuideClick" />
-              <MenuItem Header="О программе" Command="{Binding AboutCommand}" />
+              <MenuItem Header="О программе" Click="OnAboutClick" />
             </MenuItem>
           </Menu>
         </DockPanel>
@@ -115,6 +116,10 @@
       <!-- Полоса модулей: рабочий стол и модули, разрешённые роли -->
       <Border DockPanel.Dock="Top" Classes="modbar">
         <DockPanel>
+          <Button DockPanel.Dock="Left" Classes="mod" Width="32" Padding="0,2,0,0"
+                  HorizontalContentAlignment="Center" ToolTip.Tip="Назад" Command="{Binding BackCommand}">
+            <Path Data="M13,8 L3,8 M7.5,3.5 L3,8 L7.5,12.5" Width="16" Height="16" />
+          </Button>
           <Button DockPanel.Dock="Left" Classes="mod" Classes.current="{Binding IsOnDesktop}" Width="32" Padding="0,2,0,0"
                   HorizontalContentAlignment="Center" ToolTip.Tip="Рабочий стол"
                   Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Desktop}">

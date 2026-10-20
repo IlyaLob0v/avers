@@ -6,7 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace Avers.Desktop.ViewModels;
 
-/// <summary>Печать квитанции и лицевого счёта выбранной квартиры: PDF во временной папке, открывается для печати.</summary>
+/// <summary>Печать квитанции и лицевого счёта выбранной квартиры, наряд-заказа по заявке: PDF во временной папке, открывается для печати.</summary>
 public sealed partial class MainViewModel
 {
     [ObservableProperty] private bool _printWithPayDate = true;
@@ -25,15 +25,27 @@ public sealed partial class MainViewModel
     private void PrintAccount() =>
         Print("лицевой-счёт", "лицевой счёт", (s, path) => PdfForms.Account(s, _today.Year, PrintWithPayDate, _today, path));
 
+    [RelayCommand]
+    private void PrintWorkOrder()
+    {
+        if (SelectedTicket is not { } t) { Status = "Выберите заявку в журнале."; return; }
+        var address = TicketAddress;
+        OpenPdf(PrintPath("наряд-заказ", t.Number.ToString()), $"наряд-заказ № {t.Number}", path => PdfForms.WorkOrder(t, address, path));
+    }
+
     private void Print(string file, string title, Action<Subscriber, string> write)
     {
         if (SelectedSubscriber is not { } s) return;
-        var path = PrintPath(file, s);
+        OpenPdf(PrintPath(file, s.Account), $"{title} {s.FullName}", path => write(s, path));
+    }
+
+    private void OpenPdf(string path, string title, Action<string> write)
+    {
         try
         {
-            write(s, path);
+            write(path);
             OpenFile(path);
-            Status = $"Открыт PDF: {title} {s.FullName}. Печать — из программы просмотра.";
+            Status = $"Открыт PDF: {title}. Печать — из программы просмотра.";
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
         {
@@ -41,10 +53,10 @@ public sealed partial class MainViewModel
         }
     }
 
-    private static string PrintPath(string kind, Subscriber s)
+    private static string PrintPath(string kind, string key)
     {
         var dir = Path.Combine(Path.GetTempPath(), "Avers");
         Directory.CreateDirectory(dir);
-        return Path.Combine(dir, $"{kind}-{s.Account}.pdf");
+        return Path.Combine(dir, $"{kind}-{key}.pdf");
     }
 }

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Avers.Domain;
+using CommunityToolkit.Mvvm.Input;
 
 namespace Avers.Desktop.ViewModels;
 
@@ -8,6 +9,9 @@ public sealed partial class MainViewModel
 {
     /// <summary>Модули, доступные вошедшему пользователю, в порядке <see cref="NavCatalog"/>.</summary>
     public ObservableCollection<NavItem> Navigation { get; } = [];
+
+    /// <summary>Пройденные экраны для кнопки «Назад»; сбрасываются при выходе.</summary>
+    private readonly Stack<AppModule> _history = new();
 
     public string ModuleTitle => Module == AppModule.Desktop ? "Рабочий стол" : NavCatalog.Owner(Module)?.Title ?? "";
 
@@ -19,6 +23,28 @@ public sealed partial class MainViewModel
     public string UserLine => User is null ? "" : $"{User.DisplayName} · {UserRoleTitle}";
 
     public string UserRoleTitle => User is null ? "" : RoleCatalog.Title(User.Role);
+
+    private void Remember(AppModule current)
+    {
+        _history.Push(current);
+        BackCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool CanBack() => _history.Count > 0;
+
+    [RelayCommand(CanExecute = nameof(CanBack))]
+    private void Back()
+    {
+        // После записи заявки программа сама возвращается в журнал — такой экран пропускаем.
+        while (_history.TryPop(out var previous))
+        {
+            if (previous == Module) continue;
+            Module = previous;
+            Status = WindowTitle;
+            break;
+        }
+        BackCommand.NotifyCanExecuteChanged();
+    }
 
     private void RebuildNavigation()
     {

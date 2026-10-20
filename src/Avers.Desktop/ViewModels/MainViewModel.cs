@@ -437,6 +437,8 @@ public sealed partial class MainViewModel : ObservableObject
         User = null;
         Debtors.Clear();
         _debtByHouse = [];
+        _history.Clear();
+        BackCommand.NotifyCanExecuteChanged();
         Module = AppModule.Desktop;
         Status = "Сеанс завершён.";
     }
@@ -445,6 +447,8 @@ public sealed partial class MainViewModel : ObservableObject
     private void Go(AppModule page)
     {
         if (User is null) return;
+        if (page != Module)
+            Remember(Module);
         Module = page;
         var check = page switch
         {
@@ -527,10 +531,6 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Кнопка экрана-макета: действие ещё не реализовано, говорим об этом прямо.</summary>
     [RelayCommand]
     private void NotReady(string? action) => Status = $"«{action}» пока не работает: функция в разработке.";
-
-    [RelayCommand]
-    private void About() =>
-        Status = $"Аверс {typeof(MainViewModel).Assembly.GetName().Version?.ToString(3)} · учёт антенной службы, АДС и абонентов.";
 
     private static string Money(decimal value) => value.ToString("N2") + " ₽";
 }
