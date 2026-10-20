@@ -11,4 +11,6 @@ public partial class MainWindow : Window
     }
 
     private void OnStyleGuideClick(object? sender, RoutedEventArgs e) => new StyleGuideWindow().Show(this);
+
+    private void OnAboutClick(object? sender, RoutedEventArgs e) => new AboutWindow { DataContext = DataContext }.ShowDialog(this);
 }

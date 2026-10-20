@@ -1,0 +1,23 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Avers.Desktop.ViewModels"
+        x:Class="Avers.Desktop.Views.AboutWindow"
+        x:DataType="vm:MainViewModel"
+        Title="О программе"
+        Icon="/Assets/avers.ico"
+        SizeToContent="WidthAndHeight" CanResize="False" WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="24,20" Spacing="4">
+    <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,0,0,12">
+      <Image Source="/Assets/logo-avers-servis.png" Height="72" />
+      <StackPanel VerticalAlignment="Center">
+        <TextBlock Text="АВЕРС" FontSize="22" FontWeight="SemiBold" LetterSpacing="1.3" Foreground="{StaticResource Caption}" />
+        <TextBlock Classes="crumb" Text="Учёт антенной службы, АДС и абонентов" />
+      </StackPanel>
+    </StackPanel>
+    <TextBlock x:Name="VersionText" />
+    <TextBlock Text="{Binding StoreTitle, StringFormat='База: {0}'}" />
+    <TextBlock Text="{Binding UserLine, StringFormat='Пользователь: {0}'}" />
+    <Button Classes="primary" Content="Закрыть" IsDefault="True" IsCancel="True" HorizontalAlignment="Right"
+            MinWidth="96" Margin="0,16,0,0" HorizontalContentAlignment="Center" Click="OnCloseClick" />
+  </StackPanel>
+</Window>

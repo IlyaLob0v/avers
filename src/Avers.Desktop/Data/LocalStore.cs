@@ -5,14 +5,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Avers.Desktop.Data;
 
-/// <summary>Учебная база SQLite на этом компьютере: у каждого сотрудника своя, рабочая дата — дата учебных данных.</summary>
-public sealed class LocalStore(IDbContextFactory<AversDbContext> db) : IAversStore
+/// <summary>Учебная база SQLite на этом компьютере: у каждого сотрудника своя. Рабочая дата — сегодня, в тестах — дата учебных данных.</summary>
+public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly today) : IAversStore
 {
     public bool IsShared => false;
 
     public string Title => "учебная база на этом компьютере";
 
-    public DateOnly Today => DemoSeeder.WorkDate;
+    public DateOnly Today => today;
 
     /// <summary>Кто вошёл — для журнала изменений.</summary>
     private int _userId;

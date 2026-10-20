@@ -1,5 +1,6 @@
 using Avalonia.Headless;
 using Avalonia.Threading;
+using Avers.Data;
 using Avers.Desktop.ViewModels;
 using Avers.Desktop.Views;
 using Microsoft.Data.Sqlite;
@@ -16,7 +17,7 @@ public sealed class DesktopApp : IDisposable
 
     public DesktopApp(string login = "admin")
     {
-        Vm = App.CreateMainViewModel(_databaseFile);
+        Vm = App.CreateMainViewModel(_databaseFile, DemoSeeder.WorkDate);
         Window = new MainWindow { DataContext = Vm, Width = 1280, Height = 840 };
         Window.Show();
         Vm.LoginUser = Vm.Users.Single(u => u.Login == login);

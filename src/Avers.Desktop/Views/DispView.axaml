@@ -52,7 +52,7 @@
         <Button Classes="primary" Content="Принять заявку" Command="{Binding AcceptTicketCommand}" IsEnabled="{Binding CanAcceptTickets}" />
         <Button Content="Изменить заявку" Command="{Binding EditTicketCommand}" IsEnabled="{Binding CanEditSelectedTicket}" />
         <Button Content="Паспорт дома" Command="{Binding OpenTicketHouseCommand}" />
-        <Button Content="Печать наряд-заказа" Command="{Binding NotReadyCommand}" CommandParameter="Печать наряд-заказа" />
+        <Button Content="Печать наряд-заказа" Command="{Binding PrintWorkOrderCommand}" />
       </StackPanel>
     </Border>
 
