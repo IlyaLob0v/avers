@@ -2,18 +2,45 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Avers.Desktop.ViewModels"
              xmlns:ctl="using:Avers.Desktop.Controls"
+             xmlns:d="using:Avers.Domain"
              x:Class="Avers.Desktop.Views.ContractView"
              x:DataType="vm:MainViewModel">
   <DockPanel Margin="16,0,16,12">
     <Border DockPanel.Dock="Top" Classes="card" Padding="12,6">
-      <StackPanel Orientation="Horizontal">
-        <TextBlock Classes="label" Text="Организация" />
-        <TextBox Width="240" Margin="0,0,16,0" Text="{Binding SelectedHouse.Organization.Name, Mode=OneWay}" IsReadOnly="True" />
-        <TextBlock Classes="label" Text="Дом" />
-        <TextBox Width="220" Margin="0,0,16,0" Text="{Binding HouseCaption, Mode=OneWay}" IsReadOnly="True" />
-        <CheckBox Margin="0,0,16,0" Content="Только действующие" IsChecked="{Binding OnlyActiveContracts}" />
-        <TextBlock Classes="label" Text="Дата" />
-        <TextBox Width="100" Text="{Binding WorkDateText, Mode=OneWay}" IsReadOnly="True" />
+      <StackPanel>
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Classes="label" Text="Улица" />
+          <ComboBox Classes="cell" Width="190" Margin="0,0,12,0" ItemsSource="{Binding Streets}" SelectedItem="{Binding SelectedStreet}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="d:Street">
+                <TextBlock Text="{Binding Name}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <TextBlock Classes="label" Text="Дом" />
+          <ComboBox Classes="cell" Width="90" Margin="0,0,12,0" ItemsSource="{Binding HousesOnStreet}" SelectedItem="{Binding SelectedHouse}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="d:House">
+                <TextBlock Text="{Binding Number}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <TextBlock Classes="label" Text="Организация" />
+          <TextBox Width="240" Margin="0,0,16,0" Text="{Binding SelectedHouse.Organization.Name, Mode=OneWay}" IsReadOnly="True" />
+          <CheckBox Margin="0,0,16,0" Content="Только действующие" IsChecked="{Binding OnlyActiveContracts}" />
+          <TextBlock Classes="label" Text="Дата" />
+          <TextBox Width="100" Text="{Binding WorkDateText, Mode=OneWay}" IsReadOnly="True" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+          <TextBlock Classes="label" Text="Поиск" />
+          <TextBox Classes="cell" Width="260" Watermark="№ договора или фамилия" Text="{Binding ContractQuery}">
+            <TextBox.KeyBindings>
+              <KeyBinding Gesture="Enter" Command="{Binding FindContractCommand}" />
+            </TextBox.KeyBindings>
+          </TextBox>
+          <Button Classes="primary" Margin="8,0,16,0" Content="Найти" Command="{Binding FindContractCommand}" />
+          <Button Content="Реестр в Excel" Command="{Binding ExportContractsCommand}" />
+        </StackPanel>
       </StackPanel>
     </Border>
 
@@ -29,7 +56,26 @@
           <TextBlock Classes="hint" Text="{Binding LastPaymentAgo}" />
           <TextBlock Classes="hint" Text="{Binding SelectedSubscriber.Notes, StringFormat='Примечание: {0}'}" TextWrapping="Wrap" />
         </StackPanel>
-        <Button Grid.Column="1" Classes="primary" Margin="0" VerticalAlignment="Top" Content="Карточка квартиры" Command="{Binding OpenCardCommand}" />
+        <StackPanel Grid.Column="1" Width="640">
+          <Grid ColumnDefinitions="Auto,*,Auto,96,Auto,96" RowDefinitions="Auto,Auto,Auto" IsVisible="{Binding CanEditCard}">
+            <TextBlock Classes="label" Text="№ договора" VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" Classes="cell" Text="{Binding EditContractNumber}" />
+            <TextBlock Grid.Column="2" Classes="label" Margin="8,0,4,0" Text="Заключён" VerticalAlignment="Center" />
+            <TextBox Grid.Column="3" Classes="cell" Watermark="дд.мм.гггг" Text="{Binding EditContractDate}" />
+            <TextBlock Grid.Column="4" Classes="label" Margin="8,0,4,0" Text="Расторгнут" VerticalAlignment="Center" />
+            <TextBox Grid.Column="5" Classes="cell" Watermark="дд.мм.гггг" Text="{Binding EditContractTerminated}" />
+            <TextBlock Grid.Row="1" Classes="label" Text="С кем заключён" VerticalAlignment="Center" />
+            <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="5" Classes="cell" Watermark="пусто — с самим абонентом" Text="{Binding EditContractHolder}" />
+            <TextBlock Grid.Row="2" Classes="label" Text="Примечание" VerticalAlignment="Center" />
+            <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="5" Classes="cell" Text="{Binding EditNotes}" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
+            <Button Content="Новый договор" IsVisible="{Binding CanEditCard}" Command="{Binding NewContractCommand}" />
+            <Button Content="Расторгнуть" IsVisible="{Binding CanEditCard}" Command="{Binding TerminateContractCommand}" />
+            <Button Classes="primary" Content="Сохранить" IsVisible="{Binding CanEditCard}" Command="{Binding SaveCardCommand}" />
+            <Button Classes="link" Margin="0" Content="Карточка квартиры" Command="{Binding OpenCardCommand}" />
+          </StackPanel>
+        </StackPanel>
       </Grid>
     </Border>
 
