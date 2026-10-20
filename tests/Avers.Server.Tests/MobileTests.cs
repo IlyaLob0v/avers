@@ -31,6 +31,7 @@ public class MobileTests
         Assert.NotEqual("", house.HomeownerPhones);
         Assert.Equal("У старшей по дому, кв. 7.", house.TechFloorKey);
         Assert.Equal("Схема СКПТ Ленина 44", house.Schemes.Single().Name);
+        Assert.True(house.Schemes.Single().HasImage);
     }
 
     [Fact]
