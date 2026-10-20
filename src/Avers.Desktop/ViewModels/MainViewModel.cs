@@ -177,6 +177,8 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var m in data.Mechanics) Mechanics.Add(m);
         Materials.Clear();
         foreach (var m in data.Materials) Materials.Add(m);
+        Organizations.Clear();
+        foreach (var o in data.Organizations) Organizations.Add(o);
 
         RefreshTotals();
 
@@ -267,6 +269,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanEditSettings));
         OnPropertyChanged(nameof(CanEditPpr));
         OnPropertyChanged(nameof(CanEditSchemes));
+        OnPropertyChanged(nameof(CanEditPhonebook));
         NotifyTicketPanel();
         BindTicket();
         RebuildNavigation();
@@ -294,12 +297,14 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnSelectedStreetChanged(Street? value)
     {
+        StreetName = value?.Name ?? "";
         RefreshHouses();
         SelectedHouse = HousesOnStreet.FirstOrDefault();
     }
 
     partial void OnSelectedHouseChanged(House? value)
     {
+        EditHouse = value;
         if (!_holdRefresh)
             _ = ShowHouseAsync(null);
     }
