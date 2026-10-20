@@ -168,6 +168,51 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public void Print_WorkOrderOfSelectedTicketOpensAsPdf()
+    {
+        using var app = new DesktopApp("orlov");
+        app.Go(AppModule.Disp);
+        string? opened = null;
+        app.Vm.OpenFile = path => opened = path;
+
+        app.Vm.PrintWorkOrderCommand.Execute(null);
+
+        Assert.NotNull(opened);
+        Assert.StartsWith("%PDF", File.ReadAllText(opened)[..4]);
+        Assert.Contains($"наряд-заказ № {app.Vm.SelectedTicket!.Number}", app.Vm.Status);
+    }
+
+    [AvaloniaFact]
+    public void Back_ReturnsToPreviousScreens()
+    {
+        using var app = new DesktopApp("admin");
+        var start = app.Vm.Module;
+        app.Go(AppModule.Disp);
+        app.Go(AppModule.Anten);
+
+        app.Vm.BackCommand.Execute(null);
+        Assert.Equal(AppModule.Disp, app.Vm.Module);
+        app.Vm.BackCommand.Execute(null);
+        Assert.Equal(start, app.Vm.Module);
+        Assert.False(app.Vm.BackCommand.CanExecute(null));
+    }
+
+    [AvaloniaFact]
+    public void About_ShowsVersionAndDatabase()
+    {
+        using var app = new DesktopApp();
+        var about = new Views.AboutWindow { DataContext = app.Vm };
+
+        about.Show(app.Window);
+        app.Pump();
+
+        Assert.StartsWith("Версия ", about.FindControl<TextBlock>("VersionText")!.Text);
+        Assert.NotNull(about.Icon);
+        Assert.NotNull(about.CaptureRenderedFrame());
+        about.Close();
+    }
+
+    [AvaloniaFact]
     public void Ppr_ClickOnMonthMarksItAndCountsPercent()
     {
         using var app = new DesktopApp("engineer");

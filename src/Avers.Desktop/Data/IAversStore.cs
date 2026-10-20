@@ -62,6 +62,23 @@ public interface IAversStore
 
     Task CloseIntercomTicketAsync(int ticketId);
 
+    /// <summary>Словарь: черновик с Id = 0 — новая запись.</summary>
+    Task SaveStreetAsync(Street draft);
+
+    Task DeleteStreetAsync(int id);
+
+    Task SaveHouseAsync(House draft);
+
+    Task DeleteHouseAsync(int id);
+
+    Task SaveMaterialAsync(Material draft);
+
+    Task DeleteMaterialAsync(int id);
+
+    Task SaveMechanicAsync(Mechanic draft);
+
+    Task DeleteMechanicAsync(int id);
+
     /// <summary>Принимает заявку и возвращает её номер.</summary>
     Task<int> AcceptTicketAsync(CreateTicketRequest request, AppUser user);
 

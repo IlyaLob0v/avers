@@ -49,7 +49,7 @@ public sealed partial class MainViewModel
             var content = await _store.LoadSchemeFileAsync(scheme.Id);
             if (scheme != SelectedScheme) return;
             SetSchemeImage(content is null ? null : new Bitmap(new MemoryStream(content)));
-            SchemeNote = content is null ? $"Файл схемы не загружен в базу ({scheme.Format})." : "";
+            SchemeNote = content is null ? "Картинка схемы не загружена. Главный инженер добавляет её кнопкой «Заменить файл»: JPG или PNG." : "";
         }
         catch (StoreException e)
         {

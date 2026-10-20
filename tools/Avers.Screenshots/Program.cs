@@ -2,6 +2,7 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Headless;
 using Avalonia.Threading;
+using Avers.Data;
 using Avers.Desktop;
 using Avers.Desktop.ViewModels;
 using Avers.Desktop.Views;
@@ -37,7 +38,7 @@ AppBuilder.Configure<App>()
     .SetupWithoutStarting();
 
 var dbPath = Path.Combine(Path.GetTempPath(), $"avers-shots-{Guid.NewGuid():N}.db");
-var vm = App.CreateMainViewModel(dbPath);
+var vm = App.CreateMainViewModel(dbPath, DemoSeeder.WorkDate);
 var window = new MainWindow { DataContext = vm, Width = size?.Width ?? 1280, Height = size?.Height ?? 840 };
 window.Show();
 

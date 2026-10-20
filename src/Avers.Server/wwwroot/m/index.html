@@ -185,7 +185,7 @@ async function openHouse(id) {
       ["Блоки питания", h.powerSupplies], ["Ключ от техэтажа", h.techFloorKey], ["Прочее", h.otherNotes]
     ]));
     const schemes = section("Схемы СКПТ", h.schemes.filter(s => !s.hasImage).map(s =>
-      [s.name, `${s.format}, обновлена ${new Date(s.updatedAt).toLocaleDateString("ru-RU")}, файла нет в базе`]));
+      [s.name, `картинка не загружена, обновлена ${new Date(s.updatedAt).toLocaleDateString("ru-RU")}`]));
     for (const s of h.schemes.filter(s => s.hasImage)) {
       const b = document.createElement("button");
       b.className = "scheme";

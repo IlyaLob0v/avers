@@ -43,7 +43,8 @@ public enum SearchMode
     Pzhreu,
     Account,
     InnerCode,
-    Surname
+    Surname,
+    Contract
 }
 
 public enum AppModule

@@ -42,8 +42,8 @@ public partial class App : Application
     }
 
     /// <summary>Модель главного окна на учебной базе. Нужна и приложению, и тестам со снимками экранов.</summary>
-    public static MainViewModel CreateMainViewModel(string? databasePath = null) =>
-        CreateMainViewModel(OpenDemoDatabase(databasePath));
+    public static MainViewModel CreateMainViewModel(string? databasePath = null, DateOnly? today = null) =>
+        CreateMainViewModel(OpenDemoDatabase(databasePath, today ?? DateOnly.FromDateTime(DateTime.Now)));
 
     public static MainViewModel CreateMainViewModel(IAversStore store)
     {
@@ -52,7 +52,7 @@ public partial class App : Application
         return vm;
     }
 
-    private static LocalStore OpenDemoDatabase(string? databasePath)
+    private static LocalStore OpenDemoDatabase(string? databasePath, DateOnly today)
     {
         var services = new ServiceCollection();
         services.AddAversData(databasePath);
@@ -65,6 +65,6 @@ public partial class App : Application
             DemoDatabase.EnsureCurrent(db, databaseFile);
             DemoSeeder.EnsureSeeded(db);
         }
-        return new LocalStore(factory);
+        return new LocalStore(factory, today);
     }
 }

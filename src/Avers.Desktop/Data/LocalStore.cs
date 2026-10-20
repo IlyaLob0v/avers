@@ -5,14 +5,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Avers.Desktop.Data;
 
-/// <summary>Учебная база SQLite на этом компьютере: у каждого сотрудника своя, рабочая дата — дата учебных данных.</summary>
-public sealed class LocalStore(IDbContextFactory<AversDbContext> db) : IAversStore
+/// <summary>Учебная база SQLite на этом компьютере: у каждого сотрудника своя. Рабочая дата — сегодня, в тестах — дата учебных данных.</summary>
+public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly today) : IAversStore
 {
     public bool IsShared => false;
 
     public string Title => "учебная база на этом компьютере";
 
-    public DateOnly Today => DemoSeeder.WorkDate;
+    public DateOnly Today => today;
 
     /// <summary>Кто вошёл — для журнала изменений.</summary>
     private int _userId;
@@ -199,6 +199,29 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db) : IAversSto
     }
 
     private static Task Check(string? error) => error is null ? Task.CompletedTask : throw new StoreException(error);
+
+    public Task SaveStreetAsync(Street draft) => EditPhonebook((ctx, who) => Phonebook.SaveStreet(ctx, draft, who, DateTimeOffset.UtcNow));
+
+    public Task DeleteStreetAsync(int id) => EditPhonebook((ctx, who) => Phonebook.DeleteStreet(ctx, id, who, DateTimeOffset.UtcNow));
+
+    public Task SaveHouseAsync(House draft) => EditPhonebook((ctx, who) => Phonebook.SaveHouse(ctx, draft, who, DateTimeOffset.UtcNow));
+
+    public Task DeleteHouseAsync(int id) => EditPhonebook((ctx, who) => Phonebook.DeleteHouse(ctx, id, who, DateTimeOffset.UtcNow));
+
+    public Task SaveMaterialAsync(Material draft) => EditPhonebook((ctx, who) => Phonebook.SaveMaterial(ctx, draft, who, DateTimeOffset.UtcNow));
+
+    public Task DeleteMaterialAsync(int id) => EditPhonebook((ctx, who) => Phonebook.DeleteMaterial(ctx, id, who, DateTimeOffset.UtcNow));
+
+    public Task SaveMechanicAsync(Mechanic draft) => EditPhonebook((ctx, who) => Phonebook.SaveMechanic(ctx, draft, who, DateTimeOffset.UtcNow));
+
+    public Task DeleteMechanicAsync(int id) => EditPhonebook((ctx, who) => Phonebook.DeleteMechanic(ctx, id, who, DateTimeOffset.UtcNow));
+
+    private Task EditPhonebook(Func<AversDbContext, string, string?> edit)
+    {
+        using var ctx = db.CreateDbContext();
+        var error = edit(ctx, ChangeLog.Who(ctx, _userId));
+        return error is null ? Task.CompletedTask : throw new StoreException(error);
+    }
 
     public Task<int> AcceptTicketAsync(CreateTicketRequest request, AppUser user)
     {

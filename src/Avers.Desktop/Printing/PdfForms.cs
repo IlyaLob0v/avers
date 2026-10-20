@@ -5,7 +5,7 @@ using SkiaSharp;
 namespace Avers.Desktop.Printing;
 
 /// <summary>
-/// Печатные формы в PDF: квитанция и лицевой счёт абонента, домофоны дома. PDF рисует SkiaSharp, который уже есть в Avalonia;
+/// Печатные формы в PDF: квитанция и лицевой счёт абонента, наряд-заказ радиомеханику, домофоны дома. PDF рисует SkiaSharp, который уже есть в Avalonia;
 /// файл открывается программой просмотра PDF и печатается оттуда на любой принтер.
 /// </summary>
 public static class PdfForms
@@ -85,6 +85,28 @@ public static class PdfForms
         pdf.Field("Дата печати", today.ToString("dd.MM.yyyy"));
     }
 
+    /// <summary>Наряд-заказ по заявке: радиомеханик берёт его на выезд и заполняет от руки, что сделано.</summary>
+    public static void WorkOrder(WorkTicket t, string address, string path)
+    {
+        using var pdf = new Page(path);
+        pdf.Title($"Наряд-заказ № {t.Number}");
+        pdf.Field("Принята", $"{t.Date:dd.MM.yyyy} {t.Time:HH\\:mm}, {t.AcceptedBy}");
+        pdf.Field("Адрес", address);
+        pdf.Field("Телефон", t.Phone);
+        pdf.Field("Вид работ", t.KindLabel);
+        pdf.Field("Неисправность", t.Fault);
+        pdf.Field("Радиомеханик", t.Mechanic);
+        pdf.Gap();
+        pdf.Field("Что произведено", t.WorkDone);
+        pdf.Field("", "");
+        pdf.Field("Материалы", "");
+        pdf.Field("", "");
+        pdf.Field("Дата выполнения", t.DoneDate?.ToString("dd.MM.yyyy") ?? "");
+        pdf.Gap();
+        pdf.Field("Подпись радиомеханика", "");
+        pdf.Field("Подпись абонента", "");
+    }
+
     private static string Address(Subscriber s) => $"{s.House.AddressLine}, кв. {s.Apartment}";
 
     private static string Contract(Subscriber s)
@@ -123,12 +145,33 @@ public static class PdfForms
             _y += 30;
         }
 
+        /// <summary>Подпись слева, значение на линии справа; длинное значение переносится на следующие линии.</summary>
         public void Field(string label, string value)
         {
             Text(label, Left, 11, _regular);
-            Text(value, Left + 150, 11, _bold);
-            _canvas.DrawLine(Left + 150, _y + 4, Left + Width, _y + 4, _ink);
-            _y += 22;
+            foreach (var line in Wrap(value, Width - 150))
+            {
+                Text(line, Left + 150, 11, _bold);
+                _canvas.DrawLine(Left + 150, _y + 4, Left + Width, _y + 4, _ink);
+                _y += 22;
+            }
+        }
+
+        private IEnumerable<string> Wrap(string value, float width)
+        {
+            using var font = new SKFont(_bold, 11);
+            var line = "";
+            foreach (var word in value.Split(' '))
+            {
+                var next = line == "" ? word : line + " " + word;
+                if (line != "" && font.MeasureText(next) > width)
+                {
+                    yield return line;
+                    next = word;
+                }
+                line = next;
+            }
+            yield return line;
         }
 
         public void Row(bool bold, params (string Text, float X)[] cells)

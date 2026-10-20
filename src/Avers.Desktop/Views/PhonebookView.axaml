@@ -6,46 +6,123 @@
              x:DataType="vm:MainViewModel">
   <ScrollViewer>
     <StackPanel Margin="16,0,16,2">
-      <Grid ColumnDefinitions="220,*" Height="220" Margin="0,0,0,10">
-        <HeaderedContentControl Classes="group" Margin="0,0,10,0" Padding="0" Header="Улицы">
-          <ListBox Classes="streets" BorderThickness="0" ItemsSource="{Binding Streets}" SelectedItem="{Binding SelectedStreet}">
-            <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="d:Street">
-                <TextBlock Text="{Binding Name}" />
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
+      <Grid ColumnDefinitions="250,*,320" Margin="0,0,0,10">
+        <HeaderedContentControl Classes="group" Margin="0,0,10,0" Header="Улицы">
+          <StackPanel>
+            <ListBox Classes="streets" Height="200" BorderThickness="0" ItemsSource="{Binding Streets}" SelectedItem="{Binding SelectedStreet}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="d:Street">
+                  <TextBlock Text="{Binding Name}" />
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <StackPanel IsVisible="{Binding CanEditPhonebook}">
+              <TextBox Classes="cell" Margin="0,8,0,0" Text="{Binding StreetName}" />
+              <Grid ColumnDefinitions="*,*,*" Margin="0,8,0,0">
+                <Button Content="Добавить" Margin="0,0,4,0" Padding="2,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Command="{Binding AddStreetCommand}" />
+                <Button Grid.Column="1" Content="Переим." Margin="0,0,4,0" Padding="2,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Command="{Binding RenameStreetCommand}" ToolTip.Tip="Переименовать улицу" />
+                <Button Grid.Column="2" Content="Удалить" Margin="0" Padding="2,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Command="{Binding DeleteStreetCommand}" />
+              </Grid>
+            </StackPanel>
+          </StackPanel>
         </HeaderedContentControl>
-        <DataGrid Grid.Column="1" ItemsSource="{Binding HousesOnStreet}" SelectedItem="{Binding SelectedHouse}" AutoGenerateColumns="False" IsReadOnly="True">
-          <DataGrid.Columns>
-            <DataGridTextColumn Header="Дом" Binding="{Binding Number}" Width="70" />
-            <DataGridTextColumn Header="Индекс" Binding="{Binding PzhreuIndex}" Width="80" />
-            <DataGridTextColumn Header="Счёт ПЖРЭУ" Binding="{Binding PzhreuAccount}" Width="120" />
-            <DataGridTextColumn Header="Эт." Binding="{Binding Floors}" Width="60" />
-            <DataGridTextColumn Header="Под." Binding="{Binding Entrances}" Width="60" />
-            <DataGridTextColumn Header="Стояков" Binding="{Binding Risers}" Width="80" />
-          </DataGrid.Columns>
-        </DataGrid>
+        <HeaderedContentControl Grid.Column="1" Classes="group" Margin="0,0,10,0" Header="Дома улицы">
+          <DataGrid Height="276" ItemsSource="{Binding HousesOnStreet}" SelectedItem="{Binding SelectedHouse}" AutoGenerateColumns="False" IsReadOnly="True">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Дом" Binding="{Binding Number}" Width="70" />
+              <DataGridTextColumn Header="Индекс" Binding="{Binding PzhreuIndex}" Width="80" />
+              <DataGridTextColumn Header="Счёт ПЖРЭУ" Binding="{Binding PzhreuAccount}" Width="120" />
+              <DataGridTextColumn Header="Эт." Binding="{Binding Floors}" Width="60" />
+              <DataGridTextColumn Header="Под." Binding="{Binding Entrances}" Width="60" />
+              <DataGridTextColumn Header="Стояков" Binding="{Binding Risers}" Width="80" />
+              <DataGridTextColumn Header="Кв." Binding="{Binding Apartments}" Width="60" />
+              <DataGridCheckBoxColumn Header="Обсл." Binding="{Binding Serviced}" Width="*" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </HeaderedContentControl>
+        <HeaderedContentControl Grid.Column="2" Classes="group" Header="{Binding EditHouseCaption}" IsVisible="{Binding CanEditPhonebook}">
+          <StackPanel>
+            <Grid ColumnDefinitions="100,*,52,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+              <TextBlock Classes="label" Text="Номер дома" VerticalAlignment="Center" />
+              <TextBox Grid.Column="1" Grid.ColumnSpan="3" Classes="cell" Text="{Binding EditHouse.Number}" />
+              <TextBlock Grid.Row="1" Classes="label" Text="Индекс ПЖРЭУ" VerticalAlignment="Center" />
+              <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Classes="cell" Text="{Binding EditHouse.PzhreuIndex}" />
+              <TextBlock Grid.Row="2" Classes="label" Text="Счёт ПЖРЭУ" VerticalAlignment="Center" />
+              <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Classes="cell" Text="{Binding EditHouse.PzhreuAccount}" />
+              <TextBlock Grid.Row="3" Classes="label" Text="Этажей" VerticalAlignment="Center" />
+              <TextBox Grid.Row="3" Grid.Column="1" Classes="cell" Text="{Binding EditHouse.Floors}" />
+              <TextBlock Grid.Row="3" Grid.Column="2" Classes="label" Text="Под." Margin="8,0,0,0" VerticalAlignment="Center" />
+              <TextBox Grid.Row="3" Grid.Column="3" Classes="cell" Text="{Binding EditHouse.Entrances}" />
+              <TextBlock Grid.Row="4" Classes="label" Text="Стояков" VerticalAlignment="Center" />
+              <TextBox Grid.Row="4" Grid.Column="1" Classes="cell" Text="{Binding EditHouse.Risers}" />
+              <TextBlock Grid.Row="4" Grid.Column="2" Classes="label" Text="Кв." Margin="8,0,0,0" VerticalAlignment="Center" />
+              <TextBox Grid.Row="4" Grid.Column="3" Classes="cell" Text="{Binding EditHouse.Apartments}" />
+              <TextBlock Grid.Row="5" Classes="label" Text="Зона" VerticalAlignment="Center" />
+              <TextBox Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="3" Classes="cell" Text="{Binding EditHouse.Zone}" />
+            </Grid>
+            <TextBlock Classes="label" Text="Обслуживающая организация" Margin="0,4,0,2" />
+            <ComboBox Classes="cell" HorizontalAlignment="Stretch" ItemsSource="{Binding Organizations}"
+                      SelectedValueBinding="{Binding Id}" SelectedValue="{Binding EditHouse.OrganizationId}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="d:Organization">
+                  <TextBlock Text="{Binding Name}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <CheckBox Content="На обслуживании" IsChecked="{Binding EditHouse.Serviced}" />
+            <Grid ColumnDefinitions="*,*,*" Margin="0,4,0,0">
+              <Button Content="Новый дом" Margin="0,0,4,0" HorizontalAlignment="Stretch" Command="{Binding NewHouseCommand}" />
+              <Button Grid.Column="1" Content="Удалить" Margin="0,0,4,0" HorizontalAlignment="Stretch" Command="{Binding DeleteHouseCommand}" />
+              <Button Grid.Column="2" Classes="primary" Content="Сохранить" Margin="0" HorizontalAlignment="Stretch" Command="{Binding SaveHouseDataCommand}" />
+            </Grid>
+          </StackPanel>
+        </HeaderedContentControl>
       </Grid>
       <Grid ColumnDefinitions="*,*">
         <HeaderedContentControl Classes="group" Margin="0,0,5,10" Header="Материалы">
-          <DataGrid Height="180" ItemsSource="{Binding Materials}" AutoGenerateColumns="False" IsReadOnly="True">
-            <DataGrid.Columns>
-              <DataGridTextColumn Header="Наименование" Binding="{Binding Name}" Width="*" />
-              <DataGridTextColumn Header="Ед." Binding="{Binding Unit}" Width="60" />
-            </DataGrid.Columns>
-          </DataGrid>
+          <StackPanel>
+            <DataGrid Height="180" ItemsSource="{Binding Materials}" SelectedItem="{Binding SelectedMaterial}" AutoGenerateColumns="False" IsReadOnly="True">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Наименование" Binding="{Binding Name}" Width="*" />
+                <DataGridTextColumn Header="Ед." Binding="{Binding Unit}" Width="60" />
+              </DataGrid.Columns>
+            </DataGrid>
+            <Grid ColumnDefinitions="*,70" Margin="0,8,0,0" IsVisible="{Binding CanEditPhonebook}">
+              <TextBox Classes="cell" Margin="0,0,8,0" Watermark="Наименование" Text="{Binding EditMaterial.Name}" />
+              <TextBox Grid.Column="1" Classes="cell" Watermark="Ед." Text="{Binding EditMaterial.Unit}" />
+            </Grid>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0" IsVisible="{Binding CanEditPhonebook}">
+              <Button Content="Новый материал" Command="{Binding NewMaterialCommand}" />
+              <Button Content="Удалить" Command="{Binding DeleteMaterialCommand}" />
+              <Button Classes="primary" Content="Сохранить" Margin="0" Command="{Binding SaveMaterialCommand}" />
+            </StackPanel>
+          </StackPanel>
         </HeaderedContentControl>
         <HeaderedContentControl Grid.Column="1" Classes="group" Margin="5,0,0,10" Header="Радиомеханики">
-          <DataGrid Height="180" ItemsSource="{Binding Mechanics}" AutoGenerateColumns="False" IsReadOnly="True">
-            <DataGrid.Columns>
-              <DataGridTextColumn Header="ФИО" Binding="{Binding FullName}" Width="*" />
-              <DataGridTextColumn Header="Должность" Binding="{Binding Position}" Width="140" />
-              <DataGridTextColumn Header="Телефон" Binding="{Binding Phone}" Width="140" />
-            </DataGrid.Columns>
-          </DataGrid>
+          <StackPanel>
+            <DataGrid Height="180" ItemsSource="{Binding Mechanics}" SelectedItem="{Binding SelectedMechanic}" AutoGenerateColumns="False" IsReadOnly="True">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="ФИО" Binding="{Binding FullName}" Width="*" />
+                <DataGridTextColumn Header="Должность" Binding="{Binding Position}" Width="140" />
+                <DataGridTextColumn Header="Телефон" Binding="{Binding Phone}" Width="140" />
+              </DataGrid.Columns>
+            </DataGrid>
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" Margin="0,8,0,0" IsVisible="{Binding CanEditPhonebook}">
+              <TextBox Classes="cell" Margin="0,0,8,6" Watermark="ФИО" Text="{Binding EditMechanic.FullName}" />
+              <TextBox Grid.Column="1" Classes="cell" Margin="0,0,0,6" Watermark="Должность" Text="{Binding EditMechanic.Position}" />
+              <TextBox Grid.Row="1" Classes="cell" Margin="0,0,8,0" Watermark="Телефон" Text="{Binding EditMechanic.Phone}" />
+              <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Watermark="Адрес" Text="{Binding EditMechanic.Address}" />
+            </Grid>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0" IsVisible="{Binding CanEditPhonebook}">
+              <Button Content="Новый радиомеханик" Command="{Binding NewMechanicCommand}" />
+              <Button Content="Удалить" Command="{Binding DeleteMechanicCommand}" />
+              <Button Classes="primary" Content="Сохранить" Margin="0" Command="{Binding SaveMechanicCommand}" />
+            </StackPanel>
+          </StackPanel>
         </HeaderedContentControl>
       </Grid>
+      <TextBlock Classes="hint" TextWrapping="Wrap" IsVisible="{Binding CanEditPhonebook}"
+                 Text="Кнопку «Удалить» нажимают дважды. Улицу с домами и дом с абонентами, заявками или схемами удалить нельзя: такой дом снимают с обслуживания." />
     </StackPanel>
   </ScrollViewer>
 </UserControl>

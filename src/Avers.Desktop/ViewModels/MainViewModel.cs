@@ -177,6 +177,8 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var m in data.Mechanics) Mechanics.Add(m);
         Materials.Clear();
         foreach (var m in data.Materials) Materials.Add(m);
+        Organizations.Clear();
+        foreach (var o in data.Organizations) Organizations.Add(o);
 
         RefreshTotals();
 
@@ -269,6 +271,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanEditSchemes));
         OnPropertyChanged(nameof(CanEditIntercoms));
         OnPropertyChanged(nameof(CanAcceptIntercomTickets));
+        OnPropertyChanged(nameof(CanEditPhonebook));
         NotifyTicketPanel();
         BindTicket();
         RebuildNavigation();
@@ -296,12 +299,14 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnSelectedStreetChanged(Street? value)
     {
+        StreetName = value?.Name ?? "";
         RefreshHouses();
         SelectedHouse = HousesOnStreet.FirstOrDefault();
     }
 
     partial void OnSelectedHouseChanged(House? value)
     {
+        EditHouse = value;
         if (!_holdRefresh)
             _ = ShowHouseAsync(null);
     }
@@ -439,6 +444,8 @@ public sealed partial class MainViewModel : ObservableObject
         User = null;
         Debtors.Clear();
         _debtByHouse = [];
+        _history.Clear();
+        BackCommand.NotifyCanExecuteChanged();
         Module = AppModule.Desktop;
         Status = "Сеанс завершён.";
     }
@@ -447,6 +454,8 @@ public sealed partial class MainViewModel : ObservableObject
     private void Go(AppModule page)
     {
         if (User is null) return;
+        if (page != Module)
+            Remember(Module);
         Module = page;
         var check = page switch
         {
@@ -529,10 +538,6 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Кнопка экрана-макета: действие ещё не реализовано, говорим об этом прямо.</summary>
     [RelayCommand]
     private void NotReady(string? action) => Status = $"«{action}» пока не работает: функция в разработке.";
-
-    [RelayCommand]
-    private void About() =>
-        Status = $"Аверс {typeof(MainViewModel).Assembly.GetName().Version?.ToString(3)} · учёт антенной службы, АДС и абонентов.";
 
     private static string Money(decimal value) => value.ToString("N2") + " ₽";
 }

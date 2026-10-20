@@ -118,6 +118,32 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public Task CloseIntercomTicketAsync(int ticketId) =>
         Write(() => http.PutAsync($"api/intercom-tickets/{ticketId}/done", null));
 
+    public Task SaveStreetAsync(Street draft) =>
+        Upsert("streets", draft.Id, new StreetRequest(draft.Name));
+
+    public Task DeleteStreetAsync(int id) => Write(() => http.DeleteAsync($"api/streets/{id}"));
+
+    public Task SaveHouseAsync(House draft) =>
+        Upsert("houses", draft.Id, new HouseRequest(draft.StreetId, draft.Number, draft.PzhreuIndex, draft.PzhreuAccount,
+            draft.Floors, draft.Entrances, draft.Risers, draft.Apartments, draft.Zone, draft.OrganizationId, draft.Serviced));
+
+    public Task DeleteHouseAsync(int id) => Write(() => http.DeleteAsync($"api/houses/{id}"));
+
+    public Task SaveMaterialAsync(Material draft) =>
+        Upsert("materials", draft.Id, new MaterialRequest(draft.Name, draft.Unit));
+
+    public Task DeleteMaterialAsync(int id) => Write(() => http.DeleteAsync($"api/materials/{id}"));
+
+    public Task SaveMechanicAsync(Mechanic draft) =>
+        Upsert("mechanics", draft.Id, new MechanicRequest(draft.FullName, draft.Position, draft.Phone, draft.Address));
+
+    public Task DeleteMechanicAsync(int id) => Write(() => http.DeleteAsync($"api/mechanics/{id}"));
+
+    /// <summary>Id = 0 — новая запись (POST), иначе правка (PUT).</summary>
+    private Task Upsert<T>(string path, int id, T request) => Write(() => id == 0
+        ? http.PostAsJsonAsync($"api/{path}", request, Json)
+        : http.PutAsJsonAsync($"api/{path}/{id}", request, Json));
+
     public async Task<int> AcceptTicketAsync(CreateTicketRequest request, AppUser user) =>
         (await Read<TicketDto>(() => http.PostAsJsonAsync("api/tickets", request, Json))).Number;
 
