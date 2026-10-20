@@ -63,6 +63,17 @@ public class SubscriberTests
     }
 
     [Fact]
+    public async Task Search_ByContractNumber()
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("admin");
+
+        var found = await client.GetFromJsonAsync<List<SubscriberListItem>>("/api/subscribers?mode=Contract&q=2011/1800");
+
+        Assert.Equal("180090", Assert.Single(found!).Account);
+    }
+
+    [Fact]
     public async Task Search_ShortSurname_MatchesWholeSurnameOnly()
     {
         await using var app = new AversApp();

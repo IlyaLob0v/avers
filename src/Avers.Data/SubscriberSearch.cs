@@ -4,7 +4,7 @@ namespace Avers.Data;
 
 /// <summary>
 /// Поиск абонента как на «Рабочем столе» оболочки: по адресу (улица с начала названия, дом, квартира),
-/// лицевому счёту, внутреннему коду, ПЖРЭУ или фамилии. Выполняется в СУБД.
+/// лицевому счёту, внутреннему коду, ПЖРЭУ, фамилии или номеру договора. Выполняется в СУБД.
 /// </summary>
 public static class SubscriberSearch
 {
@@ -41,6 +41,7 @@ public static class SubscriberSearch
                 {
                     SearchMode.Account => query.Where(s => s.Account.ToLower().Contains(text)),
                     SearchMode.InnerCode => query.Where(s => s.InnerCode.ToLower().Contains(text)),
+                    SearchMode.Contract => query.Where(s => s.ContractNumber.ToLower().Contains(text)),
                     _ => query.Where(s => s.PzhreuIndex.ToLower().Contains(text) || s.PzhreuAccount.ToLower().Contains(text))
                 }, "", "");
         }
