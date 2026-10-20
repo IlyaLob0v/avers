@@ -5,12 +5,30 @@
              x:DataType="vm:MainViewModel">
   <StackPanel Margin="16,0,16,12">
     <Border Classes="card" Padding="12,6,4,8">
-      <Grid ColumnDefinitions="*,*,*,*">
-        <StackPanel Margin="0,0,8,0"><TextBlock Classes="hint" Text="Вн. код"/><TextBox Classes="cell" Text="{Binding SelectedSubscriber.InnerCode, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
-        <StackPanel Grid.Column="1" Margin="0,0,8,0"><TextBlock Classes="hint" Text="Индекс ПЖРУ"/><TextBox Classes="cell" Text="{Binding SelectedSubscriber.PzhreuIndex, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
-        <StackPanel Grid.Column="2" Margin="0,0,8,0"><TextBlock Classes="hint" Text="Лиц. счёт"/><TextBox Classes="cell" Text="{Binding SelectedSubscriber.Account, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
-        <StackPanel Grid.Column="3" Margin="0,0,8,0"><TextBlock Classes="hint" Text="Период"/><TextBox Classes="cell" Text="За июль 2026" IsReadOnly="True"/></StackPanel>
-      </Grid>
+      <StackPanel>
+        <Grid ColumnDefinitions="*,*,*,*,Auto">
+          <StackPanel Margin="0,0,8,0"><TextBlock Classes="hint" Text="Лиц. счёт"/>
+            <TextBox Classes="cell" Text="{Binding ReceiptAccount}">
+              <TextBox.KeyBindings>
+                <KeyBinding Gesture="Enter" Command="{Binding FindReceiptsCommand}" />
+              </TextBox.KeyBindings>
+            </TextBox>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Margin="0,0,8,0"><TextBlock Classes="hint" Text="Период"/>
+            <ComboBox Classes="cell" HorizontalAlignment="Stretch" ItemsSource="{Binding ReceiptPeriods}" SelectedItem="{Binding SelectedReceiptPeriod}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:ReceiptPeriod">
+                  <TextBlock Text="{Binding Title}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </StackPanel>
+          <StackPanel Grid.Column="2" Margin="0,0,8,0"><TextBlock Classes="hint" Text="Вн. код"/><TextBox Classes="cell" Text="{Binding SelectedSubscriber.InnerCode, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
+          <StackPanel Grid.Column="3" Margin="0,0,8,0"><TextBlock Classes="hint" Text="Индекс ПЖРУ"/><TextBox Classes="cell" Text="{Binding SelectedSubscriber.PzhreuIndex, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
+          <Button Grid.Column="4" Classes="primary" VerticalAlignment="Bottom" Content="Найти" Command="{Binding FindReceiptsCommand}" />
+        </Grid>
+        <TextBlock Classes="hint" Margin="0,6,0,0" Text="{Binding ReceiptOwner}" />
+      </StackPanel>
     </Border>
     <DataGrid Height="300" ItemsSource="{Binding Receipts}" AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
@@ -26,5 +44,7 @@
         <DataGridTextColumn Header="N_КВИТ" Binding="{Binding NKvit}" Width="*" />
       </DataGrid.Columns>
     </DataGrid>
+    <TextBlock Classes="hint" Margin="0,6,0,0" TextWrapping="Wrap"
+               Text="Строки единых квитанций приходят от ПЖРЭУ. Загрузка их файлов появится, когда будет образец файла." />
   </StackPanel>
 </UserControl>

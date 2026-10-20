@@ -341,9 +341,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (_holdRefresh) return;
         RefreshTickets();
         RebuildPayments();
-        Receipts.Clear();
-        if (SelectedSubscriber is not null)
-            foreach (var r in SelectedSubscriber.Receipts.OrderByDescending(x => x.Moment)) Receipts.Add(r);
+        RebuildReceiptPeriods();
 
         if (_intercomHouseId != SelectedHouse?.Id)
         {
