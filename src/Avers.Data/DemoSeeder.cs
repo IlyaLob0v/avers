@@ -11,6 +11,9 @@ public static class DemoSeeder
 {
     public static readonly DateOnly WorkDate = new(2026, 8, 31);
 
+    /// <summary>Номер версии учебных данных: при правке данных увеличить, и учебная база на ПК пересоздастся.</summary>
+    public const int Revision = 2;
+
     /// <summary>С чего открывается учебная база: пользователь, адрес, лицевой счёт и заявка.</summary>
     public const string StartLogin = "sokolova";
     public const string StartStreet = "Волочаевская";
@@ -80,12 +83,13 @@ public static class DemoSeeder
 
         db.Houses.AddRange(hAv12, hBr18, hVol19, hVol19a, hVol19d, hVol21, hVol23, hLen44);
 
-        Scheme(hVol19d, "Схема СКПТ Волочаевская 19Д", "SVG", new(2026, 4, 18));
-        Scheme(hVol19d, "Ведомость отводов", "XLSX", new(2026, 3, 2));
-        Scheme(hAv12, "Схема СКПТ Авангардная 12", "PNG", new(2026, 2, 11));
-        Scheme(hBr18, "Схема СКПТ Братская 18", "JPEG", new(2025, 11, 20));
-        Scheme(hBr18, "План воздушных переходов", "SVG", new(2025, 6, 14));
-        Scheme(hLen44, "Схема СКПТ Ленина 44", "SVG", new(2026, 6, 3));
+        var picture = DemoSchemePicture();
+        Scheme(db, hVol19d, "Схема СКПТ Волочаевская 19Д", new(2026, 4, 18), picture);
+        Scheme(db, hVol19d, "Ведомость отводов", new(2026, 3, 2), picture);
+        Scheme(db, hAv12, "Схема СКПТ Авангардная 12", new(2026, 2, 11), picture);
+        Scheme(db, hBr18, "Схема СКПТ Братская 18", new(2025, 11, 20), picture);
+        Scheme(db, hBr18, "План воздушных переходов", new(2025, 6, 14), picture);
+        Scheme(db, hLen44, "Схема СКПТ Ленина 44", new(2026, 6, 3), picture);
 
         AddPpr(hVol19d, "DDDDPEEEPEEE");
         AddPpr(hAv12, "DDEEEPEEEPEE");
@@ -330,8 +334,21 @@ public static class DemoSeeder
         CanEditAccount = editAccount
     };
 
-    private static void Scheme(House house, string name, string format, DateOnly updated) =>
-        house.Schemes.Add(new HouseScheme { Name = name, Format = format, UpdatedAt = updated });
+    /// <summary>Учебная схема одна на все дома: картинка с подписью «образец».</summary>
+    private static void Scheme(AversDbContext db, House house, string name, DateOnly updated, byte[] picture)
+    {
+        var scheme = new HouseScheme { Name = name, Format = "PNG", UpdatedAt = updated };
+        house.Schemes.Add(scheme);
+        db.HouseSchemeFiles.Add(new HouseSchemeFile { Scheme = scheme, Content = picture });
+    }
+
+    private static byte[] DemoSchemePicture()
+    {
+        using var stream = typeof(DemoSeeder).Assembly.GetManifestResourceStream("Avers.Data.Demo.scheme.png")!;
+        using var copy = new MemoryStream();
+        stream.CopyTo(copy);
+        return copy.ToArray();
+    }
 
     private static void PayYear(Subscriber sub, params (int Month, int Day)[] paid)
     {

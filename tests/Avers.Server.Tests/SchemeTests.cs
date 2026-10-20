@@ -26,7 +26,6 @@ public class SchemeTests
         var engineer = await app.LoginAsync("engineer");
         var mechanic = await app.LoginAsync("novikov");
         var house = await HouseAsync(mechanic, "Ленина", "44");
-        Assert.False(house.Schemes.Single().HasImage);
 
         var upload = await engineer.PostAsJsonAsync($"/api/houses/{house.Id}/schemes", new AddSchemeRequest("Стояки 1-4 подъезд", Png));
         upload.EnsureSuccessStatusCode();

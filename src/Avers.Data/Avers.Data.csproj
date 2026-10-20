@@ -4,6 +4,9 @@
     <AssemblyName>Avers.Data</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Demo\scheme.png" LogicalName="Avers.Data.Demo.scheme.png" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Avers.Domain\Avers.Domain.csproj" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />

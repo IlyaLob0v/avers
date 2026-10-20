@@ -17,7 +17,6 @@ public class SchemeTests
         try
         {
             app.Go(AppModule.Scheme);
-            Assert.Null(app.Vm.SchemeImage);
             Assert.True(app.Vm.CanEditSchemes);
 
             app.Vm.PickSchemeFile = () => Task.FromResult<string?>(file);
@@ -87,6 +86,18 @@ public class SchemeTests
 
         Assert.Equal("Схема «Стояки, подъезд 1» удалена.", app.Vm.Status);
         Assert.Equal(count, app.Vm.Schemes.Count);
+    }
+
+    [AvaloniaFact]
+    public void Reader_SeesDemoSchemePicture()
+    {
+        using var app = new DesktopApp("novikov");
+
+        app.Go(AppModule.Scheme);
+
+        Assert.Equal("PNG", app.Vm.SelectedScheme?.Format);
+        Assert.NotNull(app.Vm.SchemeImage);
+        Assert.Equal("", app.Vm.SchemeNote);
     }
 
     [AvaloniaFact]
