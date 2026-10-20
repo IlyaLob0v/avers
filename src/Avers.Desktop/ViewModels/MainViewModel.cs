@@ -269,6 +269,8 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanEditSettings));
         OnPropertyChanged(nameof(CanEditPpr));
         OnPropertyChanged(nameof(CanEditSchemes));
+        OnPropertyChanged(nameof(CanEditIntercoms));
+        OnPropertyChanged(nameof(CanAcceptIntercomTickets));
         OnPropertyChanged(nameof(CanEditPhonebook));
         NotifyTicketPanel();
         BindTicket();
@@ -356,7 +358,7 @@ public sealed partial class MainViewModel : ObservableObject
             }
             SelectedScheme = Schemes.FirstOrDefault();
         }
-        Intercom = SelectedHouse?.Intercoms.FirstOrDefault();
+        Intercom = SelectedHouse?.Intercoms.FirstOrDefault(i => i.Entrance == Intercom?.Entrance) ?? SelectedHouse?.Intercoms.FirstOrDefault();
 
         OnPropertyChanged(nameof(FaultBanner));
         OnPropertyChanged(nameof(HasFault));
