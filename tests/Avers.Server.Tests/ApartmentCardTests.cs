@@ -72,6 +72,25 @@ public class ApartmentCardTests
     }
 
     [Fact]
+    public async Task ChangeTariff_ForOneApartment_OnlyUnpaidMonths_LawyerIsForbidden()
+    {
+        await using var app = new AversApp();
+        var lawyer = await app.LoginAsync("lawyer");
+        var head = await app.LoginAsync("orlov");
+        var request = new TariffChangeRequest(2026, 1, 120m, null, 3);
+
+        var forbidden = await lawyer.PutAsJsonAsync("/api/tariff", request);
+        var result = await (await head.PutAsJsonAsync("/api/tariff", request)).Content.ReadFromJsonAsync<TariffChangeResult>();
+        var payments = await head.GetFromJsonAsync<List<PaymentDto>>("/api/subscribers/3/payments?year=2026");
+        var other = await head.GetFromJsonAsync<List<PaymentDto>>("/api/subscribers/1/payments?year=2026");
+
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        Assert.Equal(payments!.Count(p => !p.IsPaid), result!.Months);
+        Assert.All(payments!, p => Assert.Equal(p.IsPaid ? 95m : 120m, p.Tariff));
+        Assert.DoesNotContain(other!, p => p.Tariff == 120m);
+    }
+
+    [Fact]
     public async Task RecordPayment_RemembersWhoRecordedAndWhoPaid()
     {
         await using var app = new AversApp();

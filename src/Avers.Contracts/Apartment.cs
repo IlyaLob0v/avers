@@ -13,6 +13,12 @@ public sealed record UpdateContractRequest(
 /// <summary>Через сколько месяцев без оплаты карточка подсвечивается жёлтым.</summary>
 public sealed record PaymentWarningSettings(int Months);
 
+/// <summary>Новый тариф с месяца: без дома и абонента — всем, иначе дому или одной квартире.</summary>
+public sealed record TariffChangeRequest(int Year, int Month, decimal Tariff, int? HouseId, int? SubscriberId);
+
+/// <summary>Сколько неоплаченных месяцев получили новый тариф.</summary>
+public sealed record TariffChangeResult(int Months);
+
 /// <summary>Паспорт дома: техника СКПТ и примечания. Запрос заменяет все поля целиком.</summary>
 public sealed record HousePassportRequest(
     string? Antennas,

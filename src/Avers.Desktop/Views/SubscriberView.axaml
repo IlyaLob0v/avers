@@ -164,6 +164,16 @@
           <Button Content="Применить" Command="{Binding SavePaymentWarningCommand}" />
         </StackPanel>
       </Border>
+      <Border Classes="card" IsVisible="{Binding CanEditSettings}">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock VerticalAlignment="Center" Text="Тариф с" />
+          <TextBox Classes="cell" Width="80" Watermark="мм.гггг" Text="{Binding TariffFrom}" />
+          <TextBox Classes="cell" Width="80" Watermark="₽ в мес." Text="{Binding NewTariffValue}" />
+          <ComboBox Width="150" ItemsSource="{x:Static vm:MainViewModel.TariffScopes}" SelectedItem="{Binding TariffScope}" />
+          <Button Content="Изменить тариф" Command="{Binding ChangeTariffCommand}" />
+          <TextBlock Classes="hint" VerticalAlignment="Center" Text="оплаченные месяцы не меняются" />
+        </StackPanel>
+      </Border>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

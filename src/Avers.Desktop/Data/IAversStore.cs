@@ -42,6 +42,9 @@ public interface IAversStore
 
     Task SetPaymentWarningMonthsAsync(int months);
 
+    /// <summary>Новый тариф с месяца; возвращает число изменённых месяцев.</summary>
+    Task<int> ChangeTariffAsync(TariffChangeRequest request);
+
     Task SaveHousePassportAsync(int houseId, HousePassportRequest request);
 
     /// <summary>Картинка схемы СКПТ; null — файл не загружен.</summary>
