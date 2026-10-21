@@ -41,6 +41,8 @@ color: purple
 | Архитектурное решение | `avers-adr` (вместе с `engineering:architecture`) |
 | Неясное требование, нужен ответ сотрудника | `avers-open-question` |
 | Ветка, коммит, PR | `avers-pr` |
+| Новая логика или исправление ошибки: сначала тест | `test-driven-development` |
+| Ошибка, упавший тест, странное поведение | `systematic-debugging` |
 
 Общие скиллы:
 
@@ -51,7 +53,7 @@ color: purple
 | Перед коммитом крупного изменения или PR | `engineering:code-review`, `security-review` |
 | План тестов, что покрывать | `engineering:testing-strategy` |
 | Перед выпуском сборки на рабочие места | `engineering:deploy-checklist` |
-| Ошибка, расхождение поведения | `engineering:debug` |
+| Ошибка, расхождение поведения | `engineering:debug` (после `systematic-debugging`) |
 | Аудит старого кода, рефакторинг оболочки | `engineering:tech-debt` |
 | Документация, инструкции, runbook | `engineering:documentation` |
 | SQL-отчёты, сверка цифр с бухгалтерией | `data:write-query`, `data:validate-data`, `data:explore-data` |
