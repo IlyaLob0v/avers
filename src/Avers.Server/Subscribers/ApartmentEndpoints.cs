@@ -33,19 +33,15 @@ public static class ApartmentEndpoints
         if (s is null)
             return TypedResults.NotFound();
 
-        var changes = ChangeLog.Diff(
-            ("Номер договора", s.ContractNumber, request.ContractNumber),
-            ("Заключён", s.ContractDate, request.ContractDate),
-            ("Расторгнут", s.ContractTerminated, request.ContractTerminated),
-            ("С кем заключён", s.ContractHolder, request.ContractHolder),
-            ("Примечание", s.Notes, request.Notes));
-        s.ContractNumber = request.ContractNumber?.Trim() ?? "";
-        s.ContractDate = request.ContractDate;
-        s.ContractTerminated = request.ContractTerminated;
-        s.ContractHolder = request.ContractHolder?.Trim() ?? "";
-        s.Notes = request.Notes?.Trim() ?? "";
-        ChangeLog.Add(db, time.GetUtcNow(), ChangeLog.Who(db, user.AppUserId()), "Договор и примечание", ChangeLog.Account(s), changes);
-        await db.SaveChangesAsync(ct);
+        var draft = new Subscriber
+        {
+            ContractNumber = request.ContractNumber ?? "",
+            ContractDate = request.ContractDate,
+            ContractTerminated = request.ContractTerminated,
+            ContractHolder = request.ContractHolder ?? "",
+            Notes = request.Notes ?? ""
+        };
+        SubscriberContracts.Save(db, s, draft, time.Today(), ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
         return TypedResults.NoContent();
     }
 

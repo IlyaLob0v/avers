@@ -104,19 +104,15 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
     {
         using var ctx = db.CreateDbContext();
         var s = ctx.Subscribers.First(x => x.Id == subscriberId);
-        var changes = ChangeLog.Diff(
-            ("Номер договора", s.ContractNumber, request.ContractNumber),
-            ("Заключён", s.ContractDate, request.ContractDate),
-            ("Расторгнут", s.ContractTerminated, request.ContractTerminated),
-            ("С кем заключён", s.ContractHolder, request.ContractHolder),
-            ("Примечание", s.Notes, request.Notes));
-        ChangeLog.Add(ctx, DateTimeOffset.UtcNow, ChangeLog.Who(ctx, _userId), "Договор и примечание", ChangeLog.Account(s), changes);
-        s.ContractNumber = request.ContractNumber ?? "";
-        s.ContractDate = request.ContractDate;
-        s.ContractTerminated = request.ContractTerminated;
-        s.ContractHolder = request.ContractHolder ?? "";
-        s.Notes = request.Notes ?? "";
-        ctx.SaveChanges();
+        var draft = new Subscriber
+        {
+            ContractNumber = request.ContractNumber ?? "",
+            ContractDate = request.ContractDate,
+            ContractTerminated = request.ContractTerminated,
+            ContractHolder = request.ContractHolder ?? "",
+            Notes = request.Notes ?? ""
+        };
+        SubscriberContracts.Save(ctx, s, draft, Today, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
         return Task.CompletedTask;
     }
 
