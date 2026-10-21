@@ -105,18 +105,8 @@ public sealed partial class MainViewModel
     private void PrintClaim()
     {
         if (SelectedDebtor is not { } d) { Status = "Выберите должника."; return; }
-        var path = Path.Combine(Path.GetTempPath(), "Avers", $"уведомление-{d.Account}.docx");
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            WordForms.Claim($"г. Омск, {d.Address}", ClaimText, path);
-            OpenFile(path);
-            Status = $"Открыто в Word: уведомление {d.FullName}.";
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
-        {
-            Status = $"Не удалось открыть уведомление: {e.Message}";
-        }
+        OpenWord(PrintPath("уведомление", d.Account, ".docx"), $"уведомление {d.FullName}",
+            path => WordForms.Claim($"г. Омск, {d.Address}", ClaimText, path));
     }
 
     /// <summary>Пакет для суда по выбранному должнику: его оплаты грузятся вместе с домом.</summary>
@@ -150,18 +140,8 @@ public sealed partial class MainViewModel
         var date = PenaltyDate is { } chosen ? DateOnly.FromDateTime(chosen) : _today;
         if (await LoadDebtorAsync(d) is not { } s) return;
         var (header, title, body) = CourtOrderApplication.Text(s, date);
-        var path = Path.Combine(Path.GetTempPath(), "Avers", $"заявление-на-приказ-{d.Account}.docx");
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            WordForms.CourtOrder(header, title, body, path);
-            OpenFile(path);
-            Status = $"Открыто в Word: заявление на приказ {d.FullName}.";
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
-        {
-            Status = $"Не удалось открыть заявление: {e.Message}";
-        }
+        OpenWord(PrintPath("заявление-на-приказ", d.Account, ".docx"), $"заявление на приказ {d.FullName}",
+            path => WordForms.CourtOrder(header, title, body, path));
     }
 
     /// <summary>Абонент с оплатами: они грузятся вместе с домом.</summary>

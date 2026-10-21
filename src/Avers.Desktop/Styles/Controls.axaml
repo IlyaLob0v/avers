@@ -159,7 +159,7 @@
   <Style Selector="CalendarDatePicker">
     <Setter Property="SelectedDateFormat" Value="Custom" />
     <Setter Property="CustomDateFormatString" Value="dd.MM.yyyy" />
-    <Setter Property="Watermark" Value="дд.мм.гггг" />
+    <Setter Property="PlaceholderText" Value="дд.мм.гггг" />
   </Style>
   <Style Selector="CheckBox, RadioButton">
     <Setter Property="MinHeight" Value="26" />

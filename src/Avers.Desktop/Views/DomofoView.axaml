@@ -69,8 +69,8 @@
           </DataGrid>
           <StackPanel IsVisible="{Binding CanAcceptIntercomTickets}">
             <Grid ColumnDefinitions="70,*" RowDefinitions="Auto,Auto" Margin="0,8,0,0">
-              <TextBox Classes="cell" Margin="0,0,8,6" Watermark="Под." Text="{Binding IntercomEntrance}" />
-              <TextBox Grid.Column="1" Classes="cell" Margin="0,0,0,6" Watermark="Неисправность" Text="{Binding IntercomFault}" />
+              <TextBox Classes="cell" Margin="0,0,8,6" PlaceholderText="Под." Text="{Binding IntercomEntrance}" />
+              <TextBox Grid.Column="1" Classes="cell" Margin="0,0,0,6" PlaceholderText="Неисправность" Text="{Binding IntercomFault}" />
               <ComboBox Grid.Row="1" Grid.ColumnSpan="2" Classes="cell" HorizontalAlignment="Stretch" PlaceholderText="Радиомеханик"
                         ItemsSource="{Binding Mechanics}" SelectedItem="{Binding IntercomMechanic}">
                 <ComboBox.ItemTemplate>
