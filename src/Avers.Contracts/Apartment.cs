@@ -56,3 +56,6 @@ public sealed record SchemeFileRequest(byte[] Content);
 
 /// <summary>Новое название схемы.</summary>
 public sealed record RenameSchemeRequest(string Name);
+
+/// <summary>Новый скан документа абонента: вид (договор, решение суда…), название и файл PDF, JPG или PNG.</summary>
+public sealed record AddDocumentRequest(string Kind, string Name, byte[] Content);

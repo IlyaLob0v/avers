@@ -627,6 +627,51 @@ namespace Avers.Data.Migrations
                     b.ToTable("Subscribers");
                 });
 
+            modelBuilder.Entity("Avers.Domain.SubscriberDocument", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateOnly>("AddedAt")
+                        .HasColumnType("date");
+
+                    b.Property<string>("AddedBy")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("Format")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("SubscriberId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId");
+
+                    b.ToTable("SubscriberDocuments");
+                });
+
             modelBuilder.Entity("Avers.Domain.UnifiedReceipt", b =>
                 {
                     b.Property<int>("Id")
@@ -914,6 +959,17 @@ namespace Avers.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("House");
+                });
+
+            modelBuilder.Entity("Avers.Domain.SubscriberDocument", b =>
+                {
+                    b.HasOne("Avers.Domain.Subscriber", "Subscriber")
+                        .WithMany()
+                        .HasForeignKey("SubscriberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Subscriber");
                 });
 
             modelBuilder.Entity("Avers.Domain.UnifiedReceipt", b =>

@@ -1,9 +1,10 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Avers.Desktop.ViewModels"
+             xmlns:data="using:Avers.Data"
              x:Class="Avers.Desktop.Views.ClaimView"
              x:DataType="vm:MainViewModel">
-  <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" Margin="16,0,16,12" VerticalAlignment="Top">
+  <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" Margin="16,0,16,12" VerticalAlignment="Top">
     <HeaderedContentControl Classes="group" Margin="0,0,5,0" Header="Досудебное уведомление">
       <StackPanel>
         <TextBox Height="220" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" Text="{Binding ClaimText}" />
@@ -41,6 +42,30 @@
           <Button Content="Новое дело" Command="{Binding NewCourtCaseCommand}" />
           <Button Classes="primary" Content="Сохранить дело" Command="{Binding SaveCourtCaseCommand}" />
         </StackPanel>
+      </StackPanel>
+    </HeaderedContentControl>
+    <HeaderedContentControl Grid.Row="2" Grid.ColumnSpan="2" Classes="group" Margin="0,10,0,0" Header="Сканы документов">
+      <StackPanel>
+        <ListBox Height="110" ItemsSource="{Binding Documents}" SelectedItem="{Binding SelectedDocument}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="data:DocumentInfo">
+              <TextBlock>
+                <Run FontWeight="SemiBold" Text="{Binding Kind}" />
+                <Run Text="{Binding Name, StringFormat='· {0}'}" />
+                <Run Classes="hint" Text="{Binding AddedBy, StringFormat='· {0}'}" />
+              </TextBlock>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Spacing="8">
+          <Button Content="Открыть" Command="{Binding OpenDocumentCommand}" />
+          <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding CanEditCourtCases}">
+            <ComboBox Classes="cell" Width="180" ItemsSource="{Binding DocumentKinds}" SelectedItem="{Binding DocumentKind}" />
+            <Button Classes="primary" Content="Добавить скан" Command="{Binding AddDocumentCommand}" />
+            <Button Content="Удалить скан" Command="{Binding DeleteDocumentCommand}" />
+          </StackPanel>
+        </StackPanel>
+        <TextBlock Classes="hint" Margin="0,6,0,0" Text="PDF, JPG или PNG до 20 МБ." />
       </StackPanel>
     </HeaderedContentControl>
   </Grid>

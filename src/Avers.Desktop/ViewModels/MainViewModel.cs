@@ -322,6 +322,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         BuildClaim();
         BindCourtCase();
+        _ = LoadDocumentsAsync();
     }
     partial void OnOnlyActiveContractsChanged(bool value) => RefreshDerived();
 

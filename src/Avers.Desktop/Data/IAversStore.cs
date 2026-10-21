@@ -69,6 +69,15 @@ public interface IAversStore
 
     Task DeleteSchemeAsync(int schemeId);
 
+    Task<List<DocumentInfo>> LoadDocumentsAsync(int subscriberId);
+
+    /// <summary>Файл скана; null — скан удалён.</summary>
+    Task<byte[]?> LoadDocumentFileAsync(int documentId);
+
+    Task AddDocumentAsync(int subscriberId, AddDocumentRequest request);
+
+    Task DeleteDocumentAsync(int documentId);
+
     /// <summary>Панель подъезда; Id = 0 — новая.</summary>
     Task SaveIntercomPanelAsync(int houseId, IntercomPanel draft);
 
