@@ -56,6 +56,30 @@ public class ChangeLogTests
     }
 
     [Fact]
+    public async Task TicketPprSettingsAndIntercom_AreLogged()
+    {
+        await using var app = new AversApp();
+        var head = await app.LoginAsync("orlov");
+        var engineer = await app.LoginAsync("engineer");
+        var ticket = (await head.GetFromJsonAsync<List<TicketDto>>("/api/tickets?open=true"))!.First();
+
+        await head.PutAsJsonAsync($"/api/tickets/{ticket.Id}", new UpdateTicketRequest(Mechanic: "Иванов И.И."));
+        await engineer.PutAsJsonAsync("/api/ppr/1/2026/12", new PprMarkRequest(nameof(PprStatus.Planned)));
+        await head.PutAsJsonAsync("/api/settings/payment-warning", new PaymentWarningSettings(4));
+        await head.PostAsJsonAsync("/api/houses/1/intercom-tickets", new IntercomTicketRequest(2, "Не открывается дверь", "Иванов И.И."));
+        var intercomId = await app.WithDbAsync(db => Task.FromResult(db.IntercomTickets.Max(t => t.Id)));
+        await head.PutAsync($"/api/intercom-tickets/{intercomId}/done", null);
+
+        var log = await LogAsync(app);
+        Assert.Contains(log, e => e.Action == "Заявка АДС" && e.Target == $"№ {ticket.Number}" && e.Changes.Contains("→ Иванов И.И."));
+        Assert.Contains(log, e => e.Action == "График ППР" && e.Changes == "12.2026: — → план");
+        Assert.Contains(log, e => e.Action == "Настройки" && e.Changes == "Жёлтая подсветка, мес. без оплаты: 2 → 4");
+        Assert.Contains(log, e => e.Action == "Заявка по домофону" && e.Changes.Contains("Неисправность: — → Не открывается дверь"));
+        Assert.Contains(log, e => e.Action == "Заявка по домофону" && e.Changes == "Выполнена: нет → да");
+        Assert.All(log, e => Assert.NotEqual("", e.UserName));
+    }
+
+    [Fact]
     public async Task SaveWithoutChanges_IsNotLogged()
     {
         await using var app = new AversApp();

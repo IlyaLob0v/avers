@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Avers.Contracts;
 using Avers.Data;
 using Avers.Domain;
@@ -19,7 +20,7 @@ public static class PprEndpoints
     }
 
     private static Results<NoContent, NotFound, ValidationProblem> Mark(
-        int houseId, int year, int month, PprMarkRequest request, AversDbContext db, TimeProvider time)
+        int houseId, int year, int month, PprMarkRequest request, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
     {
         if (month is < 1 or > 12 || year is < 2000 or > 2100)
             return Invalid("Месяц — от 1 до 12, год — от 2000 до 2100.");
@@ -28,13 +29,13 @@ public static class PprEndpoints
         if (!db.Houses.Any(h => h.Id == houseId))
             return TypedResults.NotFound();
 
-        PprPlan.Mark(db, houseId, year, month, status, time.Today());
+        PprPlan.Mark(db, houseId, year, month, status, time.Today(), ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
         return TypedResults.NoContent();
     }
 
-    private static Results<Ok<PprCopyResult>, ProblemHttpResult> Copy(int year, AversDbContext db)
+    private static Results<Ok<PprCopyResult>, ProblemHttpResult> Copy(int year, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
     {
-        var copied = PprPlan.CopyToNextYear(db, year);
+        var copied = PprPlan.CopyToNextYear(db, year, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
         return copied > 0
             ? TypedResults.Ok(new PprCopyResult(year + 1, copied))
             : TypedResults.Problem($"План на {year + 1} год уже есть или план {year} года пуст.",

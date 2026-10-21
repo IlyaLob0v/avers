@@ -214,6 +214,7 @@ public static class TicketEndpoints
         if (errors.Count > 0)
             return TypedResults.ValidationProblem(errors);
 
+        var before = ChangeLog.TicketState(ticket);
         if (request.Fault is not null) ticket.Fault = request.Fault.Trim();
         if (request.Mechanic is not null) ticket.Mechanic = request.Mechanic.Trim();
         if (request.RisersNote is not null) ticket.RisersNote = request.RisersNote.Trim();
@@ -225,6 +226,7 @@ public static class TicketEndpoints
         }
         if (request.WorkDone is not null)
             TicketJournal.ApplyWork(ticket, request.WorkDone, time.Today());
+        ChangeLog.TicketEdit(db, time.GetUtcNow(), ChangeLog.Who(db, user.AppUserId()), ticket, before);
 
         await db.SaveChangesAsync(ct);
         var saved = await Query(db).FirstAsync(t => t.Id == id, ct);

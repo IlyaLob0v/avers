@@ -12,8 +12,8 @@ public class CardDataTests
         using (var db = database.CreateContext())
         {
             Assert.Equal(PaymentAge.DefaultWarningMonths, Settings.PaymentWarningMonths(db));
-            Settings.SetPaymentWarningMonths(db, 4);
-            Settings.SetPaymentWarningMonths(db, 3);
+            Settings.SetPaymentWarningMonths(db, 4, "Админ", DateTimeOffset.UnixEpoch);
+            Settings.SetPaymentWarningMonths(db, 3, "Админ", DateTimeOffset.UnixEpoch);
         }
 
         using var check = database.CreateContext();
@@ -29,7 +29,7 @@ public class CardDataTests
         using var database = new SqliteDatabase();
         using var db = database.CreateContext();
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => Settings.SetPaymentWarningMonths(db, months));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Settings.SetPaymentWarningMonths(db, months, "Админ", DateTimeOffset.UnixEpoch));
     }
 
     [Fact]

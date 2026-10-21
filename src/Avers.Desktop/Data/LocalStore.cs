@@ -117,7 +117,7 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
     public Task SetPaymentWarningMonthsAsync(int months)
     {
         using var ctx = db.CreateDbContext();
-        Settings.SetPaymentWarningMonths(ctx, months);
+        Settings.SetPaymentWarningMonths(ctx, months, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
         return Task.CompletedTask;
     }
 
@@ -189,13 +189,13 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
     public Task AddIntercomTicketAsync(int houseId, IntercomTicket draft)
     {
         using var ctx = db.CreateDbContext();
-        return Check(Intercoms.AddTicket(ctx, houseId, draft, Today));
+        return Check(Intercoms.AddTicket(ctx, houseId, draft, Today, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow));
     }
 
     public Task CloseIntercomTicketAsync(int ticketId)
     {
         using var ctx = db.CreateDbContext();
-        return Check(Intercoms.MarkDone(ctx, ticketId));
+        return Check(Intercoms.MarkDone(ctx, ticketId, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow));
     }
 
     private static Task Check(string? error) => error is null ? Task.CompletedTask : throw new StoreException(error);
@@ -251,9 +251,11 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
     {
         using var ctx = db.CreateDbContext();
         var t = ctx.Tickets.First(x => x.Id == ticketId);
+        var before = ChangeLog.TicketState(t);
         t.Fault = fault;
         t.Mechanic = mechanic;
         TicketJournal.ApplyWork(t, workDone, Today);
+        ChangeLog.TicketEdit(ctx, DateTimeOffset.UtcNow, ChangeLog.Who(ctx, _userId), t, before);
         ctx.SaveChanges();
         return Task.CompletedTask;
     }
@@ -261,14 +263,14 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
     public Task MarkPprAsync(int houseId, int year, int month, PprStatus status)
     {
         using var ctx = db.CreateDbContext();
-        PprPlan.Mark(ctx, houseId, year, month, status, Today);
+        PprPlan.Mark(ctx, houseId, year, month, status, Today, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
         return Task.CompletedTask;
     }
 
     public Task<int> CopyPprAsync(int year)
     {
         using var ctx = db.CreateDbContext();
-        var copied = PprPlan.CopyToNextYear(ctx, year);
+        var copied = PprPlan.CopyToNextYear(ctx, year, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
         return copied > 0
             ? Task.FromResult(copied)
             : throw new StoreException($"План на {year + 1} год уже есть или план {year} года пуст.");
