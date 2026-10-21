@@ -73,6 +73,67 @@ public class ApartmentCardTests
     }
 
     [Fact]
+    public async Task ChangeTariff_ForOneApartment_OnlyUnpaidMonths_LawyerIsForbidden()
+    {
+        await using var app = new AversApp();
+        var lawyer = await app.LoginAsync("lawyer");
+        var head = await app.LoginAsync("orlov");
+        var request = new TariffChangeRequest(2026, 1, 120m, null, 3);
+
+        var forbidden = await lawyer.PutAsJsonAsync("/api/tariff", request);
+        var result = await (await head.PutAsJsonAsync("/api/tariff", request)).Content.ReadFromJsonAsync<TariffChangeResult>();
+        var payments = await head.GetFromJsonAsync<List<PaymentDto>>("/api/subscribers/3/payments?year=2026");
+        var other = await head.GetFromJsonAsync<List<PaymentDto>>("/api/subscribers/1/payments?year=2026");
+
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        Assert.Equal(payments!.Count(p => !p.IsPaid), result!.Months);
+        Assert.All(payments!, p => Assert.Equal(p.IsPaid ? 95m : 120m, p.Tariff));
+        Assert.DoesNotContain(other!, p => p.Tariff == 120m);
+    }
+
+    [Fact]
+    public async Task AddApartment_CreatesSubscriber_LawyerIsForbidden()
+    {
+        await using var app = new AversApp();
+        var lawyer = await app.LoginAsync("lawyer");
+        var head = await app.LoginAsync("orlov");
+        var request = new NewApartmentRequest(1, null, "99", "990099", "Смирнов", "Олег", null, null, "ТО-2026/990099",
+            new DateOnly(2026, 8, 10), 95m);
+
+        var forbidden = await lawyer.PostAsJsonAsync("/api/subscribers", request);
+        var created = await head.PostAsJsonAsync("/api/subscribers", request);
+        var duplicate = await head.PostAsJsonAsync("/api/subscribers", request);
+        var found = await head.GetFromJsonAsync<List<SubscriberListItem>>("/api/subscribers?mode=Account&q=990099");
+        var payments = await head.GetFromJsonAsync<List<PaymentDto>>($"/api/subscribers/{found!.Single().Id}/payments?year=2026");
+
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, created.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, duplicate.StatusCode);
+        Assert.Equal([8, 9, 10, 11, 12], payments!.Select(p => p.Month));
+    }
+
+    [Fact]
+    public async Task OpenYear_NextYearMonthsAppear_OnlyForSettingsEditors()
+    {
+        await using var app = new AversApp();
+        var lawyer = await app.LoginAsync("lawyer");
+        var admin = await app.LoginAsync("admin");
+
+        var forbidden = await lawyer.PostAsync("/api/accruals/2027", null);
+        var tooFar = await admin.PostAsync("/api/accruals/2028", null);
+        var opened = await (await admin.PostAsync("/api/accruals/2027", null)).Content.ReadFromJsonAsync<OpenYearResult>();
+        var again = await (await admin.PostAsync("/api/accruals/2027", null)).Content.ReadFromJsonAsync<OpenYearResult>();
+        var payments = await admin.GetFromJsonAsync<List<PaymentDto>>("/api/subscribers/1/payments?year=2027");
+
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, tooFar.StatusCode);
+        Assert.True(opened!.Subscribers > 0);
+        Assert.Equal(0, again!.Subscribers);
+        Assert.Equal(12, payments!.Count);
+        Assert.All(payments, p => Assert.False(p.IsPaid));
+    }
+
+    [Fact]
     public async Task RecordPayment_RemembersWhoRecordedAndWhoPaid()
     {
         await using var app = new AversApp();
@@ -111,6 +172,26 @@ public class ApartmentCardTests
         Assert.Equal(HttpStatusCode.NoContent, edited.StatusCode);
         Assert.Equal("Выдан", await app.WithDbAsync(db => db.CourtCases.Where(c => c.Id == caseId).Select(c => c.Status).SingleAsync()));
         Assert.Contains(debts!.Debtors, d => d.Case is { DelaAversId: "ДА-88421" });
+    }
+
+    [Fact]
+    public async Task CancelPayment_OnlyAdminAndAdsHead_MonthBecomesUnpaid()
+    {
+        await using var app = new AversApp();
+        var head = await app.LoginAsync("orlov");
+        var user = await app.LoginAsync("sokolova");
+        var paid = await (await head.PostAsJsonAsync("/api/subscribers/3/payments", new RecordPaymentRequest(2026)))
+            .Content.ReadFromJsonAsync<PaymentDto>();
+
+        var forbidden = await user.DeleteAsync($"/api/subscribers/3/payments/{paid!.Id}");
+        var cancelled = await head.DeleteAsync($"/api/subscribers/3/payments/{paid.Id}");
+        var again = await head.DeleteAsync($"/api/subscribers/3/payments/{paid.Id}");
+        var card = await head.GetFromJsonAsync<SubscriberCard>("/api/subscribers/3");
+
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, cancelled.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, again.StatusCode);
+        Assert.Equal(new DateOnly(2026, 5, 22), card!.LastPayment!.PaidAt);
     }
 
     [Fact]

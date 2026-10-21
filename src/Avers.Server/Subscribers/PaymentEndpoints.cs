@@ -99,4 +99,12 @@ public static class PaymentEndpoints
 
     private static ProblemHttpResult Conflict(string detail) =>
         TypedResults.Problem(detail, statusCode: StatusCodes.Status409Conflict, title: "Оплата не внесена");
+
+    public static Results<NoContent, ValidationProblem> Cancel(int id, int paymentId, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
+    {
+        var error = PaymentCancellation.Cancel(db, id, paymentId, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
+        return error is null
+            ? TypedResults.NoContent()
+            : TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["payment"] = [error] });
+    }
 }

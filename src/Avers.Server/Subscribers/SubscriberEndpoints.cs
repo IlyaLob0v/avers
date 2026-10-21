@@ -29,9 +29,13 @@ public static class SubscriberEndpoints
         api.MapPost("/subscribers/{id:int}/court-cases", (int id, CourtCaseRequest r, ClaimsPrincipal u, AversDbContext db, TimeProvider t) =>
             ApartmentEndpoints.SaveCourtCase(id, 0, r, u, db, t)).RequireAuthorization(Policies.CourtCasesEdit);
         api.MapPut("/subscribers/{id:int}/court-cases/{caseId:int}", ApartmentEndpoints.SaveCourtCase).RequireAuthorization(Policies.CourtCasesEdit);
+        api.MapDelete("/subscribers/{id:int}/payments/{paymentId:int}", PaymentEndpoints.Cancel).RequireAuthorization(Policies.PaymentsCancel);
+        api.MapPost("/subscribers", ApartmentEndpoints.Add).RequireAuthorization(Policies.SubscribersEdit);
         api.MapPut("/subscribers/{id:int}/contract", ApartmentEndpoints.UpdateContract).RequireAuthorization(Policies.SubscribersEdit);
         api.MapGet("/settings/payment-warning", ApartmentEndpoints.GetPaymentWarning);
         api.MapPut("/settings/payment-warning", ApartmentEndpoints.SetPaymentWarning).RequireAuthorization(Policies.SettingsEdit);
+        api.MapPut("/tariff", ApartmentEndpoints.ChangeTariff).RequireAuthorization(Policies.SettingsEdit);
+        api.MapPost("/accruals/{year:int}", ApartmentEndpoints.OpenYear).RequireAuthorization(Policies.SettingsEdit);
     }
 
     private static async Task<Ok<List<StreetDto>>> Streets(AversDbContext db, CancellationToken ct) =>

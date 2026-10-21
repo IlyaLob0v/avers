@@ -11,6 +11,14 @@ public static class AversClaims
     public const string UserId = "avers:uid";
     public const string CanEditAccount = "avers:can_edit_account";
 
+    public static Claim[] For(AppUser user) =>
+    [
+        new(ClaimTypes.Name, user.Login),
+        new(ClaimTypes.Role, user.Role.ToString()),
+        new(UserId, user.Id.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+        new(CanEditAccount, user.CanEditAccount ? "true" : "false")
+    ];
+
     public static UserRole? Role(this ClaimsPrincipal user) =>
         Enum.TryParse<UserRole>(user.FindFirstValue(ClaimTypes.Role), out var role) ? role : null;
 
@@ -29,6 +37,7 @@ public static class Policies
 {
     public const string SubscribersView = "subscribers.view";
     public const string PaymentsCreate = "payments.create";
+    public const string PaymentsCancel = "payments.cancel";
     public const string TicketsView = "tickets.view";
     public const string TicketsCreate = "tickets.create";
     public const string SubscribersEdit = "subscribers.edit";
@@ -69,6 +78,9 @@ public static class Policies
             .RequireRole(nameof(UserRole.Administrator), nameof(UserRole.AdsHead)));
         options.AddPolicy(CourtCasesEdit, p => p.RequireAuthenticatedUser()
             .AddRequirements(new ModuleAccessRequirement(AppModule.Legal, AccessLevel.Edit)));
+        // Отменить ошибочную оплату — администратор и начальник АДС.
+        options.AddPolicy(PaymentsCancel, p => p.RequireAuthenticatedUser()
+            .RequireRole(nameof(UserRole.Administrator), nameof(UserRole.AdsHead)));
         options.AddPolicy(UsersManage, p => p.RequireAuthenticatedUser().RequireRole(nameof(UserRole.Administrator)));
     }
 
