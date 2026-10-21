@@ -94,6 +94,12 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
             next.Source, true, next.RecordedBy));
     }
 
+    public Task SaveCourtCaseAsync(int subscriberId, CourtCase draft) =>
+        EditPhonebook((ctx, who) => CourtCases.Save(ctx, subscriberId, draft, who, DateTimeOffset.UtcNow));
+
+    public Task CancelPaymentAsync(int subscriberId, int paymentId) =>
+        EditPhonebook((ctx, who) => PaymentCancellation.Cancel(ctx, subscriberId, paymentId, who, DateTimeOffset.UtcNow));
+
     public Task SaveContractAsync(int subscriberId, UpdateContractRequest request)
     {
         using var ctx = db.CreateDbContext();
@@ -114,11 +120,28 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
         return Task.CompletedTask;
     }
 
+    public Task AddApartmentAsync(Subscriber draft, decimal tariff) =>
+        EditPhonebook((ctx, who) => Apartments.Add(ctx, draft, tariff, Today, who, DateTimeOffset.UtcNow));
+
     public Task SetPaymentWarningMonthsAsync(int months)
     {
         using var ctx = db.CreateDbContext();
         Settings.SetPaymentWarningMonths(ctx, months, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
         return Task.CompletedTask;
+    }
+
+    public Task<int> ChangeTariffAsync(TariffChangeRequest r)
+    {
+        using var ctx = db.CreateDbContext();
+        var (error, months) = Tariffs.Change(ctx, r.Year, r.Month, r.Tariff, r.HouseId, r.SubscriberId,
+            ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
+        return error is null ? Task.FromResult(months) : throw new StoreException(error);
+    }
+
+    public Task<int> OpenYearAsync(int year)
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(Accruals.OpenYear(ctx, year, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow));
     }
 
     public Task SaveHousePassportAsync(int houseId, HousePassportRequest request)

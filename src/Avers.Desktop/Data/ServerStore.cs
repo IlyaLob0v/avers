@@ -73,11 +73,32 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public Task<PaymentDto> RecordPaymentAsync(int subscriberId, int year, AppUser user) =>
         Read<PaymentDto>(() => http.PostAsJsonAsync($"api/subscribers/{subscriberId}/payments", new RecordPaymentRequest(year), Json));
 
+    public Task SaveCourtCaseAsync(int subscriberId, CourtCase draft)
+    {
+        var request = new CourtCaseRequest(draft.DelaAversId, draft.OrderNumber, draft.OrderDate, draft.Court, draft.Amount, draft.Status);
+        return Write(() => draft.Id == 0
+            ? http.PostAsJsonAsync($"api/subscribers/{subscriberId}/court-cases", request, Json)
+            : http.PutAsJsonAsync($"api/subscribers/{subscriberId}/court-cases/{draft.Id}", request, Json));
+    }
+
+    public Task CancelPaymentAsync(int subscriberId, int paymentId) =>
+        Write(() => http.DeleteAsync($"api/subscribers/{subscriberId}/payments/{paymentId}"));
+
     public Task SaveContractAsync(int subscriberId, UpdateContractRequest request) =>
         Write(() => http.PutAsJsonAsync($"api/subscribers/{subscriberId}/contract", request, Json));
 
+    public Task AddApartmentAsync(Subscriber draft, decimal tariff) =>
+        Write(() => http.PostAsJsonAsync("api/subscribers", new NewApartmentRequest(draft.HouseId, draft.Section, draft.Apartment,
+            draft.Account, draft.LastName, draft.FirstName, draft.Patronymic, draft.Phone, draft.ContractNumber, draft.ContractDate, tariff), Json));
+
     public Task SetPaymentWarningMonthsAsync(int months) =>
         Write(() => http.PutAsJsonAsync("api/settings/payment-warning", new PaymentWarningSettings(months), Json));
+
+    public async Task<int> ChangeTariffAsync(TariffChangeRequest request) =>
+        (await Read<TariffChangeResult>(() => http.PutAsJsonAsync("api/tariff", request, Json))).Months;
+
+    public async Task<int> OpenYearAsync(int year) =>
+        (await Read<OpenYearResult>(() => http.PostAsync($"api/accruals/{year}", null))).Subscribers;
 
     public Task SaveHousePassportAsync(int houseId, HousePassportRequest request) =>
         Write(() => http.PutAsJsonAsync($"api/houses/{houseId}/passport", request, Json));

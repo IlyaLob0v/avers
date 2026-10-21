@@ -5,7 +5,8 @@ using SkiaSharp;
 namespace Avers.Desktop.Printing;
 
 /// <summary>
-/// Печатные формы в PDF: квитанция и лицевой счёт абонента, наряд-заказ радиомеханику, домофоны дома. PDF рисует SkiaSharp, который уже есть в Avalonia;
+/// Печатные формы в PDF: квитанция и лицевой счёт абонента, досудебное уведомление и пакет для суда,
+/// наряд-заказ радиомеханику, домофоны дома. PDF рисует SkiaSharp, который уже есть в Avalonia;
 /// файл открывается программой просмотра PDF и печатается оттуда на любой принтер.
 /// </summary>
 public static class PdfForms
@@ -42,8 +43,63 @@ public static class PdfForms
     /// <summary>Лицевой счёт за год: начислено, оплачено и, если нужно, дата оплаты по каждому месяцу.</summary>
     public static void Account(Subscriber s, int year, bool withPayDate, DateOnly today, string path)
     {
-        var months = s.Payments.Where(p => p.Year == year).OrderBy(p => p.Month).ToList();
         using var pdf = new Page(path);
+        Account(pdf, s, year, withPayDate, today);
+    }
+
+    /// <summary>
+    /// Досудебное уведомление: текст с экрана, первая строка — заголовок. Знак ₽ заменяется на «руб.»:
+    /// его нет в Arial на Windows 7.
+    /// </summary>
+    public static void Claim(string text, string path)
+    {
+        var lines = text.Replace("\r", "").Replace("₽", "руб.").Split('\n');
+        using var pdf = new Page(path);
+        pdf.Title(lines[0]);
+        foreach (var paragraph in lines.Skip(1))
+            pdf.Paragraph(paragraph);
+    }
+
+    /// <summary>
+    /// Пакет для суда: справка о задолженности и (или) история платежей — лицевой счёт за каждый год с начислениями,
+    /// каждый на своей странице.
+    /// </summary>
+    public static void CourtPackage(Subscriber s, DateOnly today, bool debtNote, bool history, string path)
+    {
+        using var pdf = new Page(path);
+        if (debtNote)
+            DebtNote(pdf, s, today);
+        if (!history) return;
+        var newPage = debtNote;
+        foreach (var year in s.Payments.Select(p => p.Year).Distinct().Order())
+        {
+            if (newPage) pdf.NextPage();
+            newPage = true;
+            Account(pdf, s, year, true, today);
+        }
+    }
+
+    private static void DebtNote(Page pdf, Subscriber s, DateOnly today)
+    {
+        var unpaid = DueUnpaid(s, today);
+        pdf.Title("Справка о задолженности за техническое обслуживание СКПТ");
+        pdf.Field("Абонент", s.FullName);
+        pdf.Field("Адрес", Address(s));
+        pdf.Field("Лицевой счёт", s.Account);
+        pdf.Field("Договор", Contract(s));
+        pdf.Gap();
+        pdf.Row(true, ("Неоплаченный месяц", 0), ("Сумма, руб.", 420));
+        foreach (var p in unpaid)
+            pdf.Row(false, (Month(p), 0), (Money(p.Tariff), 420));
+        pdf.Row(true, ("Задолженность", 0), (Money(Billing.Debt(Billing.Due(s.Payments, today))), 420));
+        pdf.Gap();
+        pdf.Field("Дата", today.ToString("dd.MM.yyyy"));
+        pdf.Field("Подпись", "");
+    }
+
+    private static void Account(Page pdf, Subscriber s, int year, bool withPayDate, DateOnly today)
+    {
+        var months = s.Payments.Where(p => p.Year == year).OrderBy(p => p.Month).ToList();
         pdf.Title($"Лицевой счёт № {s.Account} за {year} год");
         pdf.Field("Абонент", s.FullName);
         pdf.Field("Адрес", Address(s));
@@ -126,7 +182,7 @@ public static class PdfForms
         private const float Left = 50, Width = 495;
         private readonly FileStream _file;
         private readonly SKDocument _doc;
-        private readonly SKCanvas _canvas;
+        private SKCanvas _canvas;
         private readonly SKTypeface _regular = Typeface(SKFontStyle.Normal);
         private readonly SKTypeface _bold = Typeface(SKFontStyle.Bold);
         private readonly SKPaint _ink = new() { Color = SKColors.Black, IsAntialias = true };
@@ -149,7 +205,7 @@ public static class PdfForms
         public void Field(string label, string value)
         {
             Text(label, Left, 11, _regular);
-            foreach (var line in Wrap(value, Width - 150))
+            foreach (var line in Wrap(value, Width - 150, _bold))
             {
                 Text(line, Left + 150, 11, _bold);
                 _canvas.DrawLine(Left + 150, _y + 4, Left + Width, _y + 4, _ink);
@@ -157,9 +213,9 @@ public static class PdfForms
             }
         }
 
-        private IEnumerable<string> Wrap(string value, float width)
+        private static IEnumerable<string> Wrap(string value, float width, SKTypeface face)
         {
-            using var font = new SKFont(_bold, 11);
+            using var font = new SKFont(face, 11);
             var line = "";
             foreach (var word in value.Split(' '))
             {
@@ -182,6 +238,23 @@ public static class PdfForms
         }
 
         public void Gap() => _y += 12;
+
+        /// <summary>Абзац во всю ширину; пустая строка — отступ.</summary>
+        public void Paragraph(string text)
+        {
+            foreach (var line in Wrap(text, Width, _regular))
+            {
+                Text(line, Left, 11, _regular);
+                _y += 16;
+            }
+        }
+
+        public void NextPage()
+        {
+            _doc.EndPage();
+            _canvas = _doc.BeginPage(595, 842);
+            _y = 60;
+        }
 
         private void Text(string text, float x, float size, SKTypeface face)
         {

@@ -79,6 +79,31 @@ jobs:
           path: out-server/
           retention-days: 30
 
+  server-postgres:
+    # Серверные тесты на настоящем PostgreSQL: в build они идут на SQLite.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: avers
+          POSTGRES_PASSWORD: avers_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U avers"
+          --health-interval 5s
+          --health-retries 20
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      AVERS_TEST_POSTGRES: Host=localhost;Username=avers;Password=avers_ci
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Server tests on PostgreSQL
+        run: dotnet test tests/Avers.Server.Tests -c Release
+
   migration:
     runs-on: ubuntu-latest
     services:
@@ -101,7 +126,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Shellcheck
-        run: shellcheck db/stand/stand.sh db/migration/reconcile/test/run-tests.sh deploy/xrdp/install.sh deploy/xrdp/startwm.sh deploy/server/install.sh deploy/server/avers-password deploy/server/avers-backup
+        run: shellcheck db/stand/stand.sh db/migration/reconcile/test/run-tests.sh deploy/xrdp/install.sh deploy/xrdp/startwm.sh deploy/server/install.sh deploy/server/avers-password deploy/server/avers-backup deploy/server/avers-internet
       - name: Docker Compose config
         run: docker compose -f db/docker-compose.yml --profile legacy config -q
       - name: Reconcile tests

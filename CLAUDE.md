@@ -48,6 +48,7 @@ Claude отвечает на `@claude` в issue и PR — `.github/workflows/cla
 dotnet build Avers.sln            # сборка
 dotnet test Avers.sln             # тесты
 dotnet format Avers.sln           # форматирование
+AVERS_TEST_POSTGRES="Host=localhost;Username=avers;Password=…" dotnet test tests/Avers.Server.Tests   # серверные тесты на PostgreSQL
 docker compose -f db/docker-compose.yml up -d            # локальный PostgreSQL
 docker compose -f db/docker-compose.yml --profile legacy up -d   # + Oracle Free для выгрузки JACK
 ```

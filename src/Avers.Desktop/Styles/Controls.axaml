@@ -21,7 +21,7 @@
   Каркас     Border.topbar, Menu.topmenu, Button.ontop, TextBlock.ontop (Run.strong — выделенная часть),
              TextBlock.brand — тёмная шапка окна; Border.modbar, Button.mod (+ .current),
              Border.navglyph — полоса модулей; Border.screenhead — строка заголовка экрана; Border.statusbar — строка
-             состояния; Border.tileglyph (+ .stub) — значок плитки рабочего стола
+             состояния; Border.tileglyph — значок плитки рабочего стола
 -->
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
@@ -260,12 +260,6 @@
     <Setter Property="Foreground" Value="{StaticResource AccentSoftInk}" />
     <Setter Property="HorizontalAlignment" Value="Center" />
     <Setter Property="VerticalAlignment" Value="Center" />
-  </Style>
-  <Style Selector="Border.tileglyph.stub">
-    <Setter Property="Background" Value="{StaticResource OffBg}" />
-  </Style>
-  <Style Selector="Border.tileglyph.stub > TextBlock">
-    <Setter Property="Foreground" Value="{StaticResource OffInk}" />
   </Style>
 
   <!-- Шапка окна: тёмно-синяя полоса с маркой, меню, пользователем и кнопкой «Выйти» -->

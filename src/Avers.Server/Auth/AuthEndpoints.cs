@@ -36,13 +36,7 @@ public static class AuthEndpoints
             await db.SaveChangesAsync(ct);
         }
 
-        var identity = new ClaimsIdentity(
-        [
-            new Claim(ClaimTypes.Name, user.Login),
-            new Claim(ClaimTypes.Role, user.Role.ToString()),
-            new Claim(AversClaims.UserId, user.Id.ToString(System.Globalization.CultureInfo.InvariantCulture)),
-            new Claim(AversClaims.CanEditAccount, user.CanEditAccount ? "true" : "false")
-        ], BearerTokenDefaults.AuthenticationScheme);
+        var identity = new ClaimsIdentity(AversClaims.For(user), BearerTokenDefaults.AuthenticationScheme);
 
         return TypedResults.SignIn(new ClaimsPrincipal(identity), authenticationScheme: BearerTokenDefaults.AuthenticationScheme);
     }

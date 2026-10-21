@@ -3,6 +3,7 @@ using Avers.Contracts;
 using Avers.Data;
 using Avers.Domain;
 using Avers.Server.Auth;
+using Avers.Server.Hosting;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 
@@ -48,6 +49,47 @@ public static class ApartmentEndpoints
         return TypedResults.NoContent();
     }
 
+    public static Results<NoContent, ValidationProblem> SaveCourtCase(
+        int id, int caseId, CourtCaseRequest r, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
+    {
+        var error = CourtCases.Save(db, id, new CourtCase
+        {
+            Id = caseId,
+            DelaAversId = r.DelaAversId ?? "",
+            OrderNumber = r.OrderNumber ?? "",
+            OrderDate = r.OrderDate,
+            Court = r.Court ?? "",
+            Amount = r.Amount,
+            Status = r.Status ?? ""
+        }, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
+        return error is null
+            ? TypedResults.NoContent()
+            : TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["courtCase"] = [error] });
+    }
+
+    public static Results<NoContent, ValidationProblem> Add(
+        NewApartmentRequest request, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
+    {
+        var error = Apartments.Add(db, Draft(request), request.Tariff, time.Today(), ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
+        return error is null
+            ? TypedResults.NoContent()
+            : TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["apartment"] = [error] });
+    }
+
+    private static Subscriber Draft(NewApartmentRequest r) => new()
+    {
+        HouseId = r.HouseId,
+        Section = r.Section ?? "",
+        Apartment = r.Apartment ?? "",
+        Account = r.Account ?? "",
+        LastName = r.LastName ?? "",
+        FirstName = r.FirstName ?? "",
+        Patronymic = r.Patronymic ?? "",
+        Phone = r.Phone ?? "",
+        ContractNumber = r.ContractNumber ?? "",
+        ContractDate = r.ContractDate
+    };
+
     public static Ok<PaymentWarningSettings> GetPaymentWarning(AversDbContext db) =>
         TypedResults.Ok(new PaymentWarningSettings(Settings.PaymentWarningMonths(db)));
 
@@ -61,5 +103,29 @@ public static class ApartmentEndpoints
             });
         Settings.SetPaymentWarningMonths(db, request.Months, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
         return TypedResults.Ok(new PaymentWarningSettings(request.Months));
+    }
+
+    public static Results<Ok<TariffChangeResult>, ValidationProblem> ChangeTariff(
+        TariffChangeRequest r, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
+    {
+        var (error, months) = Tariffs.Change(db, r.Year, r.Month, r.Tariff, r.HouseId, r.SubscriberId,
+            ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
+        return error is null
+            ? TypedResults.Ok(new TariffChangeResult(months))
+            : TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["tariff"] = [error] });
+    }
+
+    /// <summary>Начисления на текущий или следующий год (<see cref="Accruals.OpenYear"/>).</summary>
+    public static Results<Ok<OpenYearResult>, ValidationProblem> OpenYear(
+        int year, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
+    {
+        var today = time.Today();
+        if (year != today.Year && year != today.Year + 1)
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["year"] = [$"Открыть можно {today.Year} или {today.Year + 1} год."]
+            });
+        return TypedResults.Ok(new OpenYearResult(
+            Accruals.OpenYear(db, year, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow())));
     }
 }

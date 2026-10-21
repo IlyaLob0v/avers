@@ -4,6 +4,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.VisualTree;
 using Avers.Data;
 using Avers.Desktop.Controls;
+using Avers.Desktop.ViewModels;
 using Avers.Domain;
 
 namespace Avers.Desktop.Tests;
@@ -30,13 +31,51 @@ public class ShellTests
     }
 
     [AvaloniaFact]
-    public void MockupButton_SaysItIsNotReady()
+    public async Task ChangeTariff_ForThisHouse_ChangesUnpaidMonths()
     {
-        using var app = new DesktopApp();
+        using var app = new DesktopApp("admin");
+        app.Go(AppModule.Abon);
+        var s = app.Vm.SelectedSubscriber!;
+        app.Go(AppModule.Subscriber);
 
-        app.Vm.NotReadyCommand.Execute("Печать");
+        app.Vm.TariffFrom = "01." + app.Vm.CardPaymentYear;
+        app.Vm.NewTariffValue = "120";
+        app.Vm.TariffScope = MainViewModel.TariffScopes[1];
+        await app.Vm.ChangeTariffCommand.ExecuteAsync(null);
 
-        Assert.Equal("«Печать» пока не работает: функция в разработке.", app.Vm.Status);
+        Assert.Contains("изменено неоплаченных месяцев", app.Vm.Status);
+        Assert.All(app.Vm.SelectedSubscriber!.Payments.Where(p => p.Amount is null), p => Assert.Equal(120m, p.Tariff));
+        Assert.Equal(s.Id, app.Vm.SelectedSubscriber.Id);
+    }
+
+    [AvaloniaFact]
+    public async Task CancelPayment_SelectedPaidMonthBecomesUnpaid()
+    {
+        using var app = new DesktopApp("orlov");
+        app.Go(AppModule.Abon);
+        await app.Vm.RecordPaymentCommand.ExecuteAsync(null);
+        var id = app.Vm.SelectedSubscriber!.Id;
+        app.Go(AppModule.Subscriber);
+
+        app.Vm.SelectedCardPayment = app.Vm.CardPayments.Last(r => r.Payment.Amount is not null);
+        var month = app.Vm.SelectedCardPayment.Payment.Month;
+        await app.Vm.CancelPaymentCommand.ExecuteAsync(null);
+
+        Assert.EndsWith("отменена.", app.Vm.Status);
+        Assert.Equal(id, app.Vm.SelectedSubscriber!.Id);
+        Assert.Null(app.Vm.SelectedSubscriber.Payments.Single(p => p.Year == app.Vm.CardPaymentYear && p.Month == month).Amount);
+    }
+
+    [AvaloniaFact]
+    public void OpenYear_ReportsOpenedSubscribers()
+    {
+        using var app = new DesktopApp("admin");
+
+        app.Vm.OpenYearCommand.Execute(null);
+        app.Pump();
+
+        Assert.StartsWith("Начисления открыты:", app.Vm.Status);
+        Assert.DoesNotContain("— 0.", app.Vm.Status);
     }
 
     [AvaloniaFact]
@@ -180,6 +219,43 @@ public class ShellTests
         Assert.NotNull(opened);
         Assert.StartsWith("%PDF", File.ReadAllText(opened)[..4]);
         Assert.Contains($"наряд-заказ № {app.Vm.SelectedTicket!.Number}", app.Vm.Status);
+    }
+
+    [AvaloniaFact]
+    public async Task CourtCase_LawyerAddsCase_ShownInDebtors()
+    {
+        using var app = new DesktopApp("lawyer");
+        app.Go(AppModule.Claim);
+        app.Pump();
+        var debtor = app.Vm.Debtors.First(d => d.CourtCase is null);
+        app.Vm.SelectedDebtor = debtor;
+
+        app.Vm.NewCourtCaseCommand.Execute(null);
+        app.Vm.CaseOrder = "2-9/2026";
+        app.Vm.CaseCourt = "Мировой судья с/у № 47";
+        await app.Vm.SaveCourtCaseCommand.ExecuteAsync(null);
+
+        Assert.True(app.Vm.CanEditCourtCases);
+        Assert.Equal(" · 2-9/2026", app.Vm.Debtors.Single(d => d.SubscriberId == debtor.SubscriberId).Case);
+        Assert.Equal("2-9/2026", app.Vm.CaseOrder);
+    }
+
+    [AvaloniaFact]
+    public async Task Claim_PrintsNoticeAndCourtPackageAsPdf()
+    {
+        using var app = new DesktopApp("lawyer");
+        app.Go(AppModule.Claim);
+        var opened = new List<string>();
+        app.Vm.OpenFile = opened.Add;
+
+        app.Vm.PrintClaimCommand.Execute(null);
+        await app.Vm.ExportCourtPackageCommand.ExecuteAsync(null);
+
+        Assert.Equal(2, opened.Count);
+        Assert.All(opened, path => Assert.StartsWith("%PDF", File.ReadAllText(path)[..4]));
+        var pages = System.Text.RegularExpressions.Regex.Count(File.ReadAllText(opened[1]), @"/Type /Page\b");
+        Assert.True(pages >= 2, $"В пакете {pages} стр.: справка и хотя бы один год оплат.");
+        Assert.Contains("пакет для суда", app.Vm.Status);
     }
 
     [AvaloniaFact]
