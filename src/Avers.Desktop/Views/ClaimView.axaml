@@ -19,6 +19,11 @@
         <CheckBox Margin="0,6,0,0" IsChecked="{Binding PackageDebtNote}" Content="Справка о задолженности" />
         <CheckBox IsChecked="{Binding PackageHistory}" Content="История платежей (лицевой счёт за каждый год)" />
         <Button Classes="primary" HorizontalAlignment="Left" Margin="0,10,0,0" Content="Выгрузить пакет в PDF" Command="{Binding ExportCourtPackageCommand}" />
+        <StackPanel Orientation="Horizontal" Margin="0,10,0,0" Spacing="8">
+          <TextBlock Classes="label" VerticalAlignment="Center" Text="Неустойка на" />
+          <CalendarDatePicker Width="110" Watermark="сегодня" SelectedDate="{Binding PenaltyDate}" />
+          <Button Content="Расчёт неустойки" Command="{Binding PrintPenaltyCommand}" />
+        </StackPanel>
         <TextBlock Classes="hint" Margin="0,6,0,0" TextWrapping="Wrap" Text="Копию договора приложите из бумажного архива." />
       </StackPanel>
     </HeaderedContentControl>
