@@ -94,6 +94,9 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
             next.Source, true, next.RecordedBy));
     }
 
+    public Task SaveCourtCaseAsync(int subscriberId, CourtCase draft) =>
+        EditPhonebook((ctx, who) => CourtCases.Save(ctx, subscriberId, draft, who, DateTimeOffset.UtcNow));
+
     public Task SaveContractAsync(int subscriberId, UpdateContractRequest request)
     {
         using var ctx = db.CreateDbContext();

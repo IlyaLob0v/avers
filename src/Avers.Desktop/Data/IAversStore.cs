@@ -40,6 +40,9 @@ public interface IAversStore
 
     Task SaveContractAsync(int subscriberId, UpdateContractRequest request);
 
+    /// <summary>Судебное дело должника; Id = 0 — новое.</summary>
+    Task SaveCourtCaseAsync(int subscriberId, CourtCase draft);
+
     Task SetPaymentWarningMonthsAsync(int months);
 
     Task SaveHousePassportAsync(int houseId, HousePassportRequest request);

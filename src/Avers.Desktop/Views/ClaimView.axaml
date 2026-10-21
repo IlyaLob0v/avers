@@ -3,7 +3,7 @@
              xmlns:vm="using:Avers.Desktop.ViewModels"
              x:Class="Avers.Desktop.Views.ClaimView"
              x:DataType="vm:MainViewModel">
-  <Grid ColumnDefinitions="*,*" Margin="16,0,16,12" VerticalAlignment="Top">
+  <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" Margin="16,0,16,12" VerticalAlignment="Top">
     <HeaderedContentControl Classes="group" Margin="0,0,5,0" Header="Досудебное уведомление">
       <StackPanel>
         <TextBox Height="220" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" Text="{Binding ClaimText}" />
@@ -19,6 +19,28 @@
         <CheckBox IsChecked="True" Content="История платежей" />
         <CheckBox IsChecked="True" Content="Копия договора" />
         <Button Classes="primary" HorizontalAlignment="Left" Margin="0,10,0,0" Content="Выгрузить пакет" Command="{Binding NotReadyCommand}" CommandParameter="Выгрузить пакет" />
+      </StackPanel>
+    </HeaderedContentControl>
+    <HeaderedContentControl Grid.Row="1" Grid.ColumnSpan="2" Classes="group" Margin="0,10,0,0" Header="Судебное дело (последнее)">
+      <StackPanel>
+        <Grid ColumnDefinitions="Auto,140,Auto,140,Auto,110,Auto,110" RowDefinitions="Auto,Auto" IsEnabled="{Binding CanEditCourtCases}">
+          <TextBlock Classes="label" VerticalAlignment="Center" Text="Дело-Аверс №" />
+          <TextBox Grid.Column="1" Classes="cell" Text="{Binding CaseNumber}" />
+          <TextBlock Grid.Column="2" Classes="label" Margin="8,0,4,0" VerticalAlignment="Center" Text="Приказ №" />
+          <TextBox Grid.Column="3" Classes="cell" Text="{Binding CaseOrder}" />
+          <TextBlock Grid.Column="4" Classes="label" Margin="8,0,4,0" VerticalAlignment="Center" Text="от" />
+          <TextBox Grid.Column="5" Classes="cell" Watermark="дд.мм.гггг" Text="{Binding CaseDate}" />
+          <TextBlock Grid.Column="6" Classes="label" Margin="8,0,4,0" VerticalAlignment="Center" Text="Сумма" />
+          <TextBox Grid.Column="7" Classes="cell" Text="{Binding CaseAmount}" />
+          <TextBlock Grid.Row="1" Classes="label" VerticalAlignment="Center" Text="Суд" />
+          <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Classes="cell" Text="{Binding CaseCourt}" />
+          <TextBlock Grid.Row="1" Grid.Column="4" Classes="label" Margin="8,0,4,0" VerticalAlignment="Center" Text="Состояние" />
+          <TextBox Grid.Row="1" Grid.Column="5" Grid.ColumnSpan="3" Classes="cell" Text="{Binding CaseStatus}" />
+        </Grid>
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Spacing="8" IsVisible="{Binding CanEditCourtCases}">
+          <Button Content="Новое дело" Command="{Binding NewCourtCaseCommand}" />
+          <Button Classes="primary" Content="Сохранить дело" Command="{Binding SaveCourtCaseCommand}" />
+        </StackPanel>
       </StackPanel>
     </HeaderedContentControl>
   </Grid>

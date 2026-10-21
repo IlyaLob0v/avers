@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Avers.Contracts;
 using Avers.Data;
 using Avers.Domain;
@@ -25,6 +26,9 @@ public static class SubscriberEndpoints
         api.MapGet("/subscribers/{id:int}", Card);
         api.MapGet("/subscribers/{id:int}/payments", Payments);
         api.MapPost("/subscribers/{id:int}/payments", PaymentEndpoints.Record).RequireAuthorization(Policies.PaymentsCreate);
+        api.MapPost("/subscribers/{id:int}/court-cases", (int id, CourtCaseRequest r, ClaimsPrincipal u, AversDbContext db, TimeProvider t) =>
+            ApartmentEndpoints.SaveCourtCase(id, 0, r, u, db, t)).RequireAuthorization(Policies.CourtCasesEdit);
+        api.MapPut("/subscribers/{id:int}/court-cases/{caseId:int}", ApartmentEndpoints.SaveCourtCase).RequireAuthorization(Policies.CourtCasesEdit);
         api.MapPut("/subscribers/{id:int}/contract", ApartmentEndpoints.UpdateContract).RequireAuthorization(Policies.SubscribersEdit);
         api.MapGet("/settings/payment-warning", ApartmentEndpoints.GetPaymentWarning);
         api.MapPut("/settings/payment-warning", ApartmentEndpoints.SetPaymentWarning).RequireAuthorization(Policies.SettingsEdit);

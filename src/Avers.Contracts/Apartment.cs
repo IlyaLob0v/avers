@@ -10,6 +10,9 @@ public sealed record UpdateContractRequest(
     string? ContractHolder,
     string? Notes);
 
+/// <summary>Судебное дело должника. Запрос заменяет все поля целиком.</summary>
+public sealed record CourtCaseRequest(string? DelaAversId, string? OrderNumber, DateOnly OrderDate, string? Court, decimal Amount, string? Status);
+
 /// <summary>Через сколько месяцев без оплаты карточка подсвечивается жёлтым.</summary>
 public sealed record PaymentWarningSettings(int Months);
 

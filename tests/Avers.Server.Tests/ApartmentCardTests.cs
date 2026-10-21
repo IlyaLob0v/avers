@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Avers.Contracts;
+using Microsoft.EntityFrameworkCore;
 
 namespace Avers.Server.Tests;
 
@@ -89,6 +90,27 @@ public class ApartmentCardTests
         Assert.Equal(paid.Month, card!.LastPayment!.Month);
         Assert.Equal(0, card.MonthsSinceLastPayment);
         Assert.False(card.IsPaymentLate);
+    }
+
+    [Fact]
+    public async Task CourtCase_LawyerAddsAndEdits_AdsHeadIsForbidden()
+    {
+        await using var app = new AversApp();
+        var lawyer = await app.LoginAsync("lawyer");
+        var head = await app.LoginAsync("orlov");
+        var request = new CourtCaseRequest("ДА-90001", "2-9/2026", new DateOnly(2026, 8, 20), "Мировой судья с/у № 47", 475m, "Подано");
+
+        var forbidden = await head.PostAsJsonAsync("/api/subscribers/3/court-cases", request);
+        var created = await lawyer.PostAsJsonAsync("/api/subscribers/3/court-cases", request);
+        var caseId = await app.WithDbAsync(db => db.CourtCases.Where(c => c.SubscriberId == 3).Select(c => c.Id).SingleAsync());
+        var edited = await lawyer.PutAsJsonAsync($"/api/subscribers/3/court-cases/{caseId}", request with { Status = "Выдан" });
+        var debts = await lawyer.GetFromJsonAsync<Avers.Data.Debts>("/api/debts");
+
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, created.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, edited.StatusCode);
+        Assert.Equal("Выдан", await app.WithDbAsync(db => db.CourtCases.Where(c => c.Id == caseId).Select(c => c.Status).SingleAsync()));
+        Assert.Contains(debts!.Debtors, d => d.Case is { DelaAversId: "ДА-88421" });
     }
 
     [Fact]

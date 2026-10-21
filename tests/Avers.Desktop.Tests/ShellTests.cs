@@ -183,6 +183,25 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public async Task CourtCase_LawyerAddsCase_ShownInDebtors()
+    {
+        using var app = new DesktopApp("lawyer");
+        app.Go(AppModule.Claim);
+        app.Pump();
+        var debtor = app.Vm.Debtors.First(d => d.CourtCase is null);
+        app.Vm.SelectedDebtor = debtor;
+
+        app.Vm.NewCourtCaseCommand.Execute(null);
+        app.Vm.CaseOrder = "2-9/2026";
+        app.Vm.CaseCourt = "Мировой судья с/у № 47";
+        await app.Vm.SaveCourtCaseCommand.ExecuteAsync(null);
+
+        Assert.True(app.Vm.CanEditCourtCases);
+        Assert.Equal(" · 2-9/2026", app.Vm.Debtors.Single(d => d.SubscriberId == debtor.SubscriberId).Case);
+        Assert.Equal("2-9/2026", app.Vm.CaseOrder);
+    }
+
+    [AvaloniaFact]
     public void Back_ReturnsToPreviousScreens()
     {
         using var app = new DesktopApp("admin");
