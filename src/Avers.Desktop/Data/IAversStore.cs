@@ -42,7 +42,13 @@ public interface IAversStore
 
     Task CancelPaymentAsync(int subscriberId, int paymentId);
 
+    /// <summary>Новая квартира: абонент с договором и тариф начислений.</summary>
+    Task AddApartmentAsync(Subscriber draft, decimal tariff);
+
     Task SetPaymentWarningMonthsAsync(int months);
+
+    /// <summary>Открывает начисления на год и возвращает число абонентов.</summary>
+    Task<int> OpenYearAsync(int year);
 
     Task SaveHousePassportAsync(int houseId, HousePassportRequest request);
 
