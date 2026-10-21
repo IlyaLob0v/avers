@@ -578,6 +578,7 @@ public sealed class DebtorRow : IRowTone
         DebtText = d.Debt.ToString("N2") + " ₽";
         Unpaid = d.Unpaid;
         LastPay = d.LastPaymentDate is { } date ? date.ToString("dd.MM.yyyy") + (d.IsOld ? " (≥ 3 лет)" : "") : "нет";
+        Limitation = d.LimitationEnds is { } end ? $"{d.OldestUnpaid:MM.yyyy} — до {end:dd.MM.yyyy}" : "";
         CourtCase = d.Case;
         Case = d.Case is { } c ? $"{c.DelaAversId} · {c.OrderNumber}" : "—";
         IsDebt = d.Debt >= Billing.DebtHighlight;
@@ -592,6 +593,9 @@ public sealed class DebtorRow : IRowTone
     public string DebtText { get; }
     public int Unpaid { get; }
     public string LastPay { get; }
+
+    /// <summary>Самый старый неоплаченный месяц и последний день, когда его можно взыскать.</summary>
+    public string Limitation { get; }
     public string Case { get; }
 
     /// <summary>Последнее судебное дело должника.</summary>

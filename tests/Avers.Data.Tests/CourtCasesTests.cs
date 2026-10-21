@@ -33,6 +33,24 @@ public class CourtCasesTests
     }
 
     [Fact]
+    public void Debtors_ShowLimitationOfOldestUnpaidMonth()
+    {
+        using var database = new SqliteDatabase();
+        using var db = database.CreateContext();
+        var s = new Subscriber { House = new House { Street = new Street { Name = "Братская" }, Number = "10" }, Account = "1", LastName = "Смирнов" };
+        s.Payments.Add(new YearPayment { Year = 2023, Month = 9, Tariff = 150, Amount = 150 });
+        s.Payments.Add(new YearPayment { Year = 2023, Month = 10, Tariff = 150 });
+        s.Payments.Add(new YearPayment { Year = 2023, Month = 11, Tariff = 150 });
+        db.Subscribers.Add(s);
+        db.SaveChanges();
+
+        var d = Debts.Load(db, Today).Debtors.Single();
+
+        Assert.Equal(new DateOnly(2023, 10, 1), d.OldestUnpaid);
+        Assert.Equal(new DateOnly(2026, 11, 10), d.LimitationEnds);
+    }
+
+    [Fact]
     public void Save_RejectsEmptyNumbersAndForeignCase()
     {
         using var database = new SqliteDatabase();
