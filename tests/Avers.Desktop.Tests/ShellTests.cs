@@ -278,6 +278,21 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public async Task Claim_PrintsPenaltyOnChosenDate()
+    {
+        using var app = new DesktopApp("lawyer");
+        app.Go(AppModule.Claim);
+        var opened = new List<string>();
+        app.Vm.OpenFile = opened.Add;
+
+        app.Vm.PenaltyDate = new DateTime(2026, 11, 1);
+        await app.Vm.PrintPenaltyCommand.ExecuteAsync(null);
+
+        Assert.StartsWith("%PDF", File.ReadAllText(opened.Single())[..4]);
+        Assert.Contains("расчёт неустойки", app.Vm.Status);
+    }
+
+    [AvaloniaFact]
     public async Task Claim_OpensNoticeInWordAndCourtPackageAsPdf()
     {
         using var app = new DesktopApp("lawyer");

@@ -107,6 +107,36 @@ public static class PdfForms
         pdf.Field("Дата выписки", today.ToString("dd.MM.yyyy"));
     }
 
+    /// <summary>
+    /// Расчёт неустойки на дату по образцу юристов: долг, дни просрочки и неустойка по каждому месяцу;
+    /// если неустойка больше долга, к взысканию — сумма долга (ст. 333 ГК РФ).
+    /// </summary>
+    public static void Penalty(Subscriber s, DateOnly date, string path)
+    {
+        var lines = Domain.Penalty.Calculate(s.Payments, date);
+        var total = lines.Sum(l => l.Amount);
+        var claimed = Domain.Penalty.Claimed(lines);
+        using var pdf = new Page(path);
+        pdf.Title($"Расчёт неустойки на {date:dd.MM.yyyy}");
+        pdf.Field("Абонент", s.FullName);
+        pdf.Field("Адрес", Address(s));
+        pdf.Field("Договор", Contract(s));
+        pdf.Gap();
+        pdf.Paragraph($"Неустойка за месяц = долг за месяц × {Domain.Penalty.PercentPerDay:0} % × дни просрочки. Оплата — до 10 числа следующего месяца (п. 5.2 договора), неустойка — п. 2.3 договора.");
+        pdf.Gap();
+        pdf.Row(true, ("Месяц", 0), ("Долг, руб.", 150), ("Дней просрочки", 250), ("% в день", 360), ("Неустойка, руб.", 420));
+        foreach (var l in lines)
+            pdf.Row(false, (Month(l.Year, l.Month), 0), (Money(l.Debt), 150), (l.Days.ToString(Ru), 250),
+                (Domain.Penalty.PercentPerDay.ToString("0", Ru), 360), (Money(l.Amount), 420));
+        pdf.Row(true, ("Итого", 0), (Money(lines.Sum(l => l.Debt)), 150), (Money(total), 420));
+        pdf.Gap();
+        if (claimed < total)
+            pdf.Paragraph("Сумма неустойки снижена до суммы основного долга в соответствии со ст. 333 ГК РФ.");
+        pdf.Paragraph($"Таким образом, сумма неустойки, подлежащая взысканию с {s.FullName} по адресу: {Address(s)}, составляет {Money(claimed)} руб.");
+        pdf.Gap();
+        pdf.Field("Главный бухгалтер", "");
+    }
+
     /// <summary>Домофоны дома: панели подъездов и невыполненные заявки — для радиомеханика.</summary>
     public static void Intercom(House house, IEnumerable<IntercomTicket> open, DateOnly today, string path)
     {
@@ -159,7 +189,9 @@ public static class PdfForms
         return $"{number}от {d:dd.MM.yyyy}, {s.ContractParty}";
     }
 
-    private static string Month(YearPayment p) => $"{Ru.DateTimeFormat.MonthNames[p.Month - 1].ToLowerInvariant()} {p.Year}";
+    private static string Month(YearPayment p) => Month(p.Year, p.Month);
+
+    private static string Month(int year, int month) => $"{Ru.DateTimeFormat.MonthNames[month - 1].ToLowerInvariant()} {year}";
 
     private static string Money(decimal value) => value.ToString("N2", Ru);
 
@@ -219,6 +251,7 @@ public static class PdfForms
 
         public void Row(bool bold, params (string Text, float X)[] cells)
         {
+            if (_y > 790) NextPage();
             foreach (var (text, x) in cells)
                 Text(text, Left + x, 11, bold ? _bold : _regular);
             _y += 18;
