@@ -32,6 +32,46 @@ public class ContractTests
     }
 
     [AvaloniaFact]
+    public async Task NewApartment_AppearsInRegistryWithAccruals()
+    {
+        using var app = new DesktopApp();
+        app.Go(AppModule.Contract);
+        var house = app.Vm.SelectedHouse!;
+
+        app.Vm.StartNewApartmentCommand.Execute(null);
+        app.Vm.NewApartment = "99";
+        app.Vm.NewAccount = "990099";
+        app.Vm.NewLastName = "Смирнов";
+        app.Vm.NewContractNumber = "ТО-2026/990099";
+        app.Vm.NewTariff = "95,50";
+        await app.Vm.AddApartmentCommand.ExecuteAsync(null);
+
+        Assert.False(app.Vm.IsNewApartmentOpen);
+        Assert.Equal(house.Id, app.Vm.SelectedHouse?.Id);
+        Assert.Contains(app.Vm.ContractRows, r => r.Account == "990099" && r.Number == "ТО-2026/990099");
+        Assert.Equal("990099", app.Vm.SelectedSubscriber?.Account);
+        Assert.All(app.Vm.SelectedSubscriber!.Payments, p => Assert.Equal(95.50m, p.Tariff));
+        Assert.NotEmpty(app.Vm.SelectedSubscriber.Payments);
+    }
+
+    [AvaloniaFact]
+    public async Task NewApartment_DuplicateAccount_SaysSo()
+    {
+        using var app = new DesktopApp();
+        app.Go(AppModule.Contract);
+
+        app.Vm.StartNewApartmentCommand.Execute(null);
+        app.Vm.NewApartment = "99";
+        app.Vm.NewAccount = "180090";
+        app.Vm.NewLastName = "Смирнов";
+        app.Vm.NewTariff = "95";
+        await app.Vm.AddApartmentCommand.ExecuteAsync(null);
+
+        Assert.Equal("Лицевой счёт 180090 уже есть.", app.Vm.Status);
+        Assert.True(app.Vm.IsNewApartmentOpen);
+    }
+
+    [AvaloniaFact]
     public async Task Terminate_ThenNewContract()
     {
         using var app = new DesktopApp();

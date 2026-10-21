@@ -4,6 +4,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.VisualTree;
 using Avers.Data;
 using Avers.Desktop.Controls;
+using Avers.Desktop.ViewModels;
 using Avers.Domain;
 
 namespace Avers.Desktop.Tests;
@@ -27,6 +28,54 @@ public class ShellTests
             Assert.Equal(module, app.Vm.Module);
             Assert.NotNull(app.Window.CaptureRenderedFrame());
         }
+    }
+
+    [AvaloniaFact]
+    public async Task ChangeTariff_ForThisHouse_ChangesUnpaidMonths()
+    {
+        using var app = new DesktopApp("admin");
+        app.Go(AppModule.Abon);
+        var s = app.Vm.SelectedSubscriber!;
+        app.Go(AppModule.Subscriber);
+
+        app.Vm.TariffFrom = "01." + app.Vm.CardPaymentYear;
+        app.Vm.NewTariffValue = "120";
+        app.Vm.TariffScope = MainViewModel.TariffScopes[1];
+        await app.Vm.ChangeTariffCommand.ExecuteAsync(null);
+
+        Assert.Contains("изменено неоплаченных месяцев", app.Vm.Status);
+        Assert.All(app.Vm.SelectedSubscriber!.Payments.Where(p => p.Amount is null), p => Assert.Equal(120m, p.Tariff));
+        Assert.Equal(s.Id, app.Vm.SelectedSubscriber.Id);
+    }
+
+    [AvaloniaFact]
+    public async Task CancelPayment_SelectedPaidMonthBecomesUnpaid()
+    {
+        using var app = new DesktopApp("orlov");
+        app.Go(AppModule.Abon);
+        await app.Vm.RecordPaymentCommand.ExecuteAsync(null);
+        var id = app.Vm.SelectedSubscriber!.Id;
+        app.Go(AppModule.Subscriber);
+
+        app.Vm.SelectedCardPayment = app.Vm.CardPayments.Last(r => r.Payment.Amount is not null);
+        var month = app.Vm.SelectedCardPayment.Payment.Month;
+        await app.Vm.CancelPaymentCommand.ExecuteAsync(null);
+
+        Assert.EndsWith("отменена.", app.Vm.Status);
+        Assert.Equal(id, app.Vm.SelectedSubscriber!.Id);
+        Assert.Null(app.Vm.SelectedSubscriber.Payments.Single(p => p.Year == app.Vm.CardPaymentYear && p.Month == month).Amount);
+    }
+
+    [AvaloniaFact]
+    public void OpenYear_ReportsOpenedSubscribers()
+    {
+        using var app = new DesktopApp("admin");
+
+        app.Vm.OpenYearCommand.Execute(null);
+        app.Pump();
+
+        Assert.StartsWith("Начисления открыты:", app.Vm.Status);
+        Assert.DoesNotContain("— 0.", app.Vm.Status);
     }
 
     [AvaloniaFact]
