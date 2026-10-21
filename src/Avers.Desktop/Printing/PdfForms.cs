@@ -5,7 +5,7 @@ using SkiaSharp;
 namespace Avers.Desktop.Printing;
 
 /// <summary>
-/// Печатные формы в PDF: квитанция и лицевой счёт абонента, досудебное уведомление и пакет для суда,
+/// Печатные формы в PDF: квитанция и лицевой счёт абонента, пакет для суда,
 /// наряд-заказ радиомеханику, домофоны дома. PDF рисует SkiaSharp, который уже есть в Avalonia;
 /// файл открывается программой просмотра PDF и печатается оттуда на любой принтер.
 /// </summary>
@@ -45,19 +45,6 @@ public static class PdfForms
     {
         using var pdf = new Page(path);
         Account(pdf, s, year, withPayDate, today);
-    }
-
-    /// <summary>
-    /// Досудебное уведомление: текст с экрана, первая строка — заголовок. Знак ₽ заменяется на «руб.»:
-    /// его нет в Arial на Windows 7.
-    /// </summary>
-    public static void Claim(string text, string path)
-    {
-        var lines = text.Replace("\r", "").Replace("₽", "руб.").Split('\n');
-        using var pdf = new Page(path);
-        pdf.Title(lines[0]);
-        foreach (var paragraph in lines.Skip(1))
-            pdf.Paragraph(paragraph);
     }
 
     /// <summary>

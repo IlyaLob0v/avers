@@ -146,15 +146,20 @@ public class ShellTests
     }
 
     [AvaloniaFact]
-    public void Claim_NamesUnpaidMonthsOfSelectedDebtor()
+    public void Claim_FollowsLawyersSampleForSelectedDebtor()
     {
         using var app = new DesktopApp("lawyer");
 
         foreach (var debtor in app.Vm.Debtors.ToList())
         {
             app.Vm.SelectedDebtor = debtor;
-            Assert.Contains($"за {debtor.Unpaid} мес.", app.Vm.ClaimText);
+            Assert.Contains(MoneyWords.Rubles(debtor.Debt), app.Vm.ClaimText);
+            Assert.Contains($"г. Омск, {debtor.Address}", app.Vm.ClaimText);
+            Assert.Contains("10 (десяти) календарных дней", app.Vm.ClaimText);
         }
+
+        app.Vm.ClaimVariant = app.Vm.ClaimVariants[1];
+        Assert.StartsWith("Досудебное уведомление о погашении задолженности", app.Vm.ClaimText);
     }
 
     [AvaloniaFact]
@@ -273,7 +278,7 @@ public class ShellTests
     }
 
     [AvaloniaFact]
-    public async Task Claim_PrintsNoticeAndCourtPackageAsPdf()
+    public async Task Claim_OpensNoticeInWordAndCourtPackageAsPdf()
     {
         using var app = new DesktopApp("lawyer");
         app.Go(AppModule.Claim);
@@ -284,7 +289,9 @@ public class ShellTests
         await app.Vm.ExportCourtPackageCommand.ExecuteAsync(null);
 
         Assert.Equal(2, opened.Count);
-        Assert.All(opened, path => Assert.StartsWith("%PDF", File.ReadAllText(path)[..4]));
+        using (var word = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(opened[0], false))
+            Assert.Contains("10 (десяти) календарных дней", word.MainDocumentPart!.Document!.Body!.InnerText);
+        Assert.StartsWith("%PDF", File.ReadAllText(opened[1])[..4]);
         var pages = System.Text.RegularExpressions.Regex.Count(File.ReadAllText(opened[1]), @"/Type /Page\b");
         Assert.True(pages >= 2, $"В пакете {pages} стр.: справка и хотя бы один год оплат.");
         Assert.Contains("пакет для суда", app.Vm.Status);

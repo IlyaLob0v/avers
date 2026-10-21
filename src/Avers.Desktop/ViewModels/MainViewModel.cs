@@ -3,6 +3,7 @@ using Avers.Contracts;
 using Avers.Data;
 using Avers.Desktop.Controls;
 using Avers.Desktop.Data;
+using Avers.Desktop.Printing;
 using Avers.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -401,12 +402,7 @@ public sealed partial class MainViewModel : ObservableObject
     private void BuildClaim()
     {
         var row = SelectedDebtor ?? Debtors.FirstOrDefault(d => d.Unpaid >= Billing.ClaimUnpaidMonths);
-        if (row is null) { ClaimText = ""; return; }
-        ClaimText =
-            $"Досудебное уведомление\n\n{row.FullName}, л/с {row.Account}, {row.Address}.\n\n" +
-            $"Задолженность за ТО СКПТ за {row.Unpaid} мес. — {row.DebtText}. Предлагаем погасить долг в течение 30 дней. По истечении срока материалы будут направлены в суд.\n\n" +
-            $"{_today:dd.MM.yyyy}, антенная служба";
-        OnPropertyChanged(nameof(ClaimText));
+        ClaimText = row is null ? "" : ClaimNotice.Text(ClaimVariant.Kind, $"г. Омск, {row.Address}", row.Debt, row.ContractTerminated);
     }
 
     [RelayCommand]
@@ -576,6 +572,7 @@ public sealed class DebtorRow : IRowTone
         FullName = d.FullName;
         Address = $"{house.AddressLine}, кв. {d.Apartment}";
         Debt = d.Debt;
+        ContractTerminated = d.ContractTerminated;
         DebtText = d.Debt.ToString("N2") + " ₽";
         Unpaid = d.Unpaid;
         LastPay = d.LastPaymentDate is { } date ? date.ToString("dd.MM.yyyy") + (d.IsOld ? " (≥ 3 лет)" : "") : "нет";
@@ -591,6 +588,7 @@ public sealed class DebtorRow : IRowTone
     public string FullName { get; }
     public string Address { get; }
     public decimal Debt { get; }
+    public DateOnly? ContractTerminated { get; }
     public string DebtText { get; }
     public int Unpaid { get; }
     public string LastPay { get; }

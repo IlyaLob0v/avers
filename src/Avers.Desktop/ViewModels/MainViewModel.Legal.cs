@@ -94,11 +94,29 @@ public sealed partial class MainViewModel
     [ObservableProperty] private bool _packageDebtNote = true;
     [ObservableProperty] private bool _packageHistory = true;
 
+    public IReadOnlyList<ClaimVariant> ClaimVariants => ClaimNotice.Variants;
+
+    [ObservableProperty] private ClaimVariant _claimVariant = ClaimNotice.Variants[0];
+
+    partial void OnClaimVariantChanged(ClaimVariant value) => BuildClaim();
+
+    /// <summary>Уведомление в Word: юристы правят текст и печатают оттуда.</summary>
     [RelayCommand]
     private void PrintClaim()
     {
         if (SelectedDebtor is not { } d) { Status = "Выберите должника."; return; }
-        OpenPdf(PrintPath("уведомление", d.Account), $"досудебное уведомление {d.FullName}", path => PdfForms.Claim(ClaimText, path));
+        var path = Path.Combine(Path.GetTempPath(), "Avers", $"уведомление-{d.Account}.docx");
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            WordForms.Claim($"г. Омск, {d.Address}", ClaimText, path);
+            OpenFile(path);
+            Status = $"Открыто в Word: уведомление {d.FullName}.";
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            Status = $"Не удалось открыть уведомление: {e.Message}";
+        }
     }
 
     /// <summary>Пакет для суда по выбранному должнику: его оплаты грузятся вместе с домом.</summary>
