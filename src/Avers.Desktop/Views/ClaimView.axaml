@@ -2,14 +2,16 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Avers.Desktop.ViewModels"
              xmlns:data="using:Avers.Data"
+             xmlns:pr="using:Avers.Desktop.Printing"
              x:Class="Avers.Desktop.Views.ClaimView"
              x:DataType="vm:MainViewModel">
   <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" Margin="16,0,16,12" VerticalAlignment="Top">
     <HeaderedContentControl Classes="group" Margin="0,0,5,0" Header="Досудебное уведомление">
       <StackPanel>
+        <ComboBox Classes="cell" Width="300" Margin="0,0,0,8" ItemsSource="{Binding ClaimVariants}" SelectedItem="{Binding ClaimVariant}" DisplayMemberBinding="{Binding Title, x:DataType=pr:ClaimVariant}" />
         <TextBox Height="220" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" Text="{Binding ClaimText}" />
-        <Button Classes="primary" HorizontalAlignment="Left" Margin="0,8,0,0" Content="Печать" Command="{Binding PrintClaimCommand}" />
-        <TextBlock Classes="hint" Margin="0,6,0,0" Text="Система отбирает абонентов с долгом более 3 месяцев и готовит текст." />
+        <Button Classes="primary" HorizontalAlignment="Left" Margin="0,8,0,0" Content="Открыть в Word" Command="{Binding PrintClaimCommand}" />
+        <TextBlock Classes="hint" Margin="0,6,0,0" TextWrapping="Wrap" Text="Текст по образцу юристов; адрес, сумму и дату отключения Аверс подставляет сам. Окончательно правится в Word." />
       </StackPanel>
     </HeaderedContentControl>
     <HeaderedContentControl Grid.Column="1" Classes="group" Margin="5,0,0,0" Header="Пакет документов для суда">
