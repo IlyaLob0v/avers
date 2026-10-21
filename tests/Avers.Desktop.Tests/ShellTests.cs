@@ -241,6 +241,38 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public async Task Claim_LawyerAddsOpensAndDeletesScan()
+    {
+        using var app = new DesktopApp("lawyer");
+        var file = Path.Combine(Path.GetTempPath(), $"Договор-{Guid.NewGuid():N}.pdf");
+        await File.WriteAllBytesAsync(file, "%PDF-1.4\n%%EOF"u8.ToArray());
+        try
+        {
+            app.Go(AppModule.Claim);
+            app.Pump();
+            var opened = new List<string>();
+            app.Vm.OpenFile = opened.Add;
+
+            app.Vm.PickDocumentFile = () => Task.FromResult<string?>(file);
+            await app.Vm.AddDocumentCommand.ExecuteAsync(null);
+            app.Vm.SelectedDocument = app.Vm.Documents.Single();
+            await app.Vm.OpenDocumentCommand.ExecuteAsync(null);
+
+            Assert.Equal(("Договор", Path.GetFileNameWithoutExtension(file)), (app.Vm.SelectedDocument!.Kind, app.Vm.SelectedDocument.Name));
+            Assert.EndsWith(".pdf", opened.Single());
+            Assert.StartsWith("%PDF", File.ReadAllText(opened.Single()));
+
+            await app.Vm.DeleteDocumentCommand.ExecuteAsync(null);
+            await app.Vm.DeleteDocumentCommand.ExecuteAsync(null);
+            Assert.Empty(app.Vm.Documents);
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    [AvaloniaFact]
     public async Task Claim_PrintsNoticeAndCourtPackageAsPdf()
     {
         using var app = new DesktopApp("lawyer");

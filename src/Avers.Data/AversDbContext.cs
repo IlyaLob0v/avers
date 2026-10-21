@@ -17,6 +17,7 @@ public sealed class AversDbContext : DbContext
     public DbSet<YearPayment> Payments => Set<YearPayment>();
     public DbSet<WorkTicket> Tickets => Set<WorkTicket>();
     public DbSet<CourtCase> CourtCases => Set<CourtCase>();
+    public DbSet<SubscriberDocument> SubscriberDocuments => Set<SubscriberDocument>();
     public DbSet<UnifiedReceipt> UnifiedReceipts => Set<UnifiedReceipt>();
     public DbSet<Mechanic> Mechanics => Set<Mechanic>();
     public DbSet<Material> Materials => Set<Material>();
@@ -109,6 +110,15 @@ public sealed class AversDbContext : DbContext
             e.Property(x => x.Amount).HasPrecision(12, 2);
             e.Property(x => x.DelaAversId).HasMaxLength(40);
             e.Property(x => x.OrderNumber).HasMaxLength(40);
+        });
+
+        model.Entity<SubscriberDocument>(e =>
+        {
+            e.Property(x => x.Kind).HasMaxLength(40);
+            e.Property(x => x.Name).HasMaxLength(200);
+            e.Property(x => x.Format).HasMaxLength(10);
+            e.Property(x => x.AddedBy).HasMaxLength(200);
+            e.HasOne(x => x.Subscriber).WithMany().HasForeignKey(x => x.SubscriberId).OnDelete(DeleteBehavior.Cascade);
         });
 
         model.Entity<UnifiedReceipt>(e =>

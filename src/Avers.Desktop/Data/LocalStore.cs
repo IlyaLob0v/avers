@@ -203,6 +203,33 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
         return Task.CompletedTask;
     }
 
+    public Task<List<DocumentInfo>> LoadDocumentsAsync(int subscriberId)
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(SubscriberDocuments.List(ctx, subscriberId));
+    }
+
+    public Task<byte[]?> LoadDocumentFileAsync(int documentId)
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(SubscriberDocuments.File(ctx, documentId)?.Content);
+    }
+
+    public Task AddDocumentAsync(int subscriberId, AddDocumentRequest request)
+    {
+        using var ctx = db.CreateDbContext();
+        var subscriber = ctx.Subscribers.First(x => x.Id == subscriberId);
+        SubscriberDocuments.Add(ctx, subscriber, request.Kind, request.Name, request.Content, Today, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteDocumentAsync(int documentId)
+    {
+        using var ctx = db.CreateDbContext();
+        SubscriberDocuments.Delete(ctx, documentId, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
+        return Task.CompletedTask;
+    }
+
     public Task SaveIntercomPanelAsync(int houseId, IntercomPanel draft)
     {
         using var ctx = db.CreateDbContext();

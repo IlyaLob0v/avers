@@ -124,6 +124,24 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public Task DeleteSchemeAsync(int schemeId) =>
         Write(() => http.DeleteAsync($"api/schemes/{schemeId}"));
 
+    public Task<List<DocumentInfo>> LoadDocumentsAsync(int subscriberId) =>
+        Read<List<DocumentInfo>>(() => http.GetAsync($"api/subscribers/{subscriberId}/documents"));
+
+    public async Task<byte[]?> LoadDocumentFileAsync(int documentId)
+    {
+        using var response = await Send(() => http.GetAsync($"api/documents/{documentId}/file"));
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return null;
+        await EnsureSuccess(response);
+        return await response.Content.ReadAsByteArrayAsync();
+    }
+
+    public Task AddDocumentAsync(int subscriberId, AddDocumentRequest request) =>
+        Write(() => http.PostAsJsonAsync($"api/subscribers/{subscriberId}/documents", request, Json));
+
+    public Task DeleteDocumentAsync(int documentId) =>
+        Write(() => http.DeleteAsync($"api/documents/{documentId}"));
+
     public Task SaveIntercomPanelAsync(int houseId, IntercomPanel draft)
     {
         var request = new IntercomPanelRequest(draft.Entrance, draft.PanelType, draft.SwitchBlock, draft.Keys, draft.Power);
