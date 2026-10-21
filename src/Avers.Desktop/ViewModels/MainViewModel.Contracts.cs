@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avers.Desktop.Data;
 using Avers.Desktop.Reports;
 using Avers.Domain;
@@ -8,7 +9,7 @@ namespace Avers.Desktop.ViewModels;
 
 /// <summary>
 /// Экран «Договоры»: выбор дома, поиск договора по номеру или фамилии во всей базе, новый договор,
-/// расторжение и реестр дома в Excel. Договор хранится в квартире: новый договор заменяет прежний,
+/// расторжение, новая квартира и реестр дома в Excel. Договор хранится в квартире: новый договор заменяет прежний,
 /// прежние данные остаются в журнале изменений.
 /// </summary>
 public sealed partial class MainViewModel
@@ -59,6 +60,68 @@ public sealed partial class MainViewModel
         if (SelectedSubscriber is null || !CanEditCard) return;
         EditContractTerminated = _today.ToString("dd.MM.yyyy");
         await SaveCard();
+    }
+
+    [ObservableProperty] private bool _isNewApartmentOpen;
+    [ObservableProperty] private string _newSection = "";
+    [ObservableProperty] private string _newApartment = "";
+    [ObservableProperty] private string _newAccount = "";
+    [ObservableProperty] private string _newLastName = "";
+    [ObservableProperty] private string _newFirstName = "";
+    [ObservableProperty] private string _newPatronymic = "";
+    [ObservableProperty] private string _newPhone = "";
+    [ObservableProperty] private string _newContractNumber = "";
+    [ObservableProperty] private string _newContractDate = "";
+    [ObservableProperty] private string _newTariff = "";
+
+    [RelayCommand]
+    private void StartNewApartment()
+    {
+        if (SelectedHouse is null || !CanEditCard) return;
+        NewSection = NewApartment = NewAccount = NewLastName = NewFirstName = NewPatronymic = NewPhone = NewContractNumber = NewTariff = "";
+        NewContractDate = _today.ToString("dd.MM.yyyy");
+        IsNewApartmentOpen = true;
+    }
+
+    [RelayCommand]
+    private void CancelNewApartment() => IsNewApartmentOpen = false;
+
+    [RelayCommand]
+    private async Task AddApartment()
+    {
+        if (SelectedHouse is not { } house || !CanEditCard) return;
+        if (!TryParseDate(NewContractDate, out var signed))
+        {
+            Status = "Дата договора — в виде дд.мм.гггг.";
+            return;
+        }
+        if (!decimal.TryParse(NewTariff.Trim(), NumberStyles.Number, Ru, out var tariff))
+        {
+            Status = "Тариф — сумма в рублях за месяц, например 95 или 95,50.";
+            return;
+        }
+        var account = NewAccount.Trim();
+        await Save(async () =>
+        {
+            await _store.AddApartmentAsync(new Subscriber
+            {
+                HouseId = house.Id,
+                Section = NewSection,
+                Apartment = NewApartment,
+                Account = account,
+                LastName = NewLastName,
+                FirstName = NewFirstName,
+                Patronymic = NewPatronymic,
+                Phone = NewPhone,
+                ContractNumber = NewContractNumber,
+                ContractDate = signed
+            }, tariff);
+            IsNewApartmentOpen = false;
+            await ReloadAsync();
+            if (await _store.FindSubscriberAsync(SearchMode.Account, account, "", "", "") is { } hit)
+                await ShowSubscriberAsync(hit.Id, hit.HouseId);
+            Status = $"Квартира {NewApartment.Trim()} добавлена, лицевой счёт {account}.";
+        });
     }
 
     [RelayCommand]
