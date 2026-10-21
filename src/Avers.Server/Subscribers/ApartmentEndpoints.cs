@@ -86,4 +86,18 @@ public static class ApartmentEndpoints
         Settings.SetPaymentWarningMonths(db, request.Months);
         return TypedResults.Ok(new PaymentWarningSettings(request.Months));
     }
+
+    /// <summary>Начисления на текущий или следующий год (<see cref="Accruals.OpenYear"/>).</summary>
+    public static Results<Ok<OpenYearResult>, ValidationProblem> OpenYear(
+        int year, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
+    {
+        var today = time.Today();
+        if (year != today.Year && year != today.Year + 1)
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["year"] = [$"Открыть можно {today.Year} или {today.Year + 1} год."]
+            });
+        return TypedResults.Ok(new OpenYearResult(
+            Accruals.OpenYear(db, year, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow())));
+    }
 }

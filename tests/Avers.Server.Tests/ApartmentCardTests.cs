@@ -93,6 +93,27 @@ public class ApartmentCardTests
     }
 
     [Fact]
+    public async Task OpenYear_NextYearMonthsAppear_OnlyForSettingsEditors()
+    {
+        await using var app = new AversApp();
+        var lawyer = await app.LoginAsync("lawyer");
+        var admin = await app.LoginAsync("admin");
+
+        var forbidden = await lawyer.PostAsync("/api/accruals/2027", null);
+        var tooFar = await admin.PostAsync("/api/accruals/2028", null);
+        var opened = await (await admin.PostAsync("/api/accruals/2027", null)).Content.ReadFromJsonAsync<OpenYearResult>();
+        var again = await (await admin.PostAsync("/api/accruals/2027", null)).Content.ReadFromJsonAsync<OpenYearResult>();
+        var payments = await admin.GetFromJsonAsync<List<PaymentDto>>("/api/subscribers/1/payments?year=2027");
+
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, tooFar.StatusCode);
+        Assert.True(opened!.Subscribers > 0);
+        Assert.Equal(0, again!.Subscribers);
+        Assert.Equal(12, payments!.Count);
+        Assert.All(payments, p => Assert.False(p.IsPaid));
+    }
+
+    [Fact]
     public async Task RecordPayment_RemembersWhoRecordedAndWhoPaid()
     {
         await using var app = new AversApp();
