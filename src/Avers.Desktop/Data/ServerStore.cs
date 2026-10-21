@@ -79,6 +79,9 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public Task SetPaymentWarningMonthsAsync(int months) =>
         Write(() => http.PutAsJsonAsync("api/settings/payment-warning", new PaymentWarningSettings(months), Json));
 
+    public async Task<int> OpenYearAsync(int year) =>
+        (await Read<OpenYearResult>(() => http.PostAsync($"api/accruals/{year}", null))).Subscribers;
+
     public Task SaveHousePassportAsync(int houseId, HousePassportRequest request) =>
         Write(() => http.PutAsJsonAsync($"api/houses/{houseId}/passport", request, Json));
 

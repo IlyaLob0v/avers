@@ -13,6 +13,9 @@ public sealed record UpdateContractRequest(
 /// <summary>Через сколько месяцев без оплаты карточка подсвечивается жёлтым.</summary>
 public sealed record PaymentWarningSettings(int Months);
 
+/// <summary>Сколько абонентов получили начисления на открытый год.</summary>
+public sealed record OpenYearResult(int Subscribers);
+
 /// <summary>Паспорт дома: техника СКПТ и примечания. Запрос заменяет все поля целиком.</summary>
 public sealed record HousePassportRequest(
     string? Antennas,

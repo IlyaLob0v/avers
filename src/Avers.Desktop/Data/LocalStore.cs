@@ -121,6 +121,12 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
         return Task.CompletedTask;
     }
 
+    public Task<int> OpenYearAsync(int year)
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(Accruals.OpenYear(ctx, year, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow));
+    }
+
     public Task SaveHousePassportAsync(int houseId, HousePassportRequest request)
     {
         using var ctx = db.CreateDbContext();

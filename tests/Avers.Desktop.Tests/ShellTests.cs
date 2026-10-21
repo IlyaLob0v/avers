@@ -40,6 +40,18 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public void OpenYear_ReportsOpenedSubscribers()
+    {
+        using var app = new DesktopApp("admin");
+
+        app.Vm.OpenYearCommand.Execute(null);
+        app.Pump();
+
+        Assert.StartsWith("Начисления открыты:", app.Vm.Status);
+        Assert.DoesNotContain("— 0.", app.Vm.Status);
+    }
+
+    [AvaloniaFact]
     public void Journal_SelectingAnotherHouse_KeepsIt()
     {
         using var app = new DesktopApp("orlov");

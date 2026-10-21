@@ -157,11 +157,17 @@
 
       <!-- Порог подсветки: администратор и начальник АДС -->
       <Border Classes="card" IsVisible="{Binding CanEditSettings}">
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <TextBlock VerticalAlignment="Center" Text="Подсвечивать жёлтым, если без оплаты" />
-          <NumericUpDown Width="110" Minimum="1" Maximum="36" Increment="1" FormatString="0" Value="{Binding EditWarningMonths}" />
-          <TextBlock VerticalAlignment="Center" Text="мес. и больше (для всех рабочих мест)" />
-          <Button Content="Применить" Command="{Binding SavePaymentWarningCommand}" />
+        <StackPanel Spacing="6">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock VerticalAlignment="Center" Text="Подсвечивать жёлтым, если без оплаты" />
+            <NumericUpDown Width="110" Minimum="1" Maximum="36" Increment="1" FormatString="0" Value="{Binding EditWarningMonths}" />
+            <TextBlock VerticalAlignment="Center" Text="мес. и больше (для всех рабочих мест)" />
+            <Button Content="Применить" Command="{Binding SavePaymentWarningCommand}" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock VerticalAlignment="Center" Text="Начисления на год всем абонентам с действующим договором, по последнему тарифу" />
+            <Button Content="{Binding OpenYearTitle}" Command="{Binding OpenYearCommand}" />
+          </StackPanel>
         </StackPanel>
       </Border>
     </StackPanel>

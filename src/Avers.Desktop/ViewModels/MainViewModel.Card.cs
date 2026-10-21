@@ -251,6 +251,21 @@ public sealed partial class MainViewModel
         });
     }
 
+    public string OpenYearTitle => $"Открыть {_today.Year + 1} год";
+
+    /// <summary>Начисления на текущий и следующий год: если в декабре забыли открыть, в январе откроются оба.</summary>
+    [RelayCommand]
+    private async Task OpenYear()
+    {
+        if (!CanEditSettings) return;
+        await Save(async () =>
+        {
+            var current = await _store.OpenYearAsync(_today.Year);
+            var next = await _store.OpenYearAsync(_today.Year + 1);
+            Status = $"Начисления открыты: на {_today.Year} год — абонентов {current}, на {_today.Year + 1} год — {next}.";
+        });
+    }
+
     private static bool TryParseDate(string text, out DateOnly? date)
     {
         date = null;

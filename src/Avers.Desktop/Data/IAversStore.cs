@@ -42,6 +42,9 @@ public interface IAversStore
 
     Task SetPaymentWarningMonthsAsync(int months);
 
+    /// <summary>Открывает начисления на год и возвращает число абонентов.</summary>
+    Task<int> OpenYearAsync(int year);
+
     Task SaveHousePassportAsync(int houseId, HousePassportRequest request);
 
     /// <summary>Картинка схемы СКПТ; null — файл не загружен.</summary>
