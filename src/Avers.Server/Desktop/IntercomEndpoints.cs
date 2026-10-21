@@ -22,10 +22,12 @@ public static class IntercomEndpoints
             SavePanel(id, 0, r, u, db, t)).RequireAuthorization(Policies.HousesEdit);
         api.MapPut("/houses/{id:int}/intercoms/{panelId:int}", SavePanel).RequireAuthorization(Policies.HousesEdit);
 
-        api.MapPost("/houses/{id:int}/intercom-tickets", (int id, IntercomTicketRequest r, AversDbContext db, TimeProvider t) =>
-            Result(Intercoms.AddTicket(db, id, new IntercomTicket { Entrance = r.Entrance, Fault = r.Fault ?? "", Mechanic = r.Mechanic ?? "" }, t.Today())))
+        api.MapPost("/houses/{id:int}/intercom-tickets", (int id, IntercomTicketRequest r, ClaimsPrincipal u, AversDbContext db, TimeProvider t) =>
+            Result(Intercoms.AddTicket(db, id, new IntercomTicket { Entrance = r.Entrance, Fault = r.Fault ?? "", Mechanic = r.Mechanic ?? "" },
+                t.Today(), ChangeLog.Who(db, u.AppUserId()), t.GetUtcNow())))
             .RequireAuthorization(Policies.TicketsCreate);
-        api.MapPut("/intercom-tickets/{id:int}/done", (int id, AversDbContext db) => Result(Intercoms.MarkDone(db, id)))
+        api.MapPut("/intercom-tickets/{id:int}/done", (int id, ClaimsPrincipal u, AversDbContext db, TimeProvider t) =>
+                Result(Intercoms.MarkDone(db, id, ChangeLog.Who(db, u.AppUserId()), t.GetUtcNow())))
             .RequireAuthorization(Policies.TicketsCreate);
     }
 

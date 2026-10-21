@@ -18,12 +18,15 @@ public static class Settings
             : PaymentAge.DefaultWarningMonths;
     }
 
-    public static void SetPaymentWarningMonths(AversDbContext db, int months)
+    /// <summary>Меняет порог для всех рабочих мест; правка попадает в журнал изменений.</summary>
+    public static void SetPaymentWarningMonths(AversDbContext db, int months, string who, DateTimeOffset at)
     {
         if (!PaymentAge.IsValidThreshold(months))
             throw new ArgumentOutOfRangeException(nameof(months), months,
                 $"Порог — от {PaymentAge.MinWarningMonths} до {PaymentAge.MaxWarningMonths} месяцев.");
 
+        ChangeLog.Add(db, at, who, "Настройки", "все рабочие места",
+            ChangeLog.Diff(("Жёлтая подсветка, мес. без оплаты", PaymentWarningMonths(db), months)));
         var value = months.ToString(CultureInfo.InvariantCulture);
         var row = db.Settings.FirstOrDefault(x => x.Key == AppSetting.PaymentWarningMonths);
         if (row is null)

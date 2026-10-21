@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Avers.Data;
 
 /// <summary>
-/// Журнал изменений оплат, лицевых счетов, паспортов домов и сотрудников. Запись добавляется
+/// Журнал изменений оплат, лицевых счетов, паспортов домов, сотрудников, заявок, графиков ППР и настроек. Запись добавляется
 /// в тот же SaveChanges, что и сама правка: нет правки — нет записи, и наоборот.
 /// </summary>
 public static class ChangeLog
@@ -39,6 +39,21 @@ public static class ChangeLog
             .Where(f => f.Before != f.After)
             .Select(f => $"{f.Field}: {f.Before} → {f.After}")
             .ToList();
+
+    /// <summary>Поля заявки АДС, которые попадают в журнал при правке.</summary>
+    public static (string Fault, string Mechanic, string WorkDone, string Risers, TicketKind Kind, TicketStatus Status) TicketState(WorkTicket t) =>
+        (t.Fault, t.Mechanic, t.WorkDone, t.RisersNote, t.Kind, t.Status);
+
+    /// <summary>Правка заявки АДС: что поменялось по сравнению с <paramref name="before"/>. Приём заявки виден в ней самой (кто и когда принял).</summary>
+    public static void TicketEdit(AversDbContext db, DateTimeOffset at, string who, WorkTicket t,
+        (string Fault, string Mechanic, string WorkDone, string Risers, TicketKind Kind, TicketStatus Status) before) =>
+        Add(db, at, who, "Заявка АДС", $"№ {t.Number}", Diff(
+            ("Неисправность", before.Fault, t.Fault),
+            ("Радиомеханик", before.Mechanic, t.Mechanic),
+            ("Что сделано", before.WorkDone, t.WorkDone),
+            ("Стояки", before.Risers, t.RisersNote),
+            ("Вид", Billing.KindTitle(before.Kind), Billing.KindTitle(t.Kind)),
+            ("Выполнена", Billing.StatusTitle(before.Status), Billing.StatusTitle(t.Status))));
 
     public static string Account(Subscriber s) => $"л/с {s.Account}, {s.ShortName}, кв. {s.Apartment}";
 

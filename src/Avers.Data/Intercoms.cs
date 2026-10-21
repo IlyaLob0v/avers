@@ -41,16 +41,21 @@ public static class Intercoms
         return null;
     }
 
-    public static string? AddTicket(AversDbContext db, int houseId, IntercomTicket draft, DateOnly today)
+    public static string? AddTicket(AversDbContext db, int houseId, IntercomTicket draft, DateOnly today, string who, DateTimeOffset at)
     {
         var fault = draft.Fault.Trim();
         if (fault.Length is 0 or > 500)
             return "Неисправность — от 1 до 500 символов.";
         if (draft.Entrance is < 1 or > 99)
             return "Подъезд — число от 1 до 99.";
-        if (!db.Houses.Any(h => h.Id == houseId))
+        var house = db.Houses.Include(h => h.Street).FirstOrDefault(h => h.Id == houseId);
+        if (house is null)
             return "Дом не найден.";
 
+        ChangeLog.Add(db, at, who, "Заявка по домофону", house.AddressLine, ChangeLog.Diff(
+            ("Подъезд", null, draft.Entrance),
+            ("Неисправность", null, fault),
+            ("Радиомеханик", null, draft.Mechanic)));
         db.IntercomTickets.Add(new IntercomTicket
         {
             HouseId = houseId,
@@ -63,11 +68,14 @@ public static class Intercoms
         return null;
     }
 
-    public static string? MarkDone(AversDbContext db, int ticketId)
+    public static string? MarkDone(AversDbContext db, int ticketId, string who, DateTimeOffset at)
     {
         var ticket = db.IntercomTickets.FirstOrDefault(t => t.Id == ticketId);
         if (ticket is null)
             return "Заявка не найдена.";
+        var house = db.Houses.Include(h => h.Street).First(h => h.Id == ticket.HouseId);
+        ChangeLog.Add(db, at, who, "Заявка по домофону", $"{house.AddressLine}, подъезд {ticket.Entrance}",
+            ChangeLog.Diff(("Выполнена", ticket.Done, true)));
         ticket.Done = true;
         db.SaveChanges();
         return null;

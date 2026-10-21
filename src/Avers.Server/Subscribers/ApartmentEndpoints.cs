@@ -94,14 +94,14 @@ public static class ApartmentEndpoints
         TypedResults.Ok(new PaymentWarningSettings(Settings.PaymentWarningMonths(db)));
 
     public static Results<Ok<PaymentWarningSettings>, ValidationProblem> SetPaymentWarning(
-        PaymentWarningSettings request, AversDbContext db)
+        PaymentWarningSettings request, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
     {
         if (!PaymentAge.IsValidThreshold(request.Months))
             return TypedResults.ValidationProblem(new Dictionary<string, string[]>
             {
                 ["months"] = [$"Порог — от {PaymentAge.MinWarningMonths} до {PaymentAge.MaxWarningMonths} месяцев."]
             });
-        Settings.SetPaymentWarningMonths(db, request.Months);
+        Settings.SetPaymentWarningMonths(db, request.Months, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
         return TypedResults.Ok(new PaymentWarningSettings(request.Months));
     }
 
