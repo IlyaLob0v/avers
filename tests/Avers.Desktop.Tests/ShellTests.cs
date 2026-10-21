@@ -278,6 +278,24 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public async Task Claim_OpensCourtOrderApplicationInWord()
+    {
+        using var app = new DesktopApp("lawyer");
+        app.Go(AppModule.Claim);
+        var opened = new List<string>();
+        app.Vm.OpenFile = opened.Add;
+        var debtor = app.Vm.SelectedDebtor!;
+
+        await app.Vm.PrintCourtOrderCommand.ExecuteAsync(null);
+
+        using var word = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(opened.Single(), false);
+        var text = word.MainDocumentPart!.Document!.Body!.InnerText;
+        Assert.Contains("Заявление о выдаче судебного приказа", text);
+        Assert.Contains(MoneyWords.Rubles(debtor.Debt), text);
+        Assert.Contains("Коньшин С.А.", text);
+    }
+
+    [AvaloniaFact]
     public async Task Claim_PrintsPenaltyOnChosenDate()
     {
         using var app = new DesktopApp("lawyer");

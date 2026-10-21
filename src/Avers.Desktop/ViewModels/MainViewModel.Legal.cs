@@ -142,6 +142,28 @@ public sealed partial class MainViewModel
         OpenPdf(PrintPath("неустойка", d.Account), $"расчёт неустойки {d.FullName}", path => PdfForms.Penalty(s, date, path));
     }
 
+    /// <summary>Заявление о выдаче судебного приказа в Word: долг и неустойка на ту же дату, что и расчёт неустойки.</summary>
+    [RelayCommand]
+    private async Task PrintCourtOrder()
+    {
+        if (SelectedDebtor is not { } d) { Status = "Выберите должника."; return; }
+        var date = PenaltyDate is { } chosen ? DateOnly.FromDateTime(chosen) : _today;
+        if (await LoadDebtorAsync(d) is not { } s) return;
+        var (header, title, body) = CourtOrderApplication.Text(s, date);
+        var path = Path.Combine(Path.GetTempPath(), "Avers", $"заявление-на-приказ-{d.Account}.docx");
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            WordForms.CourtOrder(header, title, body, path);
+            OpenFile(path);
+            Status = $"Открыто в Word: заявление на приказ {d.FullName}.";
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            Status = $"Не удалось открыть заявление: {e.Message}";
+        }
+    }
+
     /// <summary>Абонент с оплатами: они грузятся вместе с домом.</summary>
     private async Task<Subscriber?> LoadDebtorAsync(DebtorRow d)
     {

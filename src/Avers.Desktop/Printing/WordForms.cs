@@ -14,19 +14,24 @@ public static class WordForms
     public static void Claim(string address, string text, string path)
     {
         var lines = text.Replace("\r", "").Split('\n').Where(l => l.Trim() != "").ToList();
+        Write(path, [$"Россия, {address}."], lines[0], lines.Skip(1),
+            ["Зам. генерального директора\tН.С. Видяскина", "ООО «ПО «Аверс-Сервис»", "Исп. юридический отдел:", "т. (3812) 40-55-52, 38-40-11"]);
+    }
+
+    /// <summary>Заявление о выдаче судебного приказа: шапка суду справа, текст, подпись директора.</summary>
+    public static void CourtOrder(string[] header, string title, IEnumerable<string> body, string path) =>
+        Write(path, header, title, body, ["Генеральный директор", "ООО «ПО «Аверс-Сервис»\tКоньшин С.А."]);
+
+    private static void Write(string path, IEnumerable<string> header, string title, IEnumerable<string> body, IEnumerable<string> signature) =>
         Write(path,
         [
-            Para($"Россия, {address}.", JustificationValues.Right),
+            .. header.Select(l => Para(l, JustificationValues.Right)),
             Para(""),
-            Para(lines[0], JustificationValues.Center, bold: true),
-            .. lines.Skip(1).Select(l => Para(l, JustificationValues.Both, indent: true)),
+            Para(title, JustificationValues.Center, bold: true),
+            .. body.Select(l => Para(l, JustificationValues.Both, indent: true)),
             Para(""),
-            Para("Зам. генерального директора\tН.С. Видяскина"),
-            Para("ООО «ПО «Аверс-Сервис»"),
-            Para("Исп. юридический отдел:"),
-            Para("т. (3812) 40-55-52, 38-40-11")
+            .. signature.Select(l => Para(l))
         ]);
-    }
 
     private static void Write(string path, IEnumerable<Paragraph> paragraphs)
     {
