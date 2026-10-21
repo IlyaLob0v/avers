@@ -99,6 +99,26 @@ public class UserTests
         Assert.Equal(HttpStatusCode.OK, await LoginStatus(app, "admin", "avers"));
     }
 
+    [Fact]
+    public async Task DisableAndRoleChange_ApplyToOpenSession()
+    {
+        await using var app = new AversApp();
+        var admin = await app.LoginAsync("admin");
+        var orlova = await app.LoginAsync("orlova");
+        var id = await IdOf(app, "orlova");
+        var request = new SaveUserRequest("orlova", "Орлова Т.И.", "AdsHead", "АДС", false, false, "");
+
+        var before = await orlova.PutAsJsonAsync("/api/settings/payment-warning", new PaymentWarningSettings(3));
+        await admin.PutAsJsonAsync($"/api/users/{id}", request);
+        var promoted = await orlova.PutAsJsonAsync("/api/settings/payment-warning", new PaymentWarningSettings(3));
+        await admin.PutAsJsonAsync($"/api/users/{id}", request with { IsDisabled = true });
+        var disabled = await orlova.GetAsync("/api/tickets");
+
+        Assert.Equal(HttpStatusCode.Forbidden, before.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, promoted.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, disabled.StatusCode);
+    }
+
     private static Task<int> IdOf(AversApp app, string login) =>
         app.WithDbAsync(db => db.Users.Where(u => u.Login == login).Select(u => u.Id).SingleAsync());
 

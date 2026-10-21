@@ -43,6 +43,7 @@ app.UseStatusCodePages();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseAuthentication();
+app.UseFreshUser();
 app.UseAuthorization();
 app.UseRateLimiter();
 

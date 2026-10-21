@@ -11,6 +11,14 @@ public static class AversClaims
     public const string UserId = "avers:uid";
     public const string CanEditAccount = "avers:can_edit_account";
 
+    public static Claim[] For(AppUser user) =>
+    [
+        new(ClaimTypes.Name, user.Login),
+        new(ClaimTypes.Role, user.Role.ToString()),
+        new(UserId, user.Id.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+        new(CanEditAccount, user.CanEditAccount ? "true" : "false")
+    ];
+
     public static UserRole? Role(this ClaimsPrincipal user) =>
         Enum.TryParse<UserRole>(user.FindFirstValue(ClaimTypes.Role), out var role) ? role : null;
 
