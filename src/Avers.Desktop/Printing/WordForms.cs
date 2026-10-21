@@ -18,9 +18,9 @@ public static class WordForms
             ["Зам. генерального директора\tН.С. Видяскина", "ООО «ПО «Аверс-Сервис»", "Исп. юридический отдел:", "т. (3812) 40-55-52, 38-40-11"]);
     }
 
-    /// <summary>Заявление о выдаче судебного приказа: шапка суду справа, текст, подпись директора.</summary>
-    public static void CourtOrder(string[] header, string title, IEnumerable<string> body, string path) =>
-        Write(path, header, title, body, ["Генеральный директор", "ООО «ПО «Аверс-Сервис»\tКоньшин С.А."]);
+    /// <summary>Заявление в суд или ОСП: шапка справа, текст, подпись директора и исполнитель.</summary>
+    public static void Application(string[] header, string title, IEnumerable<string> body, string path) =>
+        Write(path, header, title, body, ["Генеральный директор", "ООО «ПО «Аверс-Сервис»\tКоньшин С.А.", "Исп. юридический отдел: т. (3812) 40-55-52, 38-40-11"]);
 
     private static void Write(string path, IEnumerable<string> header, string title, IEnumerable<string> body, IEnumerable<string> signature) =>
         Write(path,
