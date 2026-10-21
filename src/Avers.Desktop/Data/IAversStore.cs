@@ -47,6 +47,9 @@ public interface IAversStore
 
     Task SetPaymentWarningMonthsAsync(int months);
 
+    /// <summary>Новый тариф с месяца; возвращает число изменённых месяцев.</summary>
+    Task<int> ChangeTariffAsync(TariffChangeRequest request);
+
     /// <summary>Открывает начисления на год и возвращает число абонентов.</summary>
     Task<int> OpenYearAsync(int year);
 

@@ -30,6 +30,7 @@ public static class SubscriberEndpoints
         api.MapPut("/subscribers/{id:int}/contract", ApartmentEndpoints.UpdateContract).RequireAuthorization(Policies.SubscribersEdit);
         api.MapGet("/settings/payment-warning", ApartmentEndpoints.GetPaymentWarning);
         api.MapPut("/settings/payment-warning", ApartmentEndpoints.SetPaymentWarning).RequireAuthorization(Policies.SettingsEdit);
+        api.MapPut("/tariff", ApartmentEndpoints.ChangeTariff).RequireAuthorization(Policies.SettingsEdit);
         api.MapPost("/accruals/{year:int}", ApartmentEndpoints.OpenYear).RequireAuthorization(Policies.SettingsEdit);
     }
 

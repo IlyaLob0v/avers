@@ -4,6 +4,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.VisualTree;
 using Avers.Data;
 using Avers.Desktop.Controls;
+using Avers.Desktop.ViewModels;
 using Avers.Domain;
 
 namespace Avers.Desktop.Tests;
@@ -37,6 +38,24 @@ public class ShellTests
         app.Vm.NotReadyCommand.Execute("Печать");
 
         Assert.Equal("«Печать» пока не работает: функция в разработке.", app.Vm.Status);
+    }
+
+    [AvaloniaFact]
+    public async Task ChangeTariff_ForThisHouse_ChangesUnpaidMonths()
+    {
+        using var app = new DesktopApp("admin");
+        app.Go(AppModule.Abon);
+        var s = app.Vm.SelectedSubscriber!;
+        app.Go(AppModule.Subscriber);
+
+        app.Vm.TariffFrom = "01." + app.Vm.CardPaymentYear;
+        app.Vm.NewTariffValue = "120";
+        app.Vm.TariffScope = MainViewModel.TariffScopes[1];
+        await app.Vm.ChangeTariffCommand.ExecuteAsync(null);
+
+        Assert.Contains("изменено неоплаченных месяцев", app.Vm.Status);
+        Assert.All(app.Vm.SelectedSubscriber!.Payments.Where(p => p.Amount is null), p => Assert.Equal(120m, p.Tariff));
+        Assert.Equal(s.Id, app.Vm.SelectedSubscriber.Id);
     }
 
     [AvaloniaFact]

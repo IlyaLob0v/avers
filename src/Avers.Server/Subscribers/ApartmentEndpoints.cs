@@ -87,6 +87,16 @@ public static class ApartmentEndpoints
         return TypedResults.Ok(new PaymentWarningSettings(request.Months));
     }
 
+    public static Results<Ok<TariffChangeResult>, ValidationProblem> ChangeTariff(
+        TariffChangeRequest r, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
+    {
+        var (error, months) = Tariffs.Change(db, r.Year, r.Month, r.Tariff, r.HouseId, r.SubscriberId,
+            ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
+        return error is null
+            ? TypedResults.Ok(new TariffChangeResult(months))
+            : TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["tariff"] = [error] });
+    }
+
     /// <summary>Начисления на текущий или следующий год (<see cref="Accruals.OpenYear"/>).</summary>
     public static Results<Ok<OpenYearResult>, ValidationProblem> OpenYear(
         int year, ClaimsPrincipal user, AversDbContext db, TimeProvider time)

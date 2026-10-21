@@ -270,6 +270,37 @@ public sealed partial class MainViewModel
         });
     }
 
+    public static IReadOnlyList<string> TariffScopes { get; } = ["всем абонентам", "этому дому", "этой квартире"];
+
+    [ObservableProperty] private string _tariffFrom = "";
+    [ObservableProperty] private string _newTariffValue = "";
+    [ObservableProperty] private string _tariffScope = TariffScopes[0];
+
+    /// <summary>Новый тариф неоплаченным месяцам с выбранного: всем, дому карточки или её квартире.</summary>
+    [RelayCommand]
+    private async Task ChangeTariff()
+    {
+        if (!CanEditSettings || SelectedSubscriber is not { } s) return;
+        if (!DateOnly.TryParseExact("01." + TariffFrom.Trim(), ["dd.MM.yyyy", "dd.M.yyyy"], Ru, DateTimeStyles.None, out var from))
+        {
+            Status = "Месяц, с которого действует тариф, — в виде мм.гггг.";
+            return;
+        }
+        if (!decimal.TryParse(NewTariffValue.Trim(), NumberStyles.Number, Ru, out var tariff))
+        {
+            Status = "Тариф — сумма в рублях за месяц, например 100 или 100,50.";
+            return;
+        }
+        var scope = Array.IndexOf([.. TariffScopes], TariffScope);
+        await Save(async () =>
+        {
+            var months = await _store.ChangeTariffAsync(new TariffChangeRequest(from.Year, from.Month, tariff,
+                scope == 1 ? s.HouseId : null, scope == 2 ? s.Id : null));
+            await ReloadAsync();
+            Status = $"Тариф {tariff:N2} ₽ с {from:MM.yyyy} {TariffScope}: изменено неоплаченных месяцев — {months}.";
+        });
+    }
+
     public string OpenYearTitle => $"Открыть {_today.Year + 1} год";
 
     /// <summary>Начисления на текущий и следующий год: если в декабре забыли открыть, в январе откроются оба.</summary>

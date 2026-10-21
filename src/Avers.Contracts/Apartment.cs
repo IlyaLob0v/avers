@@ -27,6 +27,12 @@ public sealed record NewApartmentRequest(
 /// <summary>Через сколько месяцев без оплаты карточка подсвечивается жёлтым.</summary>
 public sealed record PaymentWarningSettings(int Months);
 
+/// <summary>Новый тариф с месяца: без дома и абонента — всем, иначе дому или одной квартире.</summary>
+public sealed record TariffChangeRequest(int Year, int Month, decimal Tariff, int? HouseId, int? SubscriberId);
+
+/// <summary>Сколько неоплаченных месяцев получили новый тариф.</summary>
+public sealed record TariffChangeResult(int Months);
+
 /// <summary>Сколько абонентов получили начисления на открытый год.</summary>
 public sealed record OpenYearResult(int Subscribers);
 

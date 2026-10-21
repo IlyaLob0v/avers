@@ -127,6 +127,14 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
         return Task.CompletedTask;
     }
 
+    public Task<int> ChangeTariffAsync(TariffChangeRequest r)
+    {
+        using var ctx = db.CreateDbContext();
+        var (error, months) = Tariffs.Change(ctx, r.Year, r.Month, r.Tariff, r.HouseId, r.SubscriberId,
+            ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
+        return error is null ? Task.FromResult(months) : throw new StoreException(error);
+    }
+
     public Task<int> OpenYearAsync(int year)
     {
         using var ctx = db.CreateDbContext();
