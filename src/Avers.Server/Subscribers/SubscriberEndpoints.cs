@@ -25,6 +25,7 @@ public static class SubscriberEndpoints
         api.MapGet("/subscribers/{id:int}", Card);
         api.MapGet("/subscribers/{id:int}/payments", Payments);
         api.MapPost("/subscribers/{id:int}/payments", PaymentEndpoints.Record).RequireAuthorization(Policies.PaymentsCreate);
+        api.MapDelete("/subscribers/{id:int}/payments/{paymentId:int}", PaymentEndpoints.Cancel).RequireAuthorization(Policies.PaymentsCancel);
         api.MapPost("/subscribers", ApartmentEndpoints.Add).RequireAuthorization(Policies.SubscribersEdit);
         api.MapPut("/subscribers/{id:int}/contract", ApartmentEndpoints.UpdateContract).RequireAuthorization(Policies.SubscribersEdit);
         api.MapGet("/settings/payment-warning", ApartmentEndpoints.GetPaymentWarning);

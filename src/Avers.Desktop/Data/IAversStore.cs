@@ -40,6 +40,8 @@ public interface IAversStore
 
     Task SaveContractAsync(int subscriberId, UpdateContractRequest request);
 
+    Task CancelPaymentAsync(int subscriberId, int paymentId);
+
     /// <summary>Новая квартира: абонент с договором и тариф начислений.</summary>
     Task AddApartmentAsync(Subscriber draft, decimal tariff);
 

@@ -134,6 +134,26 @@ public class ApartmentCardTests
     }
 
     [Fact]
+    public async Task CancelPayment_OnlyAdminAndAdsHead_MonthBecomesUnpaid()
+    {
+        await using var app = new AversApp();
+        var head = await app.LoginAsync("orlov");
+        var user = await app.LoginAsync("sokolova");
+        var paid = await (await head.PostAsJsonAsync("/api/subscribers/3/payments", new RecordPaymentRequest(2026)))
+            .Content.ReadFromJsonAsync<PaymentDto>();
+
+        var forbidden = await user.DeleteAsync($"/api/subscribers/3/payments/{paid!.Id}");
+        var cancelled = await head.DeleteAsync($"/api/subscribers/3/payments/{paid.Id}");
+        var again = await head.DeleteAsync($"/api/subscribers/3/payments/{paid.Id}");
+        var card = await head.GetFromJsonAsync<SubscriberCard>("/api/subscribers/3");
+
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, cancelled.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, again.StatusCode);
+        Assert.Equal(new DateOnly(2026, 5, 22), card!.LastPayment!.PaidAt);
+    }
+
+    [Fact]
     public async Task UpdateContract_ByAdsHead_IsSaved()
     {
         await using var app = new AversApp();

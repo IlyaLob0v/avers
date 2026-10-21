@@ -73,6 +73,9 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public Task<PaymentDto> RecordPaymentAsync(int subscriberId, int year, AppUser user) =>
         Read<PaymentDto>(() => http.PostAsJsonAsync($"api/subscribers/{subscriberId}/payments", new RecordPaymentRequest(year), Json));
 
+    public Task CancelPaymentAsync(int subscriberId, int paymentId) =>
+        Write(() => http.DeleteAsync($"api/subscribers/{subscriberId}/payments/{paymentId}"));
+
     public Task SaveContractAsync(int subscriberId, UpdateContractRequest request) =>
         Write(() => http.PutAsJsonAsync($"api/subscribers/{subscriberId}/contract", request, Json));
 
