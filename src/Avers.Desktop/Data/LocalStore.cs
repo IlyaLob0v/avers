@@ -94,6 +94,9 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
             next.Source, true, next.RecordedBy));
     }
 
+    public Task CancelPaymentAsync(int subscriberId, int paymentId) =>
+        EditPhonebook((ctx, who) => PaymentCancellation.Cancel(ctx, subscriberId, paymentId, who, DateTimeOffset.UtcNow));
+
     public Task SaveContractAsync(int subscriberId, UpdateContractRequest request)
     {
         using var ctx = db.CreateDbContext();

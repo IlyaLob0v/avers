@@ -29,6 +29,7 @@ public static class Policies
 {
     public const string SubscribersView = "subscribers.view";
     public const string PaymentsCreate = "payments.create";
+    public const string PaymentsCancel = "payments.cancel";
     public const string TicketsView = "tickets.view";
     public const string TicketsCreate = "tickets.create";
     public const string SubscribersEdit = "subscribers.edit";
@@ -65,6 +66,9 @@ public static class Policies
             .AddRequirements(new ModuleAccessRequirement(AppModule.Phonebook, AccessLevel.Edit)));
         // Общие настройки (порог жёлтой подсветки) — администратор и начальник АДС.
         options.AddPolicy(SettingsEdit, p => p.RequireAuthenticatedUser()
+            .RequireRole(nameof(UserRole.Administrator), nameof(UserRole.AdsHead)));
+        // Отменить ошибочную оплату — администратор и начальник АДС.
+        options.AddPolicy(PaymentsCancel, p => p.RequireAuthenticatedUser()
             .RequireRole(nameof(UserRole.Administrator), nameof(UserRole.AdsHead)));
         options.AddPolicy(UsersManage, p => p.RequireAuthenticatedUser().RequireRole(nameof(UserRole.Administrator)));
     }

@@ -40,6 +40,8 @@ public interface IAversStore
 
     Task SaveContractAsync(int subscriberId, UpdateContractRequest request);
 
+    Task CancelPaymentAsync(int subscriberId, int paymentId);
+
     Task SetPaymentWarningMonthsAsync(int months);
 
     Task SaveHousePassportAsync(int houseId, HousePassportRequest request);
