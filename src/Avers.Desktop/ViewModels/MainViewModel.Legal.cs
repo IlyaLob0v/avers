@@ -146,21 +146,31 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private async Task PrintCourtOrder()
     {
-        if (SelectedDebtor is not { } d) { Status = "Выберите должника."; return; }
         var date = PenaltyDate is { } chosen ? DateOnly.FromDateTime(chosen) : _today;
+        await OpenApplication("заявление-на-приказ", "заявление на приказ", s => CourtOrderApplication.Text(s, date));
+    }
+
+    /// <summary>Заявление в ОСП в Word по последнему судебному делу должника.</summary>
+    [RelayCommand]
+    private Task PrintEnforcement() =>
+        OpenApplication("заявление-в-осп", "заявление в ОСП", s => EnforcementApplication.Text(s, SelectedDebtor?.CourtCase));
+
+    private async Task OpenApplication(string file, string title, Func<Subscriber, (string[] Header, string Title, string[] Body)> text)
+    {
+        if (SelectedDebtor is not { } d) { Status = "Выберите должника."; return; }
         if (await LoadDebtorAsync(d) is not { } s) return;
-        var (header, title, body) = CourtOrderApplication.Text(s, date);
-        var path = Path.Combine(Path.GetTempPath(), "Avers", $"заявление-на-приказ-{d.Account}.docx");
+        var (header, heading, body) = text(s);
+        var path = Path.Combine(Path.GetTempPath(), "Avers", $"{file}-{d.Account}.docx");
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            WordForms.CourtOrder(header, title, body, path);
+            WordForms.Application(header, heading, body, path);
             OpenFile(path);
-            Status = $"Открыто в Word: заявление на приказ {d.FullName}.";
+            Status = $"Открыто в Word: {title} {d.FullName}.";
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
         {
-            Status = $"Не удалось открыть заявление: {e.Message}";
+            Status = $"Не удалось открыть {title}: {e.Message}";
         }
     }
 
