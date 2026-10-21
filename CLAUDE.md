@@ -34,7 +34,8 @@ Claude отвечает на `@claude` в issue и PR — `.github/workflows/cla
 Таблица «какой скилл когда подключать» — в `orchestrator.md`.
 
 Скиллы проекта лежат в `.claude/skills/`: `avers-verify` (проверка как в CI), `avers-domain-change`
-(правка модели и расчётов), `avers-adr`, `avers-open-question`, `avers-pr`. Повторяющуюся работу,
+(правка модели и расчётов), `avers-adr`, `avers-open-question`, `avers-pr`, `test-driven-development` (как выполнять принцип 4),
+`systematic-debugging` (сначала причина ошибки, потом правка). Повторяющуюся работу,
 для которой скилла нет, оформляй новым скиллом там же.
 
 ## Облачные сессии

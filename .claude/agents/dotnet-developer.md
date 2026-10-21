@@ -6,6 +6,8 @@ model: inherit
 skills:
   - avers-domain-change
   - avers-verify
+  - test-driven-development
+  - systematic-debugging
   - engineering:testing-strategy
 isolation: worktree
 color: cyan
