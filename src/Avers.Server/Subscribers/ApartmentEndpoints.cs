@@ -3,6 +3,7 @@ using Avers.Contracts;
 using Avers.Data;
 using Avers.Domain;
 using Avers.Server.Auth;
+using Avers.Server.Hosting;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 
@@ -47,6 +48,29 @@ public static class ApartmentEndpoints
         await db.SaveChangesAsync(ct);
         return TypedResults.NoContent();
     }
+
+    public static Results<NoContent, ValidationProblem> Add(
+        NewApartmentRequest request, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
+    {
+        var error = Apartments.Add(db, Draft(request), request.Tariff, time.Today(), ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
+        return error is null
+            ? TypedResults.NoContent()
+            : TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["apartment"] = [error] });
+    }
+
+    private static Subscriber Draft(NewApartmentRequest r) => new()
+    {
+        HouseId = r.HouseId,
+        Section = r.Section ?? "",
+        Apartment = r.Apartment ?? "",
+        Account = r.Account ?? "",
+        LastName = r.LastName ?? "",
+        FirstName = r.FirstName ?? "",
+        Patronymic = r.Patronymic ?? "",
+        Phone = r.Phone ?? "",
+        ContractNumber = r.ContractNumber ?? "",
+        ContractDate = r.ContractDate
+    };
 
     public static Ok<PaymentWarningSettings> GetPaymentWarning(AversDbContext db) =>
         TypedResults.Ok(new PaymentWarningSettings(Settings.PaymentWarningMonths(db)));
