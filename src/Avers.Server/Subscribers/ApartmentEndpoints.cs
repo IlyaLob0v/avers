@@ -49,6 +49,24 @@ public static class ApartmentEndpoints
         return TypedResults.NoContent();
     }
 
+    public static Results<NoContent, ValidationProblem> SaveCourtCase(
+        int id, int caseId, CourtCaseRequest r, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
+    {
+        var error = CourtCases.Save(db, id, new CourtCase
+        {
+            Id = caseId,
+            DelaAversId = r.DelaAversId ?? "",
+            OrderNumber = r.OrderNumber ?? "",
+            OrderDate = r.OrderDate,
+            Court = r.Court ?? "",
+            Amount = r.Amount,
+            Status = r.Status ?? ""
+        }, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
+        return error is null
+            ? TypedResults.NoContent()
+            : TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["courtCase"] = [error] });
+    }
+
     public static Results<NoContent, ValidationProblem> Add(
         NewApartmentRequest request, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
     {

@@ -14,7 +14,7 @@ public sealed record Debtor(
     int Unpaid,
     DateOnly? LastPaymentDate,
     bool IsOld,
-    string? Case);
+    CourtCase? Case);
 
 /// <summary>
 /// Долги по всей базе: суммы оплат по абонентам считает СУБД, в память приходит по строке на абонента.
@@ -42,11 +42,10 @@ public sealed class Debts
             })
             .ToDictionary(x => x.SubscriberId);
         var cases = db.CourtCases.AsNoTracking()
-            .OrderBy(c => c.Id)
-            .Select(c => new { c.SubscriberId, Text = c.DelaAversId + " · " + c.OrderNumber })
+            .OrderByDescending(c => c.Id)
             .AsEnumerable()
             .DistinctBy(c => c.SubscriberId)
-            .ToDictionary(c => c.SubscriberId, c => c.Text);
+            .ToDictionary(c => c.SubscriberId);
         var rows = db.Subscribers.AsNoTracking()
             .OrderBy(s => s.Id)
             .Select(s => new { s.Id, s.HouseId, s.Account, s.LastName, s.FirstName, s.Patronymic, s.Apartment, s.LastPaymentDate })

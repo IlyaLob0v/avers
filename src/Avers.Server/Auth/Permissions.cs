@@ -48,6 +48,7 @@ public static class Policies
     public const string SchemesEdit = "schemes.edit";
     public const string PhonebookEdit = "phonebook.edit";
     public const string UsersManage = "users.manage";
+    public const string CourtCasesEdit = "court-cases.edit";
 
     public static void Add(AuthorizationOptions options)
     {
@@ -75,6 +76,8 @@ public static class Policies
         // Общие настройки (порог жёлтой подсветки) — администратор и начальник АДС.
         options.AddPolicy(SettingsEdit, p => p.RequireAuthenticatedUser()
             .RequireRole(nameof(UserRole.Administrator), nameof(UserRole.AdsHead)));
+        options.AddPolicy(CourtCasesEdit, p => p.RequireAuthenticatedUser()
+            .AddRequirements(new ModuleAccessRequirement(AppModule.Legal, AccessLevel.Edit)));
         // Отменить ошибочную оплату — администратор и начальник АДС.
         options.AddPolicy(PaymentsCancel, p => p.RequireAuthenticatedUser()
             .RequireRole(nameof(UserRole.Administrator), nameof(UserRole.AdsHead)));

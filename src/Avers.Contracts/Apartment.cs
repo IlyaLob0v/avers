@@ -10,6 +10,9 @@ public sealed record UpdateContractRequest(
     string? ContractHolder,
     string? Notes);
 
+/// <summary>Судебное дело должника. Запрос заменяет все поля целиком.</summary>
+public sealed record CourtCaseRequest(string? DelaAversId, string? OrderNumber, DateOnly OrderDate, string? Court, decimal Amount, string? Status);
+
 /// <summary>Новая квартира в доме: абонент, договор и тариф, по которому начисляются месяцы текущего года.</summary>
 public sealed record NewApartmentRequest(
     int HouseId,

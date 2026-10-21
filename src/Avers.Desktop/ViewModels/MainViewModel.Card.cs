@@ -154,6 +154,7 @@ public sealed partial class MainViewModel
         OnPropertyChanged(nameof(LastPaymentLine));
         OnPropertyChanged(nameof(PaymentWarningHint));
         OnPropertyChanged(nameof(CanEditCard));
+        OnPropertyChanged(nameof(CanEditCourtCases));
         OnPropertyChanged(nameof(CanEditSettings));
     }
 

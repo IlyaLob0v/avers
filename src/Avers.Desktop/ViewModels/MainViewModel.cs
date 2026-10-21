@@ -318,7 +318,11 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     partial void OnSelectedTicketChanged(WorkTicket? value) => BindTicket();
-    partial void OnSelectedDebtorChanged(DebtorRow? value) => BuildClaim();
+    partial void OnSelectedDebtorChanged(DebtorRow? value)
+    {
+        BuildClaim();
+        BindCourtCase();
+    }
     partial void OnOnlyActiveContractsChanged(bool value) => RefreshDerived();
 
     private void RefreshHouses()
@@ -574,7 +578,8 @@ public sealed class DebtorRow : IRowTone
         DebtText = d.Debt.ToString("N2") + " ₽";
         Unpaid = d.Unpaid;
         LastPay = d.LastPaymentDate is { } date ? date.ToString("dd.MM.yyyy") + (d.IsOld ? " (≥ 3 лет)" : "") : "нет";
-        Case = d.Case ?? "—";
+        CourtCase = d.Case;
+        Case = d.Case is { } c ? $"{c.DelaAversId} · {c.OrderNumber}" : "—";
         IsDebt = d.Debt >= Billing.DebtHighlight;
         IsOld = d.IsOld && !IsDebt;
     }
@@ -588,6 +593,9 @@ public sealed class DebtorRow : IRowTone
     public int Unpaid { get; }
     public string LastPay { get; }
     public string Case { get; }
+
+    /// <summary>Последнее судебное дело должника.</summary>
+    public CourtCase? CourtCase { get; }
     public bool IsDebt { get; }
     public bool IsOld { get; }
     public RowTone Tone => IsDebt ? RowTone.Debt : IsOld ? RowTone.Warn : RowTone.None;
