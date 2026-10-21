@@ -9,12 +9,15 @@ public sealed record LegalStage(string Title, int Days = 0, int Months = 0, int 
 /// </summary>
 public static class LegalDeadline
 {
+    private static readonly LegalStage Limitation = new("Срок исковой давности", Years: 3);
+
     public static IReadOnlyList<LegalStage> Stages { get; } =
     [
         new("Ответ на претензию", Days: 30),
         new("Возражения на судебный приказ", Days: 10),
         new("Обжалование решения суда", Months: 1),
-        new("Срок исковой давности", Years: 3)
+        Limitation,
+        new("Повторное направление в ОСП", Months: 6)
     ];
 
     public static DateOnly Due(LegalStage stage, DateOnly start)
@@ -24,6 +27,9 @@ public static class LegalDeadline
             due = due.AddDays(1);
         return due;
     }
+
+    /// <summary>Последний день давности за месяц: оплата до 10 числа следующего месяца (договор, п. 5.2), отсчёт со следующего дня.</summary>
+    public static DateOnly LimitationEnds(int year, int month) => Due(Limitation, new DateOnly(year, month, 10).AddMonths(1));
 
     public static string Remaining(DateOnly due, DateOnly today)
     {

@@ -11,6 +11,7 @@ public class LegalDeadlineTests
     [InlineData("Возражения на судебный приказ", "2026-08-05", "2026-08-17")] // 15.08 — суббота
     [InlineData("Обжалование решения суда", "2026-01-31", "2026-03-02")]     // 28.02 — суббота
     [InlineData("Срок исковой давности", "2023-08-31", "2026-08-31")]
+    [InlineData("Повторное направление в ОСП", "2026-04-04", "2026-10-05")]  // 04.10 — воскресенье
     public void Due_CountsFromEventAndSkipsWeekend(string stage, string start, string due) =>
         Assert.Equal(DateOnly.Parse(due), LegalDeadline.Due(Stage(stage), DateOnly.Parse(start)));
 
@@ -27,6 +28,12 @@ public class LegalDeadlineTests
     [Fact]
     public void Due_KeepsWorkingSaturday() =>
         Assert.Equal(new DateOnly(2027, 2, 20), LegalDeadline.Due(Stage("Возражения на судебный приказ"), new DateOnly(2027, 2, 10)));
+
+    [Theory]
+    [InlineData(2023, 10, "2026-11-10")] // пример юристов: октябрь 2023 взыскивается до ноября 2026
+    [InlineData(2023, 12, "2027-01-11")] // 10.01.2027 — каникулы
+    public void LimitationEnds_ThreeYearsFromPaymentDay(int year, int month, string due) =>
+        Assert.Equal(DateOnly.Parse(due), LegalDeadline.LimitationEnds(year, month));
 
     [Fact]
     public void Remaining_SaysDaysLeftOrOverdue()

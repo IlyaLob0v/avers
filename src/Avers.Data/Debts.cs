@@ -14,7 +14,12 @@ public sealed record Debtor(
     int Unpaid,
     DateOnly? LastPaymentDate,
     bool IsOld,
-    CourtCase? Case);
+    CourtCase? Case,
+    DateOnly? OldestUnpaid)
+{
+    /// <summary>До какого дня можно взыскать самый старый неоплаченный месяц.</summary>
+    public DateOnly? LimitationEnds => OldestUnpaid is { } m ? LegalDeadline.LimitationEnds(m.Year, m.Month) : null;
+}
 
 /// <summary>
 /// Долги по всей базе: суммы оплат по абонентам считает СУБД, в память приходит по строке на абонента.
@@ -38,7 +43,8 @@ public sealed class Debts
                 SubscriberId = g.Key,
                 Charged = g.Sum(p => p.Tariff),
                 Paid = g.Sum(p => p.Amount ?? 0),
-                Unpaid = g.Count(p => p.Amount == null)
+                Unpaid = g.Count(p => p.Amount == null),
+                OldestUnpaid = g.Where(p => p.Amount == null).Min(p => (int?)(p.Year * 12 + p.Month - 1))
             })
             .ToDictionary(x => x.SubscriberId);
         var cases = db.CourtCases.AsNoTracking()
@@ -61,7 +67,8 @@ public sealed class Debts
             if (debt >= Billing.DebtHighlight || old)
             {
                 var name = new Subscriber { LastName = r.LastName, FirstName = r.FirstName, Patronymic = r.Patronymic }.FullName;
-                debts.Debtors.Add(new Debtor(r.Id, r.HouseId, r.Account, name, r.Apartment, debt, sum?.Unpaid ?? 0, r.LastPaymentDate, old, cases.GetValueOrDefault(r.Id)));
+                debts.Debtors.Add(new Debtor(r.Id, r.HouseId, r.Account, name, r.Apartment, debt, sum?.Unpaid ?? 0, r.LastPaymentDate, old, cases.GetValueOrDefault(r.Id),
+                    sum?.OldestUnpaid is { } m ? new DateOnly(m / 12, m % 12 + 1, 1) : null));
             }
         }
         return debts;
