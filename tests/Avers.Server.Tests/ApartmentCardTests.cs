@@ -72,6 +72,27 @@ public class ApartmentCardTests
     }
 
     [Fact]
+    public async Task AddApartment_CreatesSubscriber_LawyerIsForbidden()
+    {
+        await using var app = new AversApp();
+        var lawyer = await app.LoginAsync("lawyer");
+        var head = await app.LoginAsync("orlov");
+        var request = new NewApartmentRequest(1, null, "99", "990099", "Смирнов", "Олег", null, null, "ТО-2026/990099",
+            new DateOnly(2026, 8, 10), 95m);
+
+        var forbidden = await lawyer.PostAsJsonAsync("/api/subscribers", request);
+        var created = await head.PostAsJsonAsync("/api/subscribers", request);
+        var duplicate = await head.PostAsJsonAsync("/api/subscribers", request);
+        var found = await head.GetFromJsonAsync<List<SubscriberListItem>>("/api/subscribers?mode=Account&q=990099");
+        var payments = await head.GetFromJsonAsync<List<PaymentDto>>($"/api/subscribers/{found!.Single().Id}/payments?year=2026");
+
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, created.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, duplicate.StatusCode);
+        Assert.Equal([8, 9, 10, 11, 12], payments!.Select(p => p.Month));
+    }
+
+    [Fact]
     public async Task OpenYear_NextYearMonthsAppear_OnlyForSettingsEditors()
     {
         await using var app = new AversApp();
