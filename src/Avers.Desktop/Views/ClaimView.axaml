@@ -26,7 +26,10 @@
           <CalendarDatePicker Width="110" PlaceholderText="сегодня" SelectedDate="{Binding PenaltyDate}" />
           <Button Content="Расчёт неустойки" Command="{Binding PrintPenaltyCommand}" />
         </StackPanel>
-        <Button HorizontalAlignment="Left" Margin="0,8,0,0" Content="Заявление на судебный приказ (Word)" Command="{Binding PrintCourtOrderCommand}" />
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Spacing="8">
+          <Button Content="Заявление на судебный приказ (Word)" Command="{Binding PrintCourtOrderCommand}" />
+          <Button Content="Заявление в ОСП (Word)" Command="{Binding PrintEnforcementCommand}" />
+        </StackPanel>
         <TextBlock Classes="hint" Margin="0,6,0,0" TextWrapping="Wrap" Text="Копию договора приложите из бумажного архива." />
       </StackPanel>
     </HeaderedContentControl>
