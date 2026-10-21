@@ -40,6 +40,36 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public async Task CancelPayment_SelectedPaidMonthBecomesUnpaid()
+    {
+        using var app = new DesktopApp("orlov");
+        app.Go(AppModule.Abon);
+        await app.Vm.RecordPaymentCommand.ExecuteAsync(null);
+        var id = app.Vm.SelectedSubscriber!.Id;
+        app.Go(AppModule.Subscriber);
+
+        app.Vm.SelectedCardPayment = app.Vm.CardPayments.Last(r => r.Payment.Amount is not null);
+        var month = app.Vm.SelectedCardPayment.Payment.Month;
+        await app.Vm.CancelPaymentCommand.ExecuteAsync(null);
+
+        Assert.EndsWith("отменена.", app.Vm.Status);
+        Assert.Equal(id, app.Vm.SelectedSubscriber!.Id);
+        Assert.Null(app.Vm.SelectedSubscriber.Payments.Single(p => p.Year == app.Vm.CardPaymentYear && p.Month == month).Amount);
+    }
+
+    [AvaloniaFact]
+    public void OpenYear_ReportsOpenedSubscribers()
+    {
+        using var app = new DesktopApp("admin");
+
+        app.Vm.OpenYearCommand.Execute(null);
+        app.Pump();
+
+        Assert.StartsWith("Начисления открыты:", app.Vm.Status);
+        Assert.DoesNotContain("— 0.", app.Vm.Status);
+    }
+
+    [AvaloniaFact]
     public void Journal_SelectingAnotherHouse_KeepsIt()
     {
         using var app = new DesktopApp("orlov");

@@ -40,6 +40,21 @@
           </TextBox>
           <Button Classes="primary" Margin="8,0,16,0" Content="Найти" Command="{Binding FindContractCommand}" />
           <Button Content="Реестр в Excel" Command="{Binding ExportContractsCommand}" />
+          <Button Margin="8,0,0,0" Content="Новая квартира" IsVisible="{Binding CanEditCard}" Command="{Binding StartNewApartmentCommand}" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="0,6,0,0" Spacing="6" IsVisible="{Binding IsNewApartmentOpen}">
+          <TextBox Classes="cell" Width="56" Watermark="Секц" Text="{Binding NewSection}" />
+          <TextBox Classes="cell" Width="56" Watermark="Кв" Text="{Binding NewApartment}" />
+          <TextBox Classes="cell" Width="96" Watermark="Лиц. счёт" Text="{Binding NewAccount}" />
+          <TextBox Classes="cell" Width="130" Watermark="Фамилия" Text="{Binding NewLastName}" />
+          <TextBox Classes="cell" Width="110" Watermark="Имя" Text="{Binding NewFirstName}" />
+          <TextBox Classes="cell" Width="120" Watermark="Отчество" Text="{Binding NewPatronymic}" />
+          <TextBox Classes="cell" Width="120" Watermark="Телефон" Text="{Binding NewPhone}" />
+          <TextBox Classes="cell" Width="120" Watermark="№ договора" Text="{Binding NewContractNumber}" />
+          <TextBox Classes="cell" Width="96" Watermark="дд.мм.гггг" Text="{Binding NewContractDate}" />
+          <TextBox Classes="cell" Width="80" Watermark="₽ в мес." Text="{Binding NewTariff}" />
+          <Button Classes="primary" Content="Добавить" Command="{Binding AddApartmentCommand}" />
+          <Button Content="Отмена" Command="{Binding CancelNewApartmentCommand}" />
         </StackPanel>
       </StackPanel>
     </Border>

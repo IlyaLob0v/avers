@@ -10,8 +10,25 @@ public sealed record UpdateContractRequest(
     string? ContractHolder,
     string? Notes);
 
+/// <summary>Новая квартира в доме: абонент, договор и тариф, по которому начисляются месяцы текущего года.</summary>
+public sealed record NewApartmentRequest(
+    int HouseId,
+    string? Section,
+    string? Apartment,
+    string? Account,
+    string? LastName,
+    string? FirstName,
+    string? Patronymic,
+    string? Phone,
+    string? ContractNumber,
+    DateOnly? ContractDate,
+    decimal Tariff);
+
 /// <summary>Через сколько месяцев без оплаты карточка подсвечивается жёлтым.</summary>
 public sealed record PaymentWarningSettings(int Months);
+
+/// <summary>Сколько абонентов получили начисления на открытый год.</summary>
+public sealed record OpenYearResult(int Subscribers);
 
 /// <summary>Паспорт дома: техника СКПТ и примечания. Запрос заменяет все поля целиком.</summary>
 public sealed record HousePassportRequest(
