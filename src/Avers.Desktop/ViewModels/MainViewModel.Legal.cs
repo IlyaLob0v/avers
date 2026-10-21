@@ -125,17 +125,34 @@ public sealed partial class MainViewModel
     {
         if (SelectedDebtor is not { } d) { Status = "Выберите должника."; return; }
         if (!PackageDebtNote && !PackageHistory) { Status = "Отметьте, что положить в пакет."; return; }
-        Subscriber s;
+        if (await LoadDebtorAsync(d) is not { } s) return;
+        OpenPdf(PrintPath("пакет-для-суда", d.Account), $"пакет для суда {d.FullName}",
+            path => PdfForms.CourtPackage(s, _today, PackageDebtNote, PackageHistory, path));
+    }
+
+    [ObservableProperty] private DateTime? _penaltyDate;
+
+    /// <summary>Расчёт неустойки на дату заявления; по умолчанию — на сегодня.</summary>
+    [RelayCommand]
+    private async Task PrintPenalty()
+    {
+        if (SelectedDebtor is not { } d) { Status = "Выберите должника."; return; }
+        var date = PenaltyDate is { } chosen ? DateOnly.FromDateTime(chosen) : _today;
+        if (await LoadDebtorAsync(d) is not { } s) return;
+        OpenPdf(PrintPath("неустойка", d.Account), $"расчёт неустойки {d.FullName}", path => PdfForms.Penalty(s, date, path));
+    }
+
+    /// <summary>Абонент с оплатами: они грузятся вместе с домом.</summary>
+    private async Task<Subscriber?> LoadDebtorAsync(DebtorRow d)
+    {
         try
         {
-            s = (await _store.LoadHouseAsync(_houses.First(h => h.Id == d.HouseId))).First(x => x.Id == d.SubscriberId);
+            return (await _store.LoadHouseAsync(_houses.First(h => h.Id == d.HouseId))).First(x => x.Id == d.SubscriberId);
         }
         catch (StoreException e)
         {
             Status = e.Message;
-            return;
+            return null;
         }
-        OpenPdf(PrintPath("пакет-для-суда", d.Account), $"пакет для суда {d.FullName}",
-            path => PdfForms.CourtPackage(s, _today, PackageDebtNote, PackageHistory, path));
     }
 }
