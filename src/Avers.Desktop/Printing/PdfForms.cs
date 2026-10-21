@@ -84,11 +84,16 @@ public static class PdfForms
         pdf.Field("Подпись", "");
     }
 
+    /// <summary>
+    /// Лицевой счёт как печатала старая программа: начислено и оплачено по месяцам года,
+    /// долги прошлых лет, общий долг, время печати и телефоны абонентского отдела.
+    /// </summary>
     private static void Account(Page pdf, Subscriber s, int year, bool withPayDate, DateOnly today)
     {
         var months = s.Payments.Where(p => p.Year == year).OrderBy(p => p.Month).ToList();
-        pdf.Title($"Лицевой счёт № {s.Account} за {year} год");
-        pdf.Field("Абонент", s.FullName);
+        pdf.Paragraph(Organization);
+        pdf.Title($"Лицевой счёт абонента: {s.FullName} на {year} г.");
+        pdf.Field("Лицевой счёт", s.Account);
         pdf.Field("Адрес", Address(s));
         pdf.Field("Договор", Contract(s));
         pdf.Gap();
@@ -101,10 +106,20 @@ public static class PdfForms
             if (withPayDate) row.Add((p.PaidAt?.ToString("dd.MM.yyyy") ?? "", 410));
             pdf.Row(false, [.. row]);
         }
-        pdf.Row(true, ("Итого", 0), (Money(Billing.Charged(months)), 170), (Money(Billing.Paid(months)), 290));
         pdf.Gap();
-        pdf.Field("Задолженность", Money(Billing.Debt(Billing.Due(months, today))) + " руб.");
-        pdf.Field("Дата выписки", today.ToString("dd.MM.yyyy"));
+        pdf.Field("Всего начислено", Money(Billing.Charged(months)) + " руб.");
+        pdf.Field("Всего оплачено", Money(Billing.Paid(months)) + " руб.");
+        var due = Billing.Due(s.Payments.Where(p => p.Year <= year), today);
+        foreach (var g in due.Where(p => p.Year < year).GroupBy(p => p.Year).OrderBy(g => g.Key))
+        {
+            var debt = Billing.Debt(g);
+            if (debt > 0) pdf.Field($"Долг {g.Key % 100:00}", Money(debt) + " руб.");
+        }
+        pdf.Row(true, ("ДОЛГ:", 0), (Money(Billing.Debt(due)) + " руб.", 170));
+        pdf.Gap();
+        pdf.Field("Отпечатано", DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"));
+        pdf.Paragraph("Абон. отдел: 40-55-53. Пятница — неприёмный день!");
+        pdf.Paragraph("Диспетчер по ремонту: 40-55-54");
     }
 
     /// <summary>
@@ -132,9 +147,10 @@ public static class PdfForms
         pdf.Gap();
         if (claimed < total)
             pdf.Paragraph("Сумма неустойки снижена до суммы основного долга в соответствии со ст. 333 ГК РФ.");
-        pdf.Paragraph($"Таким образом, сумма неустойки, подлежащая взысканию с {s.FullName} по адресу: {Address(s)}, составляет {Money(claimed)} руб.");
+        pdf.Paragraph($"Таким образом, сумма неустойки, подлежащая взысканию с {s.FullName} по адресу: {Address(s)}, составляет {MoneyWords.Rubles(claimed)}.");
         pdf.Gap();
-        pdf.Field("Главный бухгалтер", "");
+        pdf.Paragraph("Главный бухгалтер");
+        pdf.Paragraph($"{Organization}    ______________    Горшенина Ю.Б.");
     }
 
     /// <summary>Домофоны дома: панели подъездов и невыполненные заявки — для радиомеханика.</summary>
@@ -179,6 +195,8 @@ public static class PdfForms
         pdf.Field("Подпись радиомеханика", "");
         pdf.Field("Подпись абонента", "");
     }
+
+    private const string Organization = "ООО «ПО «Аверс-Сервис»";
 
     private static string Address(Subscriber s) => $"{s.House.AddressLine}, кв. {s.Apartment}";
 
