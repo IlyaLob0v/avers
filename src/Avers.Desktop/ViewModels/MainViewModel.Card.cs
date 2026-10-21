@@ -27,6 +27,7 @@ public sealed partial class MainViewModel
 
     [ObservableProperty] private ContractRow? _selectedContractRow;
     [ObservableProperty] private int? _cardPaymentYear;
+    [ObservableProperty] private CardPaymentRow? _selectedCardPayment;
     [ObservableProperty] private YearOption? _cardTicketYear;
     [ObservableProperty] private int _paymentWarningMonths = PaymentAge.DefaultWarningMonths;
     [ObservableProperty] private decimal? _editWarningMonths = PaymentAge.DefaultWarningMonths;
@@ -229,6 +230,24 @@ public sealed partial class MainViewModel
         });
     }
 
+    /// <summary>Ошибочную оплату отменяют администратор и начальник АДС; прежние данные остаются в журнале.</summary>
+    [RelayCommand]
+    private async Task CancelPayment()
+    {
+        if (!CanEditSettings || SelectedSubscriber is not { } s) return;
+        if (SelectedCardPayment?.Payment is not { Amount: not null } p)
+        {
+            Status = "Выберите в таблице оплаченный месяц.";
+            return;
+        }
+        await Save(async () =>
+        {
+            await _store.CancelPaymentAsync(s.Id, p.Id);
+            await ReloadAsync();
+            Status = $"Оплата за {MonthName(p.Month)} {p.Year} отменена.";
+        });
+    }
+
     [RelayCommand]
     private async Task SavePaymentWarning()
     {
@@ -282,6 +301,21 @@ public sealed partial class MainViewModel
         });
     }
 
+    public string OpenYearTitle => $"Открыть {_today.Year + 1} год";
+
+    /// <summary>Начисления на текущий и следующий год: если в декабре забыли открыть, в январе откроются оба.</summary>
+    [RelayCommand]
+    private async Task OpenYear()
+    {
+        if (!CanEditSettings) return;
+        await Save(async () =>
+        {
+            var current = await _store.OpenYearAsync(_today.Year);
+            var next = await _store.OpenYearAsync(_today.Year + 1);
+            Status = $"Начисления открыты: на {_today.Year} год — абонентов {current}, на {_today.Year + 1} год — {next}.";
+        });
+    }
+
     private static bool TryParseDate(string text, out DateOnly? date)
     {
         date = null;
@@ -321,6 +355,7 @@ public sealed class ContractRow(Subscriber s, DateOnly today, int warningMonths)
 /// <summary>Месяц в таблице оплат карточки: кто внёс и кто оплатил.</summary>
 public sealed class CardPaymentRow(YearPayment p, string monthName)
 {
+    public YearPayment Payment { get; } = p;
     public string Month { get; } = monthName;
     public string Tariff { get; } = p.Tariff.ToString("N2");
     public string Amount { get; } = p.Amount?.ToString("N2") ?? "";
