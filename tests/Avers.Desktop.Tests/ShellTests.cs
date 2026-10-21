@@ -31,16 +31,6 @@ public class ShellTests
     }
 
     [AvaloniaFact]
-    public void MockupButton_SaysItIsNotReady()
-    {
-        using var app = new DesktopApp();
-
-        app.Vm.NotReadyCommand.Execute("Печать");
-
-        Assert.Equal("«Печать» пока не работает: функция в разработке.", app.Vm.Status);
-    }
-
-    [AvaloniaFact]
     public async Task ChangeTariff_ForThisHouse_ChangesUnpaidMonths()
     {
         using var app = new DesktopApp("admin");
@@ -229,6 +219,24 @@ public class ShellTests
         Assert.NotNull(opened);
         Assert.StartsWith("%PDF", File.ReadAllText(opened)[..4]);
         Assert.Contains($"наряд-заказ № {app.Vm.SelectedTicket!.Number}", app.Vm.Status);
+    }
+
+    [AvaloniaFact]
+    public async Task Claim_PrintsNoticeAndCourtPackageAsPdf()
+    {
+        using var app = new DesktopApp("lawyer");
+        app.Go(AppModule.Claim);
+        var opened = new List<string>();
+        app.Vm.OpenFile = opened.Add;
+
+        app.Vm.PrintClaimCommand.Execute(null);
+        await app.Vm.ExportCourtPackageCommand.ExecuteAsync(null);
+
+        Assert.Equal(2, opened.Count);
+        Assert.All(opened, path => Assert.StartsWith("%PDF", File.ReadAllText(path)[..4]));
+        var pages = System.Text.RegularExpressions.Regex.Count(File.ReadAllText(opened[1]), @"/Type /Page\b");
+        Assert.True(pages >= 2, $"В пакете {pages} стр.: справка и хотя бы один год оплат.");
+        Assert.Contains("пакет для суда", app.Vm.Status);
     }
 
     [AvaloniaFact]
