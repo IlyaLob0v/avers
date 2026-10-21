@@ -3,8 +3,7 @@
 -- ВНИМАНИЕ: просматривает каждую таблицу целиком — запускать вне рабочего времени.
 -- Выгружаются только числа, без содержимого таблиц.
 --
---   set NLS_LANG=AMERICAN_AMERICA.AL32UTF8
---   sqlplus system@avers102 @04-row-counts.sql
+--   ./jack-export.sh --row-counts system@avers102
 -- =====================================================================
 whenever sqlerror continue
 set verify off feedback off echo off
