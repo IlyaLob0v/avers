@@ -24,12 +24,7 @@ jobs:
         run: dotnet build Avers.sln -c Release --no-restore
       - name: Test
         if: hashFiles('Avers.sln') != ''
-        run: dotnet test tests/Avers.Desktop.Tests -c Release --no-build --blame-crash --blame-crash-dump-type mini --logger "console;verbosity=normal"
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: test-crash
-          path: tests/**/TestResults/
+        run: dotnet test Avers.sln -c Release --no-build
       - name: Format check
         if: hashFiles('Avers.sln') != ''
         run: dotnet format Avers.sln --verify-no-changes
