@@ -28,27 +28,25 @@ public class AppearanceTests
     }
 
     [Fact]
-    public void Catalog_EveryModuleHasTileSummary_StubsSayNotReady()
+    public void Catalog_EveryModuleHasTileSummary()
     {
         Assert.All(NavCatalog.All, e => Assert.False(string.IsNullOrWhiteSpace(e.Summary)));
-        Assert.DoesNotContain(NavCatalog.All, e => e.IsStub);
     }
 
     [AvaloniaTheory]
     [InlineData("admin")]
     [InlineData("orlova")]
-    public void Desktop_ShowsTileForEveryAvailableModule_StubsGrey(string login)
+    public void Desktop_ShowsTileForEveryAvailableModule(string login)
     {
         using var app = new DesktopApp(login);
         app.Go(AppModule.Desktop);
 
         var tiles = app.Window.GetVisualDescendants().OfType<Button>()
             .Where(b => b.Classes.Contains("tile") && b.IsEffectivelyVisible)
-            .Select(b => (Item: (NavItem)b.DataContext!, Glyph: b.GetVisualDescendants().OfType<Border>().Single(g => g.Classes.Contains("tileglyph"))))
+            .Select(b => (NavItem)b.DataContext!)
             .ToList();
 
-        Assert.Equal(app.Vm.Navigation.Select(n => n.Module), tiles.Select(t => t.Item.Module));
-        Assert.All(tiles, t => Assert.Equal(t.Item.IsStub, t.Glyph.Classes.Contains("stub")));
+        Assert.Equal(app.Vm.Navigation.Select(n => n.Module), tiles.Select(t => t.Module));
     }
 
     [AvaloniaFact]

@@ -14,15 +14,13 @@ public sealed record NavEntry(
     string Hint,
     string Summary,
     AppModule AccessModule,
-    AppModule[] Children,
-    bool IsStub = false);
+    AppModule[] Children);
 
 /// <summary>
 /// Перечень модулей единого рабочего места. Порядок — порядок кнопок.
 /// Summary — строка под названием на плитке рабочего стола, Hint — подсказка у кнопки модуля.
 /// AccessModule — по какому праву из <see cref="RoleCatalog"/> модуль показывается роли.
 /// Children — окна, открытые из модуля: пока они на экране, кнопка модуля подсвечена.
-/// IsStub — экран-заглушка: плитка серая.
 /// </summary>
 public static class NavCatalog
 {
@@ -79,7 +77,6 @@ public sealed partial class NavItem(NavEntry entry, ICommand go) : ObservableObj
     public string LegacyName => Entry.LegacyName;
     public string Hint => Entry.Hint;
     public string Summary => Entry.Summary;
-    public bool IsStub => Entry.IsStub;
     public ICommand Go { get; } = go;
 
     [ObservableProperty] private bool _isCurrent;

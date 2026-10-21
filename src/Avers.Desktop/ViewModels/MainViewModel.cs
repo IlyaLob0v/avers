@@ -533,10 +533,6 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    /// <summary>Кнопка экрана-макета: действие ещё не реализовано, говорим об этом прямо.</summary>
-    [RelayCommand]
-    private void NotReady(string? action) => Status = $"«{action}» пока не работает: функция в разработке.";
-
     private static string Money(decimal value) => value.ToString("N2") + " ₽";
 }
 
@@ -570,6 +566,7 @@ public sealed class DebtorRow : IRowTone
     public DebtorRow(Debtor d, House house)
     {
         SubscriberId = d.SubscriberId;
+        HouseId = d.HouseId;
         Account = d.Account;
         FullName = d.FullName;
         Address = $"{house.AddressLine}, кв. {d.Apartment}";
@@ -582,6 +579,7 @@ public sealed class DebtorRow : IRowTone
         IsOld = d.IsOld && !IsDebt;
     }
     public int SubscriberId { get; }
+    public int HouseId { get; }
     public string Account { get; }
     public string FullName { get; }
     public string Address { get; }
