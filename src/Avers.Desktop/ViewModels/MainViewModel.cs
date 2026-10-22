@@ -32,7 +32,14 @@ public sealed partial class MainViewModel : ObservableObject
         _reportFrom = new DateOnly(_today.Year, 1, 1);
         _reportTo = _today;
         _oekMonth = _today.AddMonths(-1).ToString("MM.yyyy");
+        AccessScreen = new AccessViewModel(this);
+        ChangeLogScreen = new ChangeLogViewModel(this);
     }
+
+    internal IAversStore Store => _store;
+
+    public AccessViewModel AccessScreen { get; }
+    public ChangeLogViewModel ChangeLogScreen { get; }
 
     public ObservableCollection<AppUser> Users { get; } = [];
     public ObservableCollection<Street> Streets { get; } = [];
@@ -44,7 +51,6 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<UnifiedReceipt> Receipts { get; } = [];
     public ObservableCollection<DebtorRow> Debtors { get; } = [];
     public ObservableCollection<PprRow> PprRows { get; } = [];
-    public ObservableCollection<AccessRow> AccessRows { get; } = [];
     public ObservableCollection<ReportMetric> ReportMetrics { get; } = [];
     public ObservableCollection<HouseScheme> Schemes { get; } = [];
     public ObservableCollection<IntercomTicket> IntercomTickets { get; } = [];
@@ -151,10 +157,6 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var u in _store.LoginUsers())
             Users.Add(u);
         LoginUser = Users.FirstOrDefault(x => x.Login == DemoSeeder.StartLogin) ?? Users.FirstOrDefault();
-
-        AccessRows.Clear();
-        foreach (var (role, title) in RoleCatalog.All)
-            AccessRows.Add(AccessRow.From(role, title));
     }
 
     /// <summary>Перечитать данные после записи: своя запись и чужие изменения в общей базе.</summary>
@@ -292,9 +294,9 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ModuleLegacyName));
         OnPropertyChanged(nameof(IsOnDesktop));
         if (value == AppModule.Access)
-            _ = LoadEmployeesAsync();
+            _ = AccessScreen.LoadAsync();
         if (value == AppModule.ChangeLog)
-            _ = LoadChangeLogAsync();
+            _ = ChangeLogScreen.LoadAsync();
         if (value == AppModule.Scheme)
             _ = ShowSchemeAsync();
         if (value is AppModule.Legal or AppModule.Claim or AppModule.Reports)
@@ -546,7 +548,8 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>Запись в базу: отказ сервера или нет связи — в строку состояния, программа продолжает работать.</summary>
-    private async Task Save(Func<Task> action)
+    /// <summary>Выполняет запись; отказ хранилища показывает в строке состояния.</summary>
+    internal async Task Save(Func<Task> action)
     {
         try
         {
@@ -626,39 +629,6 @@ public sealed class DebtorRow : IRowTone
     public bool IsDebt { get; }
     public bool IsOld { get; }
     public RowTone Tone => IsDebt ? RowTone.Debt : IsOld ? RowTone.Warn : RowTone.None;
-}
-
-public sealed class AccessRow
-{
-    public static AccessRow From(UserRole role, string title) => new()
-    {
-        Role = title,
-        Pay = Cell(role, AppModule.Abon),
-        Account = role is UserRole.Administrator or UserRole.AdsHead ? "да" : "нет",
-        Tickets = Cell(role, AppModule.Disp),
-        House = Cell(role, AppModule.Anten),
-        Scheme = Cell(role, AppModule.Scheme),
-        Legal = Cell(role, AppModule.Legal),
-        Dict = Cell(role, AppModule.Phonebook)
-    };
-
-    private static string Cell(UserRole role, AppModule m) =>
-        RoleCatalog.Can(role, m, out var level) ? level switch
-        {
-            RoleCatalog.AccessLevel.Edit => "да",
-            RoleCatalog.AccessLevel.View => "смотр",
-            RoleCatalog.AccessLevel.ScreenOnly => "экран",
-            _ => "нет"
-        } : "нет";
-
-    public string Role { get; init; } = "";
-    public string Pay { get; init; } = "";
-    public string Account { get; init; } = "";
-    public string Tickets { get; init; } = "";
-    public string House { get; init; } = "";
-    public string Scheme { get; init; } = "";
-    public string Legal { get; init; } = "";
-    public string Dict { get; init; } = "";
 }
 
 public sealed class ReportMetric(string name, string value, bool on)

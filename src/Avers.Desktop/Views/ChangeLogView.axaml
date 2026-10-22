@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Avers.Desktop.ViewModels"
              x:Class="Avers.Desktop.Views.ChangeLogView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:ChangeLogViewModel">
   <DockPanel Margin="16,0,16,12">
     <TextBlock DockPanel.Dock="Top" Classes="hint" Margin="0,0,0,8" Text="{Binding ChangeLogHint}" />
     <DataGrid ItemsSource="{Binding ChangeLogRows}" AutoGenerateColumns="False" IsReadOnly="True" RowHeight="NaN">
