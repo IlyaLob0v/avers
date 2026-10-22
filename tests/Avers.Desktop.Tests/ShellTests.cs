@@ -186,13 +186,13 @@ public class ShellTests
     {
         using var app = new DesktopApp();
         app.Go(AppModule.Disp);
-        app.Vm.PeriodAllCommand.Execute(null);
-        var inPeriod = app.Vm.Tickets.Where(t => t.Date >= app.Vm.ReportsScreen.ReportFrom && t.Date <= app.Vm.ReportsScreen.ReportTo).ToList();
+        app.Vm.TicketsScreen.PeriodAllCommand.Execute(null);
+        var inPeriod = app.Vm.TicketsScreen.Tickets.Where(t => t.Date >= app.Vm.ReportsScreen.ReportFrom && t.Date <= app.Vm.ReportsScreen.ReportTo).ToList();
 
         Assert.Equal(inPeriod.Count.ToString(), app.Vm.ReportsScreen.ReportMetrics.Single(m => m.Name == "Принято заявок").Value);
         Assert.Equal(inPeriod.Count(t => t.Status == TicketStatus.Done).ToString(),
             app.Vm.ReportsScreen.ReportMetrics.Single(m => m.Name == "Выполнено заявок").Value);
-        Assert.True(app.Vm.Tickets.Count > inPeriod.Count, "в учебной базе есть заявки вне периода отчёта");
+        Assert.True(app.Vm.TicketsScreen.Tickets.Count > inPeriod.Count, "в учебной базе есть заявки вне периода отчёта");
     }
 
     [AvaloniaFact]
@@ -200,18 +200,18 @@ public class ShellTests
     {
         using var app = new DesktopApp("orlova");
         app.Go(AppModule.Disp);
-        app.Vm.NewTicketFault = "Нет изображения на 1-м канале";
+        app.Vm.TicketsScreen.NewTicketFault = "Нет изображения на 1-м канале";
 
-        app.Vm.AcceptTicketCommand.Execute(null);
+        app.Vm.TicketsScreen.AcceptTicketCommand.Execute(null);
         app.Pump();
 
-        var ticket = app.Vm.SelectedTicket!;
+        var ticket = app.Vm.TicketsScreen.SelectedTicket!;
         Assert.Equal("Нет изображения на 1-м канале", ticket.Fault);
-        Assert.Contains(app.Vm.Tickets, t => t.Id == ticket.Id);
-        Assert.True(app.Vm.CanEditSelectedTicket);
+        Assert.Contains(app.Vm.TicketsScreen.Tickets, t => t.Id == ticket.Id);
+        Assert.True(app.Vm.TicketsScreen.CanEditSelectedTicket);
 
-        app.Vm.SelectedTicket = app.Vm.Tickets.First(t => t.AcceptedByUserId != ticket.AcceptedByUserId);
-        Assert.False(app.Vm.CanEditSelectedTicket);
+        app.Vm.TicketsScreen.SelectedTicket = app.Vm.TicketsScreen.Tickets.First(t => t.AcceptedByUserId != ticket.AcceptedByUserId);
+        Assert.False(app.Vm.TicketsScreen.CanEditSelectedTicket);
     }
 
     [AvaloniaTheory]
@@ -238,11 +238,11 @@ public class ShellTests
         string? opened = null;
         app.Vm.OpenFile = path => opened = path;
 
-        app.Vm.PrintWorkOrderCommand.Execute(null);
+        app.Vm.TicketsScreen.PrintWorkOrderCommand.Execute(null);
 
         Assert.NotNull(opened);
         Assert.StartsWith("%PDF", File.ReadAllText(opened)[..4]);
-        Assert.Contains($"наряд-заказ № {app.Vm.SelectedTicket!.Number}", app.Vm.Status);
+        Assert.Contains($"наряд-заказ № {app.Vm.TicketsScreen.SelectedTicket!.Number}", app.Vm.Status);
     }
 
     [AvaloniaFact]

@@ -3,7 +3,7 @@
              xmlns:vm="using:Avers.Desktop.ViewModels"
              xmlns:d="using:Avers.Domain"
              x:Class="Avers.Desktop.Views.TicketView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:TicketsViewModel">
   <ScrollViewer>
     <HeaderedContentControl Classes="group" Margin="16,0,16,12" Width="920" HorizontalAlignment="Left" VerticalAlignment="Top" Header="{Binding TicketHeader}">
       <StackPanel>
@@ -34,7 +34,7 @@
         </Border>
         <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
           <Button Classes="primary" Content="Сохранить" Command="{Binding SaveTicketCommand}" IsEnabled="{Binding CanEditSelectedTicket}" />
-          <Button Content="Закрыть" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Disp}" />
+          <Button Content="Закрыть" Command="{Binding Shell.GoCommand}" CommandParameter="{x:Static d:AppModule.Disp}" />
         </StackPanel>
       </StackPanel>
     </HeaderedContentControl>

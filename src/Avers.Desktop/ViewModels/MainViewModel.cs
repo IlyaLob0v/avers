@@ -39,6 +39,7 @@ public sealed partial class MainViewModel : ObservableObject
         ReceiptsScreen = new ReceiptsViewModel(this);
         LegalScreen = new LegalViewModel(this);
         ContractsScreen = new ContractsViewModel(this);
+        TicketsScreen = new TicketsViewModel(this);
     }
 
     internal IAversStore Store => _store;
@@ -59,11 +60,11 @@ public sealed partial class MainViewModel : ObservableObject
     public ReceiptsViewModel ReceiptsScreen { get; }
     public LegalViewModel LegalScreen { get; }
     public ContractsViewModel ContractsScreen { get; }
+    public TicketsViewModel TicketsScreen { get; }
 
     public ObservableCollection<AppUser> Users { get; } = [];
     public ObservableCollection<Street> Streets { get; } = [];
     public ObservableCollection<House> HousesOnStreet { get; } = [];
-    public ObservableCollection<WorkTicket> Tickets { get; } = [];
     public ObservableCollection<WorkTicket> HouseTickets { get; } = [];
     public ObservableCollection<Mechanic> Mechanics { get; } = [];
     public ObservableCollection<Material> Materials { get; } = [];
@@ -78,7 +79,6 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private Street? _selectedStreet;
     [ObservableProperty] private House? _selectedHouse;
     [ObservableProperty] private Subscriber? _selectedSubscriber;
-    [ObservableProperty] private WorkTicket? _selectedTicket;
     [ObservableProperty] private SearchMode _searchMode = SearchMode.Address;
     [ObservableProperty] private string _findStreet = DemoSeeder.StartStreet;
     [ObservableProperty] private string _findHouse = DemoSeeder.StartHouse;
@@ -86,9 +86,6 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _findApartment = DemoSeeder.StartApartment;
     [ObservableProperty] private string _findQuery = "";
     [ObservableProperty] private string _status = "Готово.";
-    [ObservableProperty] private string _ticketFault = "";
-    [ObservableProperty] private string _ticketWork = "";
-    [ObservableProperty] private string _ticketMechanic = "";
 
     public string LoginRoleTitle => LoginUser is null ? "" : RoleCatalog.Title(LoginUser.Role);
     public bool ShowLogin => User is null;
@@ -100,7 +97,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         AppModule.Abon => $"Ввод платежей абонентов за {_today:dd.MM.yyyy}",
         AppModule.Disp => $"Приём заявок от населения · {_today:dd.MM.yyyy}",
-        AppModule.Ticket => SelectedTicket is null ? "Заявка" : $"Заявка № {SelectedTicket.Number} от {SelectedTicket.Date:dd.MM.yyyy}",
+        AppModule.Ticket => TicketsScreen.SelectedTicket is not { } t ? "Заявка" : $"Заявка № {t.Number} от {t.Date:dd.MM.yyyy}",
         AppModule.Anten => SelectedHouse is null ? "Паспорт дома" : $"Паспорт дома · {SelectedHouse.AddressLine}",
         AppModule.AntenInfo => "Сведения по антенне / дому",
         AppModule.Scheme => SelectedHouse is null ? "Схема СКПТ" : $"Схема СКПТ · {SelectedHouse.AddressLine}",
@@ -184,7 +181,7 @@ public sealed partial class MainViewModel : ObservableObject
         _houses = data.Houses;
         _tickets = data.Tickets;
         _intercomTickets = data.IntercomTickets;
-        LoadTicketYears();
+        TicketsScreen.LoadTicketYears();
 
         Mechanics.Clear();
         foreach (var m in data.Mechanics) Mechanics.Add(m);
@@ -203,10 +200,10 @@ public sealed partial class MainViewModel : ObservableObject
         RefreshHouses();
         SelectedHouse = HousesOnStreet.FirstOrDefault(h => h.Id == keep?.Id)
                         ?? HousesOnStreet.FirstOrDefault(h => h.Number == DemoSeeder.StartHouse) ?? HousesOnStreet.FirstOrDefault();
-        SelectedTicket = _tickets.FirstOrDefault(t => t.Number == DemoSeeder.StartTicket);
+        TicketsScreen.SelectedTicket = _tickets.FirstOrDefault(t => t.Number == DemoSeeder.StartTicket);
         _holdRefresh = false;
         _intercomHouseId = null;
-        BindTicket();
+        TicketsScreen.BindTicket();
         await ShowHouseAsync(keepSubscriberId);
     }
 
@@ -280,8 +277,8 @@ public sealed partial class MainViewModel : ObservableObject
         SchemeScreen.RefreshRights();
         IntercomScreen.RefreshRights();
         PhonebookScreen.RefreshRights();
-        NotifyTicketPanel();
-        BindTicket();
+        TicketsScreen.NotifyTicketPanel();
+        TicketsScreen.BindTicket();
         RebuildNavigation();
         OnPropertyChanged(nameof(UserLine));
         OnPropertyChanged(nameof(UserRoleTitle));
@@ -326,7 +323,6 @@ public sealed partial class MainViewModel : ObservableObject
         RefreshDerived();
     }
 
-    partial void OnSelectedTicketChanged(WorkTicket? value) => BindTicket();
 
     private void RefreshHouses()
     {
@@ -348,7 +344,8 @@ public sealed partial class MainViewModel : ObservableObject
     private void RefreshDerived()
     {
         if (_holdRefresh) return;
-        RefreshTickets();
+        TicketsScreen.RefreshTickets();
+        RebuildHouseTickets();
         RebuildPayments();
         ReceiptsScreen.RebuildReceiptPeriods();
 
@@ -376,10 +373,20 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ContractDateText));
         OnPropertyChanged(nameof(LastPprText));
         OnPropertyChanged(nameof(HouseAptLine));
-        NotifyTicketPanel();
+        TicketsScreen.NotifyTicketPanel();
         RefreshCard();
         LegalScreen.BuildClaim();
     }
+
+    private void RebuildHouseTickets()
+    {
+        HouseTickets.Clear();
+        if (SelectedHouse is not null)
+            foreach (var t in _tickets.Where(t => t.HouseId == SelectedHouse.Id).Newest())
+                HouseTickets.Add(t);
+    }
+
+    internal void NotifyWindowTitle() => OnPropertyChanged(nameof(WindowTitle));
 
     private void RebuildPayments()
     {
