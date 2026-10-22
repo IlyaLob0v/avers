@@ -29,7 +29,6 @@ public sealed partial class MainViewModel : ObservableObject
     {
         _store = store;
         _today = store.Today;
-        _oekMonth = _today.AddMonths(-1).ToString("MM.yyyy");
         AccessScreen = new AccessViewModel(this);
         ChangeLogScreen = new ChangeLogViewModel(this);
         PhonebookScreen = new PhonebookViewModel(this);
@@ -37,6 +36,7 @@ public sealed partial class MainViewModel : ObservableObject
         IntercomScreen = new IntercomViewModel(this);
         SchemeScreen = new SchemeViewModel(this);
         ReportsScreen = new ReportsViewModel(this);
+        ReceiptsScreen = new ReceiptsViewModel(this);
     }
 
     internal IAversStore Store => _store;
@@ -53,6 +53,7 @@ public sealed partial class MainViewModel : ObservableObject
     public IntercomViewModel IntercomScreen { get; }
     public SchemeViewModel SchemeScreen { get; }
     public ReportsViewModel ReportsScreen { get; }
+    public ReceiptsViewModel ReceiptsScreen { get; }
 
     public ObservableCollection<AppUser> Users { get; } = [];
     public ObservableCollection<Street> Streets { get; } = [];
@@ -61,7 +62,6 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<WorkTicket> HouseTickets { get; } = [];
     public ObservableCollection<Mechanic> Mechanics { get; } = [];
     public ObservableCollection<Material> Materials { get; } = [];
-    public ObservableCollection<UnifiedReceipt> Receipts { get; } = [];
     public ObservableCollection<DebtorRow> Debtors { get; } = [];
     public ObservableCollection<PaymentGridRow> PaymentRows { get; } = [];
 
@@ -237,7 +237,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>Переходит к дому абонента и выбирает его квартиру.</summary>
-    private async Task ShowSubscriberAsync(int subscriberId, int houseId)
+    internal async Task ShowSubscriberAsync(int subscriberId, int houseId)
     {
         var house = _houses.First(h => h.Id == houseId);
         _holdRefresh = true;
@@ -360,7 +360,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (_holdRefresh) return;
         RefreshTickets();
         RebuildPayments();
-        RebuildReceiptPeriods();
+        ReceiptsScreen.RebuildReceiptPeriods();
 
         var houseChanged = _intercomHouseId != SelectedHouse?.Id;
         if (houseChanged)

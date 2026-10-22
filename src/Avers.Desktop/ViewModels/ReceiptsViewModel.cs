@@ -16,36 +16,39 @@ namespace Avers.Desktop.ViewModels;
 /// Единые квитанции ПЖРЭУ: поиск квартиры по любому лицевому счёту во всей базе и отбор строк по месяцу.
 /// Квитанции делает ОЭК (мы в них услуга с кодом 38): её файл начислений загружается здесь же.
 /// </summary>
-public sealed partial class MainViewModel
+public sealed partial class ReceiptsViewModel(MainViewModel shell) : ObservableObject
 {
     private int? _receiptsBoundId;
 
+    public MainViewModel Shell => shell;
+
+    public ObservableCollection<UnifiedReceipt> Receipts { get; } = [];
     public ObservableCollection<ReceiptPeriod> ReceiptPeriods { get; } = [];
 
     [ObservableProperty] private ReceiptPeriod? _selectedReceiptPeriod;
     [ObservableProperty] private string _receiptAccount = "";
 
     /// <summary>Месяц файла ОЭК, мм.гггг; по умолчанию прошлый: файл за месяц приходит в следующем.</summary>
-    [ObservableProperty] private string _oekMonth = "";
+    [ObservableProperty] private string _oekMonth = shell.Today.AddMonths(-1).ToString("MM.yyyy");
 
-    public string ReceiptOwner => SelectedSubscriber is { } s ? $"{s.FullName} · {s.House.AddressLine}, кв. {s.Apartment}" : "";
+    public string ReceiptOwner => shell.SelectedSubscriber is { } s ? $"{s.FullName} · {s.House.AddressLine}, кв. {s.Apartment}" : "";
 
-    private IEnumerable<UnifiedReceipt> SubscriberReceipts => SelectedSubscriber?.Receipts ?? [];
+    private IEnumerable<UnifiedReceipt> SubscriberReceipts => shell.SelectedSubscriber?.Receipts ?? [];
 
     partial void OnSelectedReceiptPeriodChanged(ReceiptPeriod? value) => RebuildReceipts();
 
     /// <summary>Месяцы, за которые у квартиры есть строки, новые сверху; выбор месяца сохраняется, пока квартира та же.</summary>
-    private void RebuildReceiptPeriods()
+    internal void RebuildReceiptPeriods()
     {
-        var keep = _receiptsBoundId == SelectedSubscriber?.Id ? SelectedReceiptPeriod : null;
-        if (_receiptsBoundId != SelectedSubscriber?.Id)
-            ReceiptAccount = SelectedSubscriber?.Account ?? "";
-        _receiptsBoundId = SelectedSubscriber?.Id;
+        var keep = _receiptsBoundId == shell.SelectedSubscriber?.Id ? SelectedReceiptPeriod : null;
+        if (_receiptsBoundId != shell.SelectedSubscriber?.Id)
+            ReceiptAccount = shell.SelectedSubscriber?.Account ?? "";
+        _receiptsBoundId = shell.SelectedSubscriber?.Id;
 
         ReceiptPeriods.Clear();
         ReceiptPeriods.Add(ReceiptPeriod.All);
         foreach (var m in SubscriberReceipts.Select(r => new DateOnly(r.Moment.Year, r.Moment.Month, 1)).Distinct().OrderDescending())
-            ReceiptPeriods.Add(new ReceiptPeriod(m, $"За {Ru.DateTimeFormat.MonthNames[m.Month - 1].ToLowerInvariant()} {m.Year}"));
+            ReceiptPeriods.Add(new ReceiptPeriod(m, $"За {MainViewModel.Ru.DateTimeFormat.MonthNames[m.Month - 1].ToLowerInvariant()} {m.Year}"));
         SelectedReceiptPeriod = ReceiptPeriods.FirstOrDefault(p => p == keep) ?? ReceiptPeriod.All;
         RebuildReceipts();
         OnPropertyChanged(nameof(ReceiptOwner));
@@ -67,22 +70,22 @@ public sealed partial class MainViewModel
         var account = ReceiptAccount.Trim();
         try
         {
-            var hit = await _store.FindSubscriberAsync(SearchMode.Account, account, "", "", "");
+            var hit = await shell.Store.FindSubscriberAsync(SearchMode.Account, account, "", "", "");
             if (hit is null)
             {
-                Status = $"Лицевой счёт {account} не найден.";
+                shell.Status = $"Лицевой счёт {account} не найден.";
                 return;
             }
-            await ShowSubscriberAsync(hit.Value.Id, hit.Value.HouseId);
+            await shell.ShowSubscriberAsync(hit.Value.Id, hit.Value.HouseId);
         }
         catch (StoreException e)
         {
-            Status = e.Message;
+            shell.Status = e.Message;
             return;
         }
-        Status = Receipts.Count == 0
-            ? $"По лицевому счёту {SelectedSubscriber?.Account} единых квитанций нет."
-            : $"Лицевой счёт {SelectedSubscriber?.Account}: строк — {Receipts.Count}.";
+        shell.Status = Receipts.Count == 0
+            ? $"По лицевому счёту {shell.SelectedSubscriber?.Account} единых квитанций нет."
+            : $"Лицевой счёт {shell.SelectedSubscriber?.Account}: строк — {Receipts.Count}.";
     }
 
     [RelayCommand]
@@ -95,14 +98,14 @@ public sealed partial class MainViewModel
     /// <summary>Загружает файл ОЭК за <see cref="OekMonth"/>; расхождения открываются в Excel.</summary>
     public async Task ImportOekFileAsync(string path)
     {
-        if (!CanEditSettings)
+        if (!shell.CanEditSettings)
         {
-            Status = "Файл ОЭК загружают администратор и начальник АДС.";
+            shell.Status = "Файл ОЭК загружают администратор и начальник АДС.";
             return;
         }
-        if (!DateOnly.TryParseExact("01." + OekMonth.Trim(), ["dd.MM.yyyy", "dd.M.yyyy"], Ru, DateTimeStyles.None, out var month))
+        if (!DateOnly.TryParseExact("01." + OekMonth.Trim(), ["dd.MM.yyyy", "dd.M.yyyy"], MainViewModel.Ru, DateTimeStyles.None, out var month))
         {
-            Status = "Месяц файла ОЭК — в виде мм.гггг.";
+            shell.Status = "Месяц файла ОЭК — в виде мм.гггг.";
             return;
         }
         List<OekRow> rows;
@@ -112,19 +115,19 @@ public sealed partial class MainViewModel
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
         {
-            Status = $"Не удалось прочитать файл ОЭК: {e.Message}";
+            shell.Status = $"Не удалось прочитать файл ОЭК: {e.Message}";
             return;
         }
-        await Save(async () =>
+        await shell.Save(async () =>
         {
-            var r = await _store.ImportOekAsync(new OekImportRequest(month.Year, month.Month, rows));
-            await ReloadAsync();
+            var r = await shell.Store.ImportOekAsync(new OekImportRequest(month.Year, month.Month, rows));
+            await shell.ReloadAsync();
             if (r.Mismatches.Count > 0)
-                Export("сверка-оэк", "сверка с ОЭК", file => XlsxTable.Write(file,
+                shell.Export("сверка-оэк", "сверка с ОЭК", file => XlsxTable.Write(file,
                     $"Сверка с ОЭК за {month:MM.yyyy}: строки, которые надо разобрать",
                     ["Л/с ОЭК", "Л/с Аверса", "Адрес", "Кв.", "Начислено ОЭК", "Тариф Аверса", "Оплачено ОЭК", "Что не так"],
                     r.Mismatches.Select(m => new object?[] { m.OekAccount, m.Account, m.Address, m.Apartment, m.OekAccrued, m.AversTariff, m.OekPaid, m.Problem })));
-            Status = $"Файл ОЭК за {month:MM.yyyy}: строк {r.Rows}, найдено квартир {r.Matched}, загружено оплат {r.Payments} на {Money(r.PaidTotal)}, " +
+            shell.Status = $"Файл ОЭК за {month:MM.yyyy}: строк {r.Rows}, найдено квартир {r.Matched}, загружено оплат {r.Payments} на {MainViewModel.Money(r.PaidTotal)}, " +
                      $"уже были загружены {r.AlreadyLoaded}, расхождений {r.Mismatches.Count}.";
         });
     }

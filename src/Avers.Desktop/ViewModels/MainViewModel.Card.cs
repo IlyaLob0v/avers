@@ -16,7 +16,7 @@ namespace Avers.Desktop.ViewModels;
 /// </summary>
 public sealed partial class MainViewModel
 {
-    private static readonly CultureInfo Ru = CultureInfo.GetCultureInfo("ru-RU");
+    internal static readonly CultureInfo Ru = CultureInfo.GetCultureInfo("ru-RU");
     private int? _cardBoundId;
 
     public ObservableCollection<ContractRow> ContractRows { get; } = [];

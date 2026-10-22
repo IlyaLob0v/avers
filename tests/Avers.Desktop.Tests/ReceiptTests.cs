@@ -10,18 +10,18 @@ public class ReceiptTests
     {
         using var app = new DesktopApp();
         app.Go(AppModule.PrDubl);
-        app.Vm.ReceiptAccount = "180090";
-        await app.Vm.FindReceiptsCommand.ExecuteAsync(null);
+        app.Vm.ReceiptsScreen.ReceiptAccount = "180090";
+        await app.Vm.ReceiptsScreen.FindReceiptsCommand.ExecuteAsync(null);
         Assert.Equal("180090", app.Vm.SelectedSubscriber?.Account);
-        Assert.Empty(app.Vm.Receipts);
+        Assert.Empty(app.Vm.ReceiptsScreen.Receipts);
 
-        app.Vm.ReceiptAccount = "1932068";
-        await app.Vm.FindReceiptsCommand.ExecuteAsync(null);
-        Assert.Equal(2, app.Vm.Receipts.Count);
-        Assert.Equal(["Все периоды", "За июль 2026", "За июнь 2026"], app.Vm.ReceiptPeriods.Select(p => p.Title));
+        app.Vm.ReceiptsScreen.ReceiptAccount = "1932068";
+        await app.Vm.ReceiptsScreen.FindReceiptsCommand.ExecuteAsync(null);
+        Assert.Equal(2, app.Vm.ReceiptsScreen.Receipts.Count);
+        Assert.Equal(["Все периоды", "За июль 2026", "За июнь 2026"], app.Vm.ReceiptsScreen.ReceiptPeriods.Select(p => p.Title));
 
-        app.Vm.SelectedReceiptPeriod = app.Vm.ReceiptPeriods[2];
+        app.Vm.ReceiptsScreen.SelectedReceiptPeriod = app.Vm.ReceiptsScreen.ReceiptPeriods[2];
 
-        Assert.Equal("КВ-33004", Assert.Single(app.Vm.Receipts).NKvit);
+        Assert.Equal("КВ-33004", Assert.Single(app.Vm.ReceiptsScreen.Receipts).NKvit);
     }
 }
