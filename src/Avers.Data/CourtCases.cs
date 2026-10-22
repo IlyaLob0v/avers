@@ -5,6 +5,8 @@ namespace Avers.Data;
 /// <summary>Судебные дела должника: в JACK их нет, юристы вводят заново. Метод возвращает текст ошибки или null.</summary>
 public static class CourtCases
 {
+    public const int MaxTextLength = 2000;
+
     /// <summary>Сохраняет дело абонента; черновик с Id = 0 — новое дело. Правка попадает в журнал изменений.</summary>
     public static string? Save(AversDbContext db, int subscriberId, CourtCase draft, string who, DateTimeOffset at)
     {
@@ -14,8 +16,12 @@ public static class CourtCases
             return "Суд и состояние дела — до 200 символов.";
         if (draft.DelaAversId.Trim() == "" && draft.OrderNumber.Trim() == "")
             return "Укажите номер дела или номер судебного приказа.";
-        if (draft.Amount < 0 || decimal.Round(draft.Amount, 2) != draft.Amount)
-            return "Сумма — не меньше нуля, не больше двух знаков после запятой.";
+        if (draft.WritSentTo.Trim().Length > 40)
+            return "Куда направлен лист — до 40 символов.";
+        if (draft.Receipts.Trim().Length > MaxTextLength || draft.Notes.Trim().Length > MaxTextLength)
+            return $"Поступления и примечание — до {MaxTextLength} символов.";
+        if (draft.Amount < 0 || decimal.Round(draft.Amount, 2) != draft.Amount || draft.StateDuty < 0 || decimal.Round(draft.StateDuty, 2) != draft.StateDuty)
+            return "Сумма и госпошлина — не меньше нуля, не больше двух знаков после запятой.";
         var subscriber = db.Subscribers.FirstOrDefault(s => s.Id == subscriberId);
         if (subscriber is null)
             return "Абонент не найден.";
@@ -30,13 +36,23 @@ public static class CourtCases
             ("Дата приказа", isNew ? null : item.OrderDate, draft.OrderDate),
             ("Суд", isNew ? null : item.Court, draft.Court),
             ("Сумма", isNew ? null : item.Amount, draft.Amount),
-            ("Состояние", isNew ? null : item.Status, draft.Status)));
+            ("Состояние", isNew ? null : item.Status, draft.Status),
+            ("Госпошлина", isNew ? null : item.StateDuty, draft.StateDuty),
+            ("Лист направлен", isNew ? null : item.WritSentTo, draft.WritSentTo),
+            ("Дата направления", isNew ? null : item.WritSentDate, draft.WritSentDate),
+            ("Поступления", isNew ? null : item.Receipts, draft.Receipts),
+            ("Примечание", isNew ? null : item.Notes, draft.Notes)));
         item.DelaAversId = draft.DelaAversId.Trim();
         item.OrderNumber = draft.OrderNumber.Trim();
         item.OrderDate = draft.OrderDate;
         item.Court = draft.Court.Trim();
         item.Amount = draft.Amount;
         item.Status = draft.Status.Trim();
+        item.StateDuty = draft.StateDuty;
+        item.WritSentTo = draft.WritSentTo.Trim();
+        item.WritSentDate = draft.WritSentDate;
+        item.Receipts = draft.Receipts.Trim();
+        item.Notes = draft.Notes.Trim();
         if (isNew)
             db.CourtCases.Add(item);
         db.SaveChanges();

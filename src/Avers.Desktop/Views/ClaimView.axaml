@@ -35,7 +35,7 @@
     </HeaderedContentControl>
     <HeaderedContentControl Grid.Row="1" Grid.ColumnSpan="2" Classes="group" Margin="0,10,0,0" Header="Судебное дело (последнее)">
       <StackPanel>
-        <Grid ColumnDefinitions="Auto,140,Auto,140,Auto,110,Auto,110" RowDefinitions="Auto,Auto" IsEnabled="{Binding CanEditCourtCases}">
+        <Grid ColumnDefinitions="Auto,140,Auto,140,Auto,110,Auto,110" RowDefinitions="Auto,Auto,Auto,Auto,Auto" IsEnabled="{Binding CanEditCourtCases}">
           <TextBlock Classes="label" VerticalAlignment="Center" Text="Дело-Аверс №" />
           <TextBox Grid.Column="1" Classes="cell" Text="{Binding CaseNumber}" />
           <TextBlock Grid.Column="2" Classes="label" Margin="8,0,4,0" VerticalAlignment="Center" Text="Приказ №" />
@@ -48,6 +48,16 @@
           <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Classes="cell" Text="{Binding CaseCourt}" />
           <TextBlock Grid.Row="1" Grid.Column="4" Classes="label" Margin="8,0,4,0" VerticalAlignment="Center" Text="Состояние" />
           <TextBox Grid.Row="1" Grid.Column="5" Grid.ColumnSpan="3" Classes="cell" Text="{Binding CaseStatus}" />
+          <TextBlock Grid.Row="2" Classes="label" VerticalAlignment="Center" Text="Госпошлина" />
+          <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding CaseDuty}" />
+          <TextBlock Grid.Row="2" Grid.Column="2" Classes="label" Margin="8,0,4,0" VerticalAlignment="Center" Text="Лист направлен" />
+          <TextBox Grid.Row="2" Grid.Column="3" Classes="cell" PlaceholderText="ОСП или ОСФР" Text="{Binding CaseWritTo}" />
+          <TextBlock Grid.Row="2" Grid.Column="4" Classes="label" Margin="8,0,4,0" VerticalAlignment="Center" Text="дата" />
+          <TextBox Grid.Row="2" Grid.Column="5" Classes="cell" PlaceholderText="дд.мм.гггг" Text="{Binding CaseWritDate}" />
+          <TextBlock Grid.Row="3" Classes="label" VerticalAlignment="Center" Text="Поступления" />
+          <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="7" Classes="cell" PlaceholderText="901,58-28.11.24 + 214,93-24.12.24" Text="{Binding CaseReceipts}" />
+          <TextBlock Grid.Row="4" Classes="label" VerticalAlignment="Center" Text="Примечание" />
+          <TextBox Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="7" Classes="cell" Text="{Binding CaseNotes}" />
         </Grid>
         <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Spacing="8" IsVisible="{Binding CanEditCourtCases}">
           <Button Content="Новое дело" Command="{Binding NewCourtCaseCommand}" />

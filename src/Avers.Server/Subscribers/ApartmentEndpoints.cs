@@ -56,7 +56,12 @@ public static class ApartmentEndpoints
             OrderDate = r.OrderDate,
             Court = r.Court ?? "",
             Amount = r.Amount,
-            Status = r.Status ?? ""
+            Status = r.Status ?? "",
+            StateDuty = r.StateDuty,
+            WritSentTo = r.WritSentTo ?? "",
+            WritSentDate = r.WritSentDate,
+            Receipts = r.Receipts ?? "",
+            Notes = r.Notes ?? ""
         }, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
         return error is null
             ? TypedResults.NoContent()
