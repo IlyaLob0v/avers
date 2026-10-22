@@ -1,5 +1,6 @@
 using Avers.Desktop.Data;
 using Avers.Desktop.Printing;
+using Avers.Desktop.Reports;
 using Avers.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -190,4 +191,11 @@ public sealed partial class MainViewModel
             return null;
         }
     }
+
+    [RelayCommand]
+    private void ExportDebtors() =>
+        Export("должники", "отчёт по должникам", path => XlsxTable.Write(path,
+            $"Должники на {_today:dd.MM.yyyy}",
+            ["ФИО", "Адрес", "Лиц. счёт", "Долг, руб.", "Неоплачено мес.", "Последняя оплата", "Судебный приказ"],
+            Debtors.Select(d => new object?[] { d.FullName, d.Address, d.Account, d.Debt, d.Unpaid, d.LastPay, d.Case })));
 }

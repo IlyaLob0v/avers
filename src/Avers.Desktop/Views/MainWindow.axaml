@@ -169,7 +169,9 @@
         <views:TicketView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Ticket}}" />
         <views:AntenView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Anten}}" />
         <views:AntenInfoView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.AntenInfo}}" />
-        <views:SchemeView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Scheme}}" />
+        <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Scheme}}">
+          <views:SchemeView DataContext="{Binding SchemeScreen}" />
+        </Panel>
         <views:SubscriberView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Subscriber}}" />
         <views:PrDublView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.PrDubl}}" />
         <views:ContractView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Contract}}" />
@@ -179,7 +181,9 @@
         </Panel>
         <views:LegalView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Legal}}" />
         <views:ClaimView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Claim}}" />
-        <views:ReportsView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Reports}}" />
+        <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Reports}}">
+          <views:ReportsView DataContext="{Binding ReportsScreen}" />
+        </Panel>
         <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Phonebook}}">
           <views:PhonebookView DataContext="{Binding PhonebookScreen}" />
         </Panel>

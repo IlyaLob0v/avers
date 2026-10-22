@@ -74,4 +74,22 @@ public sealed partial class MainViewModel
         Directory.CreateDirectory(dir);
         return Path.Combine(dir, $"{kind}-{key}{extension}");
     }
+
+    /// <summary>Записывает файл Excel во временную папку и открывает его.</summary>
+    internal void Export(string file, string title, Action<string> write)
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "Avers");
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, $"{file}-{_today:yyyy-MM-dd}.xlsx");
+        try
+        {
+            write(path);
+            OpenFile(path);
+            Status = $"Открыт Excel: {title}.";
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            Status = $"Не удалось открыть отчёт: {e.Message}";
+        }
+    }
 }

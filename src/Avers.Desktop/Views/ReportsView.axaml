@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Avers.Desktop.ViewModels"
              x:Class="Avers.Desktop.Views.ReportsView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:ReportsViewModel">
   <Grid ColumnDefinitions="290,*" Margin="16,0,16,12" VerticalAlignment="Top">
     <HeaderedContentControl Classes="group" Margin="0,0,10,0" Header="Параметры">
       <StackPanel>

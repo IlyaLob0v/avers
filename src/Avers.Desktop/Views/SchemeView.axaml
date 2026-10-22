@@ -3,7 +3,7 @@
              xmlns:vm="using:Avers.Desktop.ViewModels"
              xmlns:d="using:Avers.Domain"
              x:Class="Avers.Desktop.Views.SchemeView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:SchemeViewModel">
   <Grid ColumnDefinitions="*,290" Margin="16,0,16,12" VerticalAlignment="Top">
     <HeaderedContentControl Classes="group" Margin="0,0,10,0" Header="Схема стояков · JPG / PNG">
       <StackPanel>

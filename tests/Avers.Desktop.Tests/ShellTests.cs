@@ -187,11 +187,11 @@ public class ShellTests
         using var app = new DesktopApp();
         app.Go(AppModule.Disp);
         app.Vm.PeriodAllCommand.Execute(null);
-        var inPeriod = app.Vm.Tickets.Where(t => t.Date >= app.Vm.ReportFrom && t.Date <= app.Vm.ReportTo).ToList();
+        var inPeriod = app.Vm.Tickets.Where(t => t.Date >= app.Vm.ReportsScreen.ReportFrom && t.Date <= app.Vm.ReportsScreen.ReportTo).ToList();
 
-        Assert.Equal(inPeriod.Count.ToString(), app.Vm.ReportMetrics.Single(m => m.Name == "Принято заявок").Value);
+        Assert.Equal(inPeriod.Count.ToString(), app.Vm.ReportsScreen.ReportMetrics.Single(m => m.Name == "Принято заявок").Value);
         Assert.Equal(inPeriod.Count(t => t.Status == TicketStatus.Done).ToString(),
-            app.Vm.ReportMetrics.Single(m => m.Name == "Выполнено заявок").Value);
+            app.Vm.ReportsScreen.ReportMetrics.Single(m => m.Name == "Выполнено заявок").Value);
         Assert.True(app.Vm.Tickets.Count > inPeriod.Count, "в учебной базе есть заявки вне периода отчёта");
     }
 
@@ -468,16 +468,16 @@ public class ShellTests
         using var app = new DesktopApp("lawyer");
         string? opened = null;
         app.Vm.OpenFile = path => opened = path;
-        app.Vm.ReportMetrics.Single(m => m.Name == "Домов на обслуживании").On = false;
+        app.Vm.ReportsScreen.ReportMetrics.Single(m => m.Name == "Домов на обслуживании").On = false;
 
-        app.Vm.ExportReportCommand.Execute(null);
+        app.Vm.ReportsScreen.ExportReportCommand.Execute(null);
 
         using var book = new ClosedXML.Excel.XLWorkbook(opened!);
         var sheet = book.Worksheet(1);
         Assert.Equal("Обслуживающая организация", sheet.Cell(3, 1).GetString());
         Assert.DoesNotContain(sheet.Row(3).CellsUsed(), c => c.GetString() == "Домов на обслуживании");
         var total = sheet.Column(1).CellsUsed().Single(c => c.GetString() == "Итого").Address.RowNumber;
-        Assert.Equal(app.Vm.ReportMetrics.Single(m => m.Name == "Принято заявок").Value, sheet.Cell(total, 2).GetString());
+        Assert.Equal(app.Vm.ReportsScreen.ReportMetrics.Single(m => m.Name == "Принято заявок").Value, sheet.Cell(total, 2).GetString());
     }
 
     [AvaloniaFact]
