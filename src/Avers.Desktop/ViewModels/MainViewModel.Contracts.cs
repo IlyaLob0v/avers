@@ -1,5 +1,6 @@
 using System.Globalization;
 using Avers.Desktop.Data;
+using Avers.Desktop.Printing;
 using Avers.Desktop.Reports;
 using Avers.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -60,6 +61,14 @@ public sealed partial class MainViewModel
         if (SelectedSubscriber is null || !CanEditCard) return;
         EditContractTerminated = _today.ToString("dd.MM.yyyy");
         await SaveCard();
+    }
+
+    /// <summary>Бланк договора с согласием на обработку ПнД в Word: паспорт, ИНН и СНИЛС вписывают от руки.</summary>
+    [RelayCommand]
+    private void PrintContract()
+    {
+        if (SelectedSubscriber is not { } s) return;
+        OpenWord(PrintPath("договор", s.Account, ".docx"), $"договор {s.FullName}", path => WordForms.Contract(ContractForm.Text(s), path));
     }
 
     [ObservableProperty] private bool _isNewApartmentOpen;

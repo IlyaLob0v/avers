@@ -87,6 +87,7 @@
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
             <Button Content="Новый договор" IsVisible="{Binding CanEditCard}" Command="{Binding NewContractCommand}" />
             <Button Content="Расторгнуть" IsVisible="{Binding CanEditCard}" Command="{Binding TerminateContractCommand}" />
+            <Button Content="Бланк договора (Word)" Command="{Binding PrintContractCommand}" />
             <Button Classes="primary" Content="Сохранить" IsVisible="{Binding CanEditCard}" Command="{Binding SaveCardCommand}" />
             <Button Classes="link" Margin="0" Content="Карточка квартиры" Command="{Binding OpenCardCommand}" />
           </StackPanel>

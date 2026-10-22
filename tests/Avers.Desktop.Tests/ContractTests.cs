@@ -20,6 +20,30 @@ public class ContractTests
     }
 
     [AvaloniaFact]
+    public async Task PrintContract_FillsWhatAversKnows_LeavesPassportBlank()
+    {
+        using var app = new DesktopApp();
+        app.Go(AppModule.Contract);
+        var opened = new List<string>();
+        app.Vm.OpenFile = opened.Add;
+        app.Vm.ContractQuery = "ТО-2011/180090";
+        await app.Vm.FindContractCommand.ExecuteAsync(null);
+
+        app.Vm.PrintContractCommand.Execute(null);
+
+        using var word = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(opened.Single(), false);
+        var text = word.MainDocumentPart!.Document!.Body!.InnerText;
+        Assert.Contains("ДОГОВОР № ТО-2011/180090", text);
+        Assert.Contains("«01» сентября 2011 г.", text);
+        Assert.Contains("гр-н (-ка) Савельев Игорь Дмитриевич", text);
+        Assert.Contains("г. Омск, ул. Братская, д. 18, корп. _____ кв. 90", text);
+        Assert.Contains(MoneyWords.Rubles(95), text);
+        Assert.Contains("СОГЛАСИЕ НА ОБРАБОТКУ ПЕРСОНАЛЬНЫХ ДАННЫХ", text);
+        Assert.Contains("ИНН ______", text);
+        Assert.Contains("СНИЛС ______", text);
+    }
+
+    [AvaloniaFact]
     public async Task FindBySurname_WithoutDigits()
     {
         using var app = new DesktopApp();
