@@ -33,7 +33,7 @@
         </StackPanel>
         <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
           <TextBlock Classes="label" Text="Поиск" />
-          <TextBox Classes="cell" Width="260" Watermark="№ договора или фамилия" Text="{Binding ContractQuery}">
+          <TextBox Classes="cell" Width="260" PlaceholderText="№ договора или фамилия" Text="{Binding ContractQuery}">
             <TextBox.KeyBindings>
               <KeyBinding Gesture="Enter" Command="{Binding FindContractCommand}" />
             </TextBox.KeyBindings>
@@ -43,16 +43,16 @@
           <Button Margin="8,0,0,0" Content="Новая квартира" IsVisible="{Binding CanEditCard}" Command="{Binding StartNewApartmentCommand}" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Margin="0,6,0,0" Spacing="6" IsVisible="{Binding IsNewApartmentOpen}">
-          <TextBox Classes="cell" Width="56" Watermark="Секц" Text="{Binding NewSection}" />
-          <TextBox Classes="cell" Width="56" Watermark="Кв" Text="{Binding NewApartment}" />
-          <TextBox Classes="cell" Width="96" Watermark="Лиц. счёт" Text="{Binding NewAccount}" />
-          <TextBox Classes="cell" Width="130" Watermark="Фамилия" Text="{Binding NewLastName}" />
-          <TextBox Classes="cell" Width="110" Watermark="Имя" Text="{Binding NewFirstName}" />
-          <TextBox Classes="cell" Width="120" Watermark="Отчество" Text="{Binding NewPatronymic}" />
-          <TextBox Classes="cell" Width="120" Watermark="Телефон" Text="{Binding NewPhone}" />
-          <TextBox Classes="cell" Width="120" Watermark="№ договора" Text="{Binding NewContractNumber}" />
-          <TextBox Classes="cell" Width="96" Watermark="дд.мм.гггг" Text="{Binding NewContractDate}" />
-          <TextBox Classes="cell" Width="80" Watermark="₽ в мес." Text="{Binding NewTariff}" />
+          <TextBox Classes="cell" Width="56" PlaceholderText="Секц" Text="{Binding NewSection}" />
+          <TextBox Classes="cell" Width="56" PlaceholderText="Кв" Text="{Binding NewApartment}" />
+          <TextBox Classes="cell" Width="96" PlaceholderText="Лиц. счёт" Text="{Binding NewAccount}" />
+          <TextBox Classes="cell" Width="130" PlaceholderText="Фамилия" Text="{Binding NewLastName}" />
+          <TextBox Classes="cell" Width="110" PlaceholderText="Имя" Text="{Binding NewFirstName}" />
+          <TextBox Classes="cell" Width="120" PlaceholderText="Отчество" Text="{Binding NewPatronymic}" />
+          <TextBox Classes="cell" Width="120" PlaceholderText="Телефон" Text="{Binding NewPhone}" />
+          <TextBox Classes="cell" Width="120" PlaceholderText="№ договора" Text="{Binding NewContractNumber}" />
+          <TextBox Classes="cell" Width="96" PlaceholderText="дд.мм.гггг" Text="{Binding NewContractDate}" />
+          <TextBox Classes="cell" Width="80" PlaceholderText="₽ в мес." Text="{Binding NewTariff}" />
           <Button Classes="primary" Content="Добавить" Command="{Binding AddApartmentCommand}" />
           <Button Content="Отмена" Command="{Binding CancelNewApartmentCommand}" />
         </StackPanel>
@@ -76,11 +76,11 @@
             <TextBlock Classes="label" Text="№ договора" VerticalAlignment="Center" />
             <TextBox Grid.Column="1" Classes="cell" Text="{Binding EditContractNumber}" />
             <TextBlock Grid.Column="2" Classes="label" Margin="8,0,4,0" Text="Заключён" VerticalAlignment="Center" />
-            <TextBox Grid.Column="3" Classes="cell" Watermark="дд.мм.гггг" Text="{Binding EditContractDate}" />
+            <TextBox Grid.Column="3" Classes="cell" PlaceholderText="дд.мм.гггг" Text="{Binding EditContractDate}" />
             <TextBlock Grid.Column="4" Classes="label" Margin="8,0,4,0" Text="Расторгнут" VerticalAlignment="Center" />
-            <TextBox Grid.Column="5" Classes="cell" Watermark="дд.мм.гггг" Text="{Binding EditContractTerminated}" />
+            <TextBox Grid.Column="5" Classes="cell" PlaceholderText="дд.мм.гггг" Text="{Binding EditContractTerminated}" />
             <TextBlock Grid.Row="1" Classes="label" Text="С кем заключён" VerticalAlignment="Center" />
-            <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="5" Classes="cell" Watermark="пусто — с самим абонентом" Text="{Binding EditContractHolder}" />
+            <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="5" Classes="cell" PlaceholderText="пусто — с самим абонентом" Text="{Binding EditContractHolder}" />
             <TextBlock Grid.Row="2" Classes="label" Text="Примечание" VerticalAlignment="Center" />
             <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="5" Classes="cell" Text="{Binding EditNotes}" />
           </Grid>

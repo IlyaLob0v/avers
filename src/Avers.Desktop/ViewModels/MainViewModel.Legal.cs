@@ -105,18 +105,8 @@ public sealed partial class MainViewModel
     private void PrintClaim()
     {
         if (SelectedDebtor is not { } d) { Status = "Выберите должника."; return; }
-        var path = Path.Combine(Path.GetTempPath(), "Avers", $"уведомление-{d.Account}.docx");
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            WordForms.Claim($"г. Омск, {d.Address}", ClaimText, path);
-            OpenFile(path);
-            Status = $"Открыто в Word: уведомление {d.FullName}.";
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
-        {
-            Status = $"Не удалось открыть уведомление: {e.Message}";
-        }
+        OpenWord(PrintPath("уведомление", d.Account, ".docx"), $"уведомление {d.FullName}",
+            path => WordForms.Claim($"г. Омск, {d.Address}", ClaimText, path));
     }
 
     /// <summary>Пакет для суда по выбранному должнику: его оплаты грузятся вместе с домом.</summary>
@@ -160,18 +150,8 @@ public sealed partial class MainViewModel
         if (SelectedDebtor is not { } d) { Status = "Выберите должника."; return; }
         if (await LoadDebtorAsync(d) is not { } s) return;
         var (header, heading, body) = text(s);
-        var path = Path.Combine(Path.GetTempPath(), "Avers", $"{file}-{d.Account}.docx");
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            WordForms.Application(header, heading, body, path);
-            OpenFile(path);
-            Status = $"Открыто в Word: {title} {d.FullName}.";
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
-        {
-            Status = $"Не удалось открыть {title}: {e.Message}";
-        }
+        OpenWord(PrintPath(file, d.Account, ".docx"), $"{title} {d.FullName}",
+            path => WordForms.Application(header, heading, body, path));
     }
 
     /// <summary>Абонент с оплатами: они грузятся вместе с домом.</summary>

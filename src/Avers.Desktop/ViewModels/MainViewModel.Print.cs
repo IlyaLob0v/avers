@@ -53,10 +53,25 @@ public sealed partial class MainViewModel
         }
     }
 
-    private static string PrintPath(string kind, string key)
+    /// <summary>Пишет документ Word и открывает его.</summary>
+    private void OpenWord(string path, string title, Action<string> write)
+    {
+        try
+        {
+            write(path);
+            OpenFile(path);
+            Status = $"Открыто в Word: {title}.";
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            Status = $"Не удалось открыть {title}: {e.Message}";
+        }
+    }
+
+    private static string PrintPath(string kind, string key, string extension = ".pdf")
     {
         var dir = Path.Combine(Path.GetTempPath(), "Avers");
         Directory.CreateDirectory(dir);
-        return Path.Combine(dir, $"{kind}-{key}.pdf");
+        return Path.Combine(dir, $"{kind}-{key}{extension}");
     }
 }

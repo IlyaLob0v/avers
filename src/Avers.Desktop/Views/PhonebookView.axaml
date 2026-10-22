@@ -88,8 +88,8 @@
               </DataGrid.Columns>
             </DataGrid>
             <Grid ColumnDefinitions="*,70" Margin="0,8,0,0" IsVisible="{Binding CanEditPhonebook}">
-              <TextBox Classes="cell" Margin="0,0,8,0" Watermark="Наименование" Text="{Binding EditMaterial.Name}" />
-              <TextBox Grid.Column="1" Classes="cell" Watermark="Ед." Text="{Binding EditMaterial.Unit}" />
+              <TextBox Classes="cell" Margin="0,0,8,0" PlaceholderText="Наименование" Text="{Binding EditMaterial.Name}" />
+              <TextBox Grid.Column="1" Classes="cell" PlaceholderText="Ед." Text="{Binding EditMaterial.Unit}" />
             </Grid>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0" IsVisible="{Binding CanEditPhonebook}">
               <Button Content="Новый материал" Command="{Binding NewMaterialCommand}" />
@@ -108,10 +108,10 @@
               </DataGrid.Columns>
             </DataGrid>
             <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" Margin="0,8,0,0" IsVisible="{Binding CanEditPhonebook}">
-              <TextBox Classes="cell" Margin="0,0,8,6" Watermark="ФИО" Text="{Binding EditMechanic.FullName}" />
-              <TextBox Grid.Column="1" Classes="cell" Margin="0,0,0,6" Watermark="Должность" Text="{Binding EditMechanic.Position}" />
-              <TextBox Grid.Row="1" Classes="cell" Margin="0,0,8,0" Watermark="Телефон" Text="{Binding EditMechanic.Phone}" />
-              <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Watermark="Адрес" Text="{Binding EditMechanic.Address}" />
+              <TextBox Classes="cell" Margin="0,0,8,6" PlaceholderText="ФИО" Text="{Binding EditMechanic.FullName}" />
+              <TextBox Grid.Column="1" Classes="cell" Margin="0,0,0,6" PlaceholderText="Должность" Text="{Binding EditMechanic.Position}" />
+              <TextBox Grid.Row="1" Classes="cell" Margin="0,0,8,0" PlaceholderText="Телефон" Text="{Binding EditMechanic.Phone}" />
+              <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" PlaceholderText="Адрес" Text="{Binding EditMechanic.Address}" />
             </Grid>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0" IsVisible="{Binding CanEditPhonebook}">
               <Button Content="Новый радиомеханик" Command="{Binding NewMechanicCommand}" />

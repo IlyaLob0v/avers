@@ -23,7 +23,7 @@
         <Button Classes="primary" HorizontalAlignment="Left" Margin="0,10,0,0" Content="Выгрузить пакет в PDF" Command="{Binding ExportCourtPackageCommand}" />
         <StackPanel Orientation="Horizontal" Margin="0,10,0,0" Spacing="8">
           <TextBlock Classes="label" VerticalAlignment="Center" Text="Неустойка на" />
-          <CalendarDatePicker Width="110" Watermark="сегодня" SelectedDate="{Binding PenaltyDate}" />
+          <CalendarDatePicker Width="110" PlaceholderText="сегодня" SelectedDate="{Binding PenaltyDate}" />
           <Button Content="Расчёт неустойки" Command="{Binding PrintPenaltyCommand}" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Spacing="8">
@@ -41,7 +41,7 @@
           <TextBlock Grid.Column="2" Classes="label" Margin="8,0,4,0" VerticalAlignment="Center" Text="Приказ №" />
           <TextBox Grid.Column="3" Classes="cell" Text="{Binding CaseOrder}" />
           <TextBlock Grid.Column="4" Classes="label" Margin="8,0,4,0" VerticalAlignment="Center" Text="от" />
-          <TextBox Grid.Column="5" Classes="cell" Watermark="дд.мм.гггг" Text="{Binding CaseDate}" />
+          <TextBox Grid.Column="5" Classes="cell" PlaceholderText="дд.мм.гггг" Text="{Binding CaseDate}" />
           <TextBlock Grid.Column="6" Classes="label" Margin="8,0,4,0" VerticalAlignment="Center" Text="Сумма" />
           <TextBox Grid.Column="7" Classes="cell" Text="{Binding CaseAmount}" />
           <TextBlock Grid.Row="1" Classes="label" VerticalAlignment="Center" Text="Суд" />
