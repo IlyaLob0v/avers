@@ -101,6 +101,12 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
     public Task CancelPaymentAsync(int subscriberId, int paymentId) =>
         EditPhonebook((ctx, who) => PaymentCancellation.Cancel(ctx, subscriberId, paymentId, who, DateTimeOffset.UtcNow));
 
+    public Task<OekImportResult> ImportOekAsync(OekImportRequest request)
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(OekImport.Apply(ctx, request, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow));
+    }
+
     public Task SaveContractAsync(int subscriberId, UpdateContractRequest request)
     {
         using var ctx = db.CreateDbContext();

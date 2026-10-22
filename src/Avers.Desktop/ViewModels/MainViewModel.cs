@@ -31,6 +31,7 @@ public sealed partial class MainViewModel : ObservableObject
         _today = store.Today;
         _reportFrom = new DateOnly(_today.Year, 1, 1);
         _reportTo = _today;
+        _oekMonth = _today.AddMonths(-1).ToString("MM.yyyy");
     }
 
     public ObservableCollection<AppUser> Users { get; } = [];

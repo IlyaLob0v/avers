@@ -30,6 +30,7 @@ public static class SubscriberEndpoints
             ApartmentEndpoints.SaveCourtCase(id, 0, r, u, db, t)).RequireAuthorization(Policies.CourtCasesEdit);
         api.MapPut("/subscribers/{id:int}/court-cases/{caseId:int}", ApartmentEndpoints.SaveCourtCase).RequireAuthorization(Policies.CourtCasesEdit);
         api.MapDelete("/subscribers/{id:int}/payments/{paymentId:int}", PaymentEndpoints.Cancel).RequireAuthorization(Policies.PaymentsCancel);
+        api.MapPost("/oek/import", PaymentEndpoints.ImportOek).RequireAuthorization(Policies.PaymentsImport);
         api.MapPost("/subscribers", ApartmentEndpoints.Add).RequireAuthorization(Policies.SubscribersEdit);
         api.MapPut("/subscribers/{id:int}/contract", ApartmentEndpoints.UpdateContract).RequireAuthorization(Policies.SubscribersEdit);
         api.MapGet("/settings/payment-warning", ApartmentEndpoints.GetPaymentWarning);

@@ -72,10 +72,12 @@ public sealed class AversDbContext : DbContext
             e.Property(x => x.Section).HasMaxLength(8);
             e.Property(x => x.PzhreuIndex).HasMaxLength(16);
             e.Property(x => x.PzhreuAccount).HasMaxLength(40);
+            e.Property(x => x.OekAccount).HasMaxLength(20);
             e.Property(x => x.ContractNumber).HasMaxLength(40);
             e.Property(x => x.ContractHolder).HasMaxLength(250);
             e.HasIndex(x => x.Account).IsUnique();
             e.HasIndex(x => x.InnerCode);
+            e.HasIndex(x => x.OekAccount);
             e.HasIndex(x => x.LastName);
             e.Ignore(x => x.FullName);
             e.Ignore(x => x.ShortName);

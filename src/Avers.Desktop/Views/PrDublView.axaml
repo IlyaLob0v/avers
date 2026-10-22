@@ -44,7 +44,14 @@
         <DataGridTextColumn Header="N_КВИТ" Binding="{Binding NKvit}" Width="*" />
       </DataGrid.Columns>
     </DataGrid>
+    <Border Classes="card" Margin="0,10,0,0" Padding="12,8" IsVisible="{Binding CanEditSettings}">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock VerticalAlignment="Center" Text="Файл начислений ОЭК (nachММГГГГ_an, Excel) за месяц" />
+        <TextBox Classes="cell" Width="90" Text="{Binding OekMonth}" PlaceholderText="мм.гггг" />
+        <Button Classes="primary" Content="Загрузить файл ОЭК" Command="{Binding ImportOekCommand}" />
+      </StackPanel>
+    </Border>
     <TextBlock Classes="hint" Margin="0,6,0,0" TextWrapping="Wrap"
-               Text="Строки единых квитанций приходят от ПЖРЭУ. Загрузка их файлов появится, когда будет образец файла." />
+               Text="Единые квитанции делает ОЭК, мы в них услуга с кодом 38. Файл ОЭК: оплаты ложатся в месяц файла с источником «ОЭК», у квартиры запоминается л/с ОЭК; расхождения открываются в Excel." />
   </StackPanel>
 </UserControl>

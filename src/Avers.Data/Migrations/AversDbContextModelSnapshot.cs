@@ -599,6 +599,11 @@ namespace Avers.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("OekAccount")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<string>("Patronymic")
                         .IsRequired()
                         .HasMaxLength(80)
@@ -640,6 +645,8 @@ namespace Avers.Data.Migrations
                     b.HasIndex("InnerCode");
 
                     b.HasIndex("LastName");
+
+                    b.HasIndex("OekAccount");
 
                     b.ToTable("Subscribers");
                 });

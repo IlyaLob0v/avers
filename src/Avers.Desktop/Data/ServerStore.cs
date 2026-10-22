@@ -85,6 +85,9 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public Task CancelPaymentAsync(int subscriberId, int paymentId) =>
         Write(() => http.DeleteAsync($"api/subscribers/{subscriberId}/payments/{paymentId}"));
 
+    public Task<OekImportResult> ImportOekAsync(OekImportRequest request) =>
+        Read<OekImportResult>(() => http.PostAsJsonAsync("api/oek/import", request, Json));
+
     public Task SaveContractAsync(int subscriberId, UpdateContractRequest request) =>
         Write(() => http.PutAsJsonAsync($"api/subscribers/{subscriberId}/contract", request, Json));
 
