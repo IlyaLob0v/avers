@@ -86,7 +86,7 @@
               <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" IsReadOnly="True"
                        Text="{Binding SelectedSubscriber.PzhreuAccount, Mode=OneWay}" />
               <TextBlock Grid.Row="2" Text="Льгота" />
-              <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.Benefit, Mode=OneWay}" IsReadOnly="True" />
+              <ComboBox Grid.Row="2" Grid.Column="1" HorizontalAlignment="Stretch" ItemsSource="{Binding Benefits}" SelectedItem="{Binding EditBenefit}" IsEnabled="{Binding CanEditCard}" />
               <TextBlock Grid.Row="3" Text="Расчёт с" />
               <TextBox Grid.Row="3" Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.SettlementFrom, Mode=OneWay}" IsReadOnly="True" />
               <TextBlock Grid.Row="4" Text="Долг" />

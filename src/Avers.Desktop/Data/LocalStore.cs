@@ -110,7 +110,8 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
             ContractDate = request.ContractDate,
             ContractTerminated = request.ContractTerminated,
             ContractHolder = request.ContractHolder ?? "",
-            Notes = request.Notes ?? ""
+            Notes = request.Notes ?? "",
+            Benefit = request.Benefit ?? Subscriber.NoBenefit
         };
         SubscriberContracts.Save(ctx, s, draft, Today, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
         return Task.CompletedTask;

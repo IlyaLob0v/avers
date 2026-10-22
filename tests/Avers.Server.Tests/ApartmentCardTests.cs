@@ -204,7 +204,7 @@ public class ApartmentCardTests
         var client = await app.LoginAsync("orlov");
 
         var response = await client.PutAsJsonAsync("/api/subscribers/3/contract", new UpdateContractRequest(
-            "ТО-2026/77", new DateOnly(2026, 9, 1), null, "Петрова Анна Ивановна", "Новый собственник"));
+            "ТО-2026/77", new DateOnly(2026, 9, 1), null, "Петрова Анна Ивановна", "Новый собственник", "коллективная оплата"));
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         var card = await client.GetFromJsonAsync<SubscriberCard>("/api/subscribers/3");
@@ -212,6 +212,7 @@ public class ApartmentCardTests
         Assert.Equal("Петрова Анна Ивановна", card.ContractParty);
         Assert.Equal("Новый собственник", card.Notes);
         Assert.Equal(new DateOnly(2026, 9, 1), card.ContractDate);
+        Assert.Equal("коллективная оплата", card.Benefit);
     }
 
     [Fact]
@@ -250,11 +251,14 @@ public class ApartmentCardTests
             new UpdateContractRequest(new string('1', 41), null, null, null, null));
         var badDates = await client.PutAsJsonAsync("/api/subscribers/1/contract",
             new UpdateContractRequest("1", new DateOnly(2026, 9, 1), new DateOnly(2026, 8, 1), null, null));
+        var unknownBenefit = await client.PutAsJsonAsync("/api/subscribers/1/contract",
+            new UpdateContractRequest("1", null, null, null, null, "ветеран труда"));
         var missing = await client.PutAsJsonAsync("/api/subscribers/999/contract",
             new UpdateContractRequest("1", null, null, null, null));
 
         Assert.Equal(HttpStatusCode.BadRequest, tooLong.StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, badDates.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, unknownBenefit.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
     }
 }
