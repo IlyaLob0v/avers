@@ -12,15 +12,15 @@ public class IntercomTests
         app.Go(AppModule.Domofo);
         var count = app.Vm.SelectedHouse!.Intercoms.Count;
 
-        app.Vm.NewIntercomPanelCommand.Execute(null);
+        app.Vm.IntercomScreen.NewIntercomPanelCommand.Execute(null);
         app.Pump();
-        Assert.Equal(0, app.Vm.Intercom?.Id);
-        app.Vm.Intercom!.PanelType = "Метаком МК-20";
-        await app.Vm.SaveIntercomPanelCommand.ExecuteAsync(null);
+        Assert.Equal(0, app.Vm.IntercomScreen.Intercom?.Id);
+        app.Vm.IntercomScreen.Intercom!.PanelType = "Метаком МК-20";
+        await app.Vm.IntercomScreen.SaveIntercomPanelCommand.ExecuteAsync(null);
 
         Assert.Equal(count + 1, app.Vm.SelectedHouse!.Intercoms.Count);
-        Assert.Equal("Метаком МК-20", app.Vm.Intercom?.PanelType);
-        Assert.Same(app.Vm.Intercom, app.Vm.SelectedIntercomPanel);
+        Assert.Equal("Метаком МК-20", app.Vm.IntercomScreen.Intercom?.PanelType);
+        Assert.Same(app.Vm.IntercomScreen.Intercom, app.Vm.IntercomScreen.SelectedIntercomPanel);
     }
 
     [AvaloniaFact]
@@ -28,22 +28,22 @@ public class IntercomTests
     {
         using var app = new DesktopApp();
         app.Go(AppModule.Domofo);
-        var count = app.Vm.IntercomTickets.Count;
+        var count = app.Vm.IntercomScreen.IntercomTickets.Count;
 
-        app.Vm.IntercomEntrance = "2";
-        app.Vm.IntercomFault = "Не работает трубка кв. 70";
-        app.Vm.IntercomMechanic = app.Vm.Mechanics[0];
-        await app.Vm.AcceptIntercomTicketCommand.ExecuteAsync(null);
+        app.Vm.IntercomScreen.IntercomEntrance = "2";
+        app.Vm.IntercomScreen.IntercomFault = "Не работает трубка кв. 70";
+        app.Vm.IntercomScreen.IntercomMechanic = app.Vm.Mechanics[0];
+        await app.Vm.IntercomScreen.AcceptIntercomTicketCommand.ExecuteAsync(null);
 
-        Assert.Equal(count + 1, app.Vm.IntercomTickets.Count);
-        app.Vm.SelectedIntercomTicket = app.Vm.IntercomTickets.Single(t => t.Fault == "Не работает трубка кв. 70");
-        Assert.Equal(app.Vm.Mechanics[0].FullName, app.Vm.SelectedIntercomTicket.Mechanic);
-        await app.Vm.CloseIntercomTicketCommand.ExecuteAsync(null);
-        Assert.True(app.Vm.IntercomTickets.Single(t => t.Fault == "Не работает трубка кв. 70").Done);
+        Assert.Equal(count + 1, app.Vm.IntercomScreen.IntercomTickets.Count);
+        app.Vm.IntercomScreen.SelectedIntercomTicket = app.Vm.IntercomScreen.IntercomTickets.Single(t => t.Fault == "Не работает трубка кв. 70");
+        Assert.Equal(app.Vm.Mechanics[0].FullName, app.Vm.IntercomScreen.SelectedIntercomTicket.Mechanic);
+        await app.Vm.IntercomScreen.CloseIntercomTicketCommand.ExecuteAsync(null);
+        Assert.True(app.Vm.IntercomScreen.IntercomTickets.Single(t => t.Fault == "Не работает трубка кв. 70").Done);
 
         string? opened = null;
         app.Vm.OpenFile = path => opened = path;
-        app.Vm.PrintIntercomCommand.Execute(null);
+        app.Vm.IntercomScreen.PrintIntercomCommand.Execute(null);
         Assert.True(new FileInfo(opened!).Length > 0);
     }
 }

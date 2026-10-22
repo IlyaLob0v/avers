@@ -3,12 +3,12 @@
              xmlns:vm="using:Avers.Desktop.ViewModels"
              xmlns:d="using:Avers.Domain"
              x:Class="Avers.Desktop.Views.DomofoView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:IntercomViewModel">
   <StackPanel Margin="16,0,16,12">
     <Border Classes="card" Padding="12,6" Margin="0,0,0,10">
       <StackPanel Orientation="Horizontal">
         <TextBlock Classes="label" Text="Улица" />
-        <ComboBox Classes="cell" Width="190" Margin="0,0,12,0" ItemsSource="{Binding Streets}" SelectedItem="{Binding SelectedStreet}">
+        <ComboBox Classes="cell" Width="190" Margin="0,0,12,0" ItemsSource="{Binding Shell.Streets}" SelectedItem="{Binding Shell.SelectedStreet}">
           <ComboBox.ItemTemplate>
             <DataTemplate x:DataType="d:Street">
               <TextBlock Text="{Binding Name}" />
@@ -16,7 +16,7 @@
           </ComboBox.ItemTemplate>
         </ComboBox>
         <TextBlock Classes="label" Text="Дом" />
-        <ComboBox Classes="cell" Width="90" Margin="0,0,12,0" ItemsSource="{Binding HousesOnStreet}" SelectedItem="{Binding SelectedHouse}">
+        <ComboBox Classes="cell" Width="90" Margin="0,0,12,0" ItemsSource="{Binding Shell.HousesOnStreet}" SelectedItem="{Binding Shell.SelectedHouse}">
           <ComboBox.ItemTemplate>
             <DataTemplate x:DataType="d:House">
               <TextBlock Text="{Binding Number}" />
@@ -31,7 +31,7 @@
         <StackPanel>
           <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
             <TextBlock Classes="label" Text="Подъезд" VerticalAlignment="Center" />
-            <ComboBox Grid.Column="1" Classes="cell" HorizontalAlignment="Stretch" ItemsSource="{Binding SelectedHouse.Intercoms}" SelectedItem="{Binding SelectedIntercomPanel}"
+            <ComboBox Grid.Column="1" Classes="cell" HorizontalAlignment="Stretch" ItemsSource="{Binding Shell.SelectedHouse.Intercoms}" SelectedItem="{Binding SelectedIntercomPanel}"
                       PlaceholderText="нет панелей">
               <ComboBox.ItemTemplate>
                 <DataTemplate x:DataType="d:IntercomPanel">
@@ -72,7 +72,7 @@
               <TextBox Classes="cell" Margin="0,0,8,6" PlaceholderText="Под." Text="{Binding IntercomEntrance}" />
               <TextBox Grid.Column="1" Classes="cell" Margin="0,0,0,6" PlaceholderText="Неисправность" Text="{Binding IntercomFault}" />
               <ComboBox Grid.Row="1" Grid.ColumnSpan="2" Classes="cell" HorizontalAlignment="Stretch" PlaceholderText="Радиомеханик"
-                        ItemsSource="{Binding Mechanics}" SelectedItem="{Binding IntercomMechanic}">
+                        ItemsSource="{Binding Shell.Mechanics}" SelectedItem="{Binding IntercomMechanic}">
                 <ComboBox.ItemTemplate>
                   <DataTemplate x:DataType="d:Mechanic">
                     <TextBlock Text="{Binding FullName}" />

@@ -46,7 +46,7 @@ public partial class PprView : UserControl
             case PprStatus.Done: button.Classes.Add("done"); break;
             case PprStatus.Overdue: button.Classes.Add("late"); break;
         }
-        if (DataContext is MainViewModel vm)
+        if (DataContext is PprViewModel vm)
         {
             button.Command = vm.MarkPprCommand;
             button.CommandParameter = cell;
