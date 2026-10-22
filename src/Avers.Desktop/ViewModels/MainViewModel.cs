@@ -38,11 +38,13 @@ public sealed partial class MainViewModel : ObservableObject
         ReportsScreen = new ReportsViewModel(this);
         ReceiptsScreen = new ReceiptsViewModel(this);
         LegalScreen = new LegalViewModel(this);
+        ContractsScreen = new ContractsViewModel(this);
     }
 
     internal IAversStore Store => _store;
     internal DateOnly Today => _today;
     internal IReadOnlyList<House> Houses => _houses;
+    internal IReadOnlyList<Subscriber> HouseSubscribers => _subscribers;
     internal IReadOnlyList<IntercomTicket> AllIntercomTickets => _intercomTickets;
     internal IReadOnlyList<WorkTicket> AllTickets => _tickets;
     internal IReadOnlyDictionary<int, decimal> DebtByHouse => _debtByHouse;
@@ -56,6 +58,7 @@ public sealed partial class MainViewModel : ObservableObject
     public ReportsViewModel ReportsScreen { get; }
     public ReceiptsViewModel ReceiptsScreen { get; }
     public LegalViewModel LegalScreen { get; }
+    public ContractsViewModel ContractsScreen { get; }
 
     public ObservableCollection<AppUser> Users { get; } = [];
     public ObservableCollection<Street> Streets { get; } = [];
@@ -83,7 +86,6 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _findApartment = DemoSeeder.StartApartment;
     [ObservableProperty] private string _findQuery = "";
     [ObservableProperty] private string _status = "Готово.";
-    [ObservableProperty] private bool _onlyActiveContracts = true;
     [ObservableProperty] private string _ticketFault = "";
     [ObservableProperty] private string _ticketWork = "";
     [ObservableProperty] private string _ticketMechanic = "";
@@ -325,7 +327,6 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     partial void OnSelectedTicketChanged(WorkTicket? value) => BindTicket();
-    partial void OnOnlyActiveContractsChanged(bool value) => RefreshDerived();
 
     private void RefreshHouses()
     {

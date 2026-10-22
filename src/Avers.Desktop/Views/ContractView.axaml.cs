@@ -10,7 +10,7 @@ public partial class ContractView : UserControl
         InitializeComponent();
         Registry.DoubleTapped += (_, _) =>
         {
-            if (DataContext is MainViewModel vm && vm.SelectedContractRow is { } row)
+            if (DataContext is ContractsViewModel vm && vm.SelectedContractRow is { } row)
                 vm.OpenCardCommand.Execute(row);
         };
     }

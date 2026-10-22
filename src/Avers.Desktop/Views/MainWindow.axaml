@@ -176,7 +176,9 @@
         <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.PrDubl}}">
           <views:PrDublView DataContext="{Binding ReceiptsScreen}" />
         </Panel>
-        <views:ContractView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Contract}}" />
+        <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Contract}}">
+          <views:ContractView DataContext="{Binding ContractsScreen}" />
+        </Panel>
         <views:PrintView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Print}}" />
         <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Ppr}}">
           <views:PprView DataContext="{Binding PprScreen}" />
