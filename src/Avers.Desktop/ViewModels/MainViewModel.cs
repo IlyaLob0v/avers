@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using Avers.Contracts;
 using Avers.Data;
 using Avers.Desktop.Controls;
@@ -164,6 +165,7 @@ public sealed partial class MainViewModel : ObservableObject
         var keepHouseId = SelectedHouse?.Id;
         _seesSubscribers = RoleCatalog.Can(user.Role, AppModule.Abon, out _);
         PaymentWarningMonths = data.PaymentWarningMonths;
+        PaymentConfirmFrom = data.PaymentConfirmFrom;
 
         Streets.Clear();
         foreach (var s in data.Streets)
@@ -315,6 +317,7 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnSelectedSubscriberChanged(Subscriber? value)
     {
         PrintWithPayDate = value?.PrintAccountWithPayDate ?? true;
+        PaymentAmount = "";
         RefreshDerived();
     }
 
@@ -501,9 +504,29 @@ public sealed partial class MainViewModel : ObservableObject
             Status = "Нет права вносить оплату.";
             return;
         }
+        decimal? amount = null;
+        if (!string.IsNullOrWhiteSpace(PaymentAmount))
+        {
+            if (!decimal.TryParse(PaymentAmount.Trim(), NumberStyles.Number, Ru, out var typed) || typed < 0)
+            {
+                Status = "Сумма оплаты — число, например 150 или 150,50.";
+                return;
+            }
+            amount = typed;
+        }
+        var sum = amount ?? SelectedSubscriber.Payments.Where(p => p.Year == _today.Year && p.Amount is null)
+            .OrderBy(p => p.Month).FirstOrDefault()?.Tariff ?? 0;
+        var pending = (SelectedSubscriber.Id, sum);
+        if (sum >= PaymentConfirmFrom && _paymentToConfirm != pending)
+        {
+            _paymentToConfirm = pending;
+            Status = $"Внести {Money(sum)}? Нажмите «Внести оплату» ещё раз.";
+            return;
+        }
+        _paymentToConfirm = null;
         await Save(async () =>
         {
-            var paid = await _store.RecordPaymentAsync(SelectedSubscriber.Id, _today.Year, User);
+            var paid = await _store.RecordPaymentAsync(SelectedSubscriber.Id, _today.Year, amount, User);
             await ReloadAsync();
             Status = $"Внесена оплата {paid.Amount:N2} ₽ за {Months[paid.Month - 1]} {paid.Year}.";
         });
