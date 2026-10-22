@@ -70,17 +70,18 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
         return Task.FromResult(AccountingReport.Load(ctx, year, month));
     }
 
-    public Task<PaymentDto> RecordPaymentAsync(int subscriberId, int year, AppUser user)
+    public Task<PaymentDto> RecordPaymentAsync(int subscriberId, int year, decimal? amount, AppUser user)
     {
         using var ctx = db.CreateDbContext();
         var next = ctx.Payments.Where(p => p.SubscriberId == subscriberId && p.Year == year && p.Amount == null)
                        .OrderBy(p => p.Month).FirstOrDefault()
                    ?? throw new StoreException($"Все месяцы {year} уже оплачены.");
+        var paid = amount ?? next.Tariff;
         var changes = ChangeLog.Diff(
-            ("Сумма", next.Amount, next.Tariff),
+            ("Сумма", next.Amount, paid),
             ("Дата оплаты", next.PaidAt, Today),
             ("Источник", next.Source, "Касса"));
-        next.Amount = next.Tariff;
+        next.Amount = paid;
         next.Source = "Касса";
         next.PaidAt = Today;
         next.RecordedBy = user.DisplayName;
@@ -124,6 +125,13 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
     {
         using var ctx = db.CreateDbContext();
         Settings.SetPaymentWarningMonths(ctx, months, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
+        return Task.CompletedTask;
+    }
+
+    public Task SetPaymentConfirmFromAsync(decimal amount)
+    {
+        using var ctx = db.CreateDbContext();
+        Settings.SetPaymentConfirmFrom(ctx, amount, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
         return Task.CompletedTask;
     }
 

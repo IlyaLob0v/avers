@@ -31,6 +31,12 @@ public sealed partial class MainViewModel
     [ObservableProperty] private YearOption? _cardTicketYear;
     [ObservableProperty] private int _paymentWarningMonths = PaymentAge.DefaultWarningMonths;
     [ObservableProperty] private decimal? _editWarningMonths = PaymentAge.DefaultWarningMonths;
+    [ObservableProperty] private decimal _paymentConfirmFrom = AppSetting.DefaultPaymentConfirmFrom;
+    [ObservableProperty] private decimal? _editPaymentConfirmFrom = AppSetting.DefaultPaymentConfirmFrom;
+    [ObservableProperty] private string _paymentAmount = "";
+
+    /// <summary>Оплата, которую ждут подтвердить повторным нажатием: квартира и сумма.</summary>
+    private (int SubscriberId, decimal Amount)? _paymentToConfirm;
     [ObservableProperty] private string _editContractNumber = "";
     [ObservableProperty] private string _editContractDate = "";
     [ObservableProperty] private string _editContractTerminated = "";
@@ -99,6 +105,14 @@ public sealed partial class MainViewModel
 
     partial void OnCardPaymentYearChanged(int? value) => RebuildCardPayments();
     partial void OnCardTicketYearChanged(YearOption? value) => RebuildApartmentTickets();
+    public string PaymentConfirmHint => $"Пусто — по тарифу. От {Money(PaymentConfirmFrom)} оплату надо подтвердить.";
+
+    partial void OnPaymentConfirmFromChanged(decimal value)
+    {
+        EditPaymentConfirmFrom = value;
+        OnPropertyChanged(nameof(PaymentConfirmHint));
+    }
+
     partial void OnPaymentWarningMonthsChanged(int value)
     {
         EditWarningMonths = value;
@@ -272,6 +286,27 @@ public sealed partial class MainViewModel
             await _store.SetPaymentWarningMonthsAsync(months);
             PaymentWarningMonths = months;
             Status = $"Жёлтая подсветка: без оплаты {PaymentAge.MonthsText(months)} и больше.";
+        });
+    }
+
+    [RelayCommand]
+    private async Task SavePaymentConfirm()
+    {
+        if (!CanEditSettings)
+        {
+            Status = "Порог подтверждения меняют администратор и начальник АДС.";
+            return;
+        }
+        if (EditPaymentConfirmFrom is not { } amount || amount <= 0)
+        {
+            Status = "Порог подтверждения — больше 0 ₽.";
+            return;
+        }
+        await Save(async () =>
+        {
+            await _store.SetPaymentConfirmFromAsync(amount);
+            PaymentConfirmFrom = amount;
+            Status = $"Оплату от {Money(amount)} надо подтверждать.";
         });
     }
 

@@ -108,6 +108,21 @@ public static class ApartmentEndpoints
         return TypedResults.Ok(new PaymentWarningSettings(request.Months));
     }
 
+    public static Ok<PaymentConfirmSettings> GetPaymentConfirm(AversDbContext db) =>
+        TypedResults.Ok(new PaymentConfirmSettings(Settings.PaymentConfirmFrom(db)));
+
+    public static Results<Ok<PaymentConfirmSettings>, ValidationProblem> SetPaymentConfirm(
+        PaymentConfirmSettings request, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
+    {
+        if (request.From <= 0)
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["from"] = ["Порог подтверждения — больше 0 ₽."]
+            });
+        Settings.SetPaymentConfirmFrom(db, request.From, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
+        return TypedResults.Ok(request);
+    }
+
     public static Results<Ok<TariffChangeResult>, ValidationProblem> ChangeTariff(
         TariffChangeRequest r, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
     {
