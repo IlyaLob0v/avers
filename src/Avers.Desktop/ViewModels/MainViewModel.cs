@@ -34,12 +34,14 @@ public sealed partial class MainViewModel : ObservableObject
         _oekMonth = _today.AddMonths(-1).ToString("MM.yyyy");
         AccessScreen = new AccessViewModel(this);
         ChangeLogScreen = new ChangeLogViewModel(this);
+        PhonebookScreen = new PhonebookViewModel(this);
     }
 
     internal IAversStore Store => _store;
 
     public AccessViewModel AccessScreen { get; }
     public ChangeLogViewModel ChangeLogScreen { get; }
+    public PhonebookViewModel PhonebookScreen { get; }
 
     public ObservableCollection<AppUser> Users { get; } = [];
     public ObservableCollection<Street> Streets { get; } = [];
@@ -160,7 +162,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>Перечитать данные после записи: своя запись и чужие изменения в общей базе.</summary>
-    private async Task ReloadAsync() => await Apply(await _store.LoadAsync(User!), User!);
+    internal async Task ReloadAsync() => await Apply(await _store.LoadAsync(User!), User!);
 
     private async Task Apply(AversSnapshot data, AppUser user)
     {
@@ -183,8 +185,8 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var m in data.Mechanics) Mechanics.Add(m);
         Materials.Clear();
         foreach (var m in data.Materials) Materials.Add(m);
-        Organizations.Clear();
-        foreach (var o in data.Organizations) Organizations.Add(o);
+        PhonebookScreen.Organizations.Clear();
+        foreach (var o in data.Organizations) PhonebookScreen.Organizations.Add(o);
 
         RefreshTotals();
 
@@ -277,7 +279,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanEditSchemes));
         OnPropertyChanged(nameof(CanEditIntercoms));
         OnPropertyChanged(nameof(CanAcceptIntercomTickets));
-        OnPropertyChanged(nameof(CanEditPhonebook));
+        PhonebookScreen.RefreshRights();
         NotifyTicketPanel();
         BindTicket();
         RebuildNavigation();
@@ -305,14 +307,14 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnSelectedStreetChanged(Street? value)
     {
-        StreetName = value?.Name ?? "";
+        PhonebookScreen.StreetName = value?.Name ?? "";
         RefreshHouses();
         SelectedHouse = HousesOnStreet.FirstOrDefault();
     }
 
     partial void OnSelectedHouseChanged(House? value)
     {
-        EditHouse = value;
+        PhonebookScreen.EditHouse = value;
         if (!_holdRefresh)
             _ = ShowHouseAsync(null);
     }

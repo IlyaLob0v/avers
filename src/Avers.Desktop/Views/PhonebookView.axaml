@@ -3,13 +3,13 @@
              xmlns:vm="using:Avers.Desktop.ViewModels"
              xmlns:d="using:Avers.Domain"
              x:Class="Avers.Desktop.Views.PhonebookView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:PhonebookViewModel">
   <ScrollViewer>
     <StackPanel Margin="16,0,16,2">
       <Grid ColumnDefinitions="250,*,320" Margin="0,0,0,10">
         <HeaderedContentControl Classes="group" Margin="0,0,10,0" Header="Улицы">
           <StackPanel>
-            <ListBox Classes="streets" Height="200" BorderThickness="0" ItemsSource="{Binding Streets}" SelectedItem="{Binding SelectedStreet}">
+            <ListBox Classes="streets" Height="200" BorderThickness="0" ItemsSource="{Binding Shell.Streets}" SelectedItem="{Binding Shell.SelectedStreet}">
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="d:Street">
                   <TextBlock Text="{Binding Name}" />
@@ -27,7 +27,7 @@
           </StackPanel>
         </HeaderedContentControl>
         <HeaderedContentControl Grid.Column="1" Classes="group" Margin="0,0,10,0" Header="Дома улицы">
-          <DataGrid Height="276" ItemsSource="{Binding HousesOnStreet}" SelectedItem="{Binding SelectedHouse}" AutoGenerateColumns="False" IsReadOnly="True">
+          <DataGrid Height="276" ItemsSource="{Binding Shell.HousesOnStreet}" SelectedItem="{Binding Shell.SelectedHouse}" AutoGenerateColumns="False" IsReadOnly="True">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Дом" Binding="{Binding Number}" Width="70" />
               <DataGridTextColumn Header="Индекс" Binding="{Binding PzhreuIndex}" Width="80" />
@@ -81,7 +81,7 @@
       <Grid ColumnDefinitions="*,*">
         <HeaderedContentControl Classes="group" Margin="0,0,5,10" Header="Материалы">
           <StackPanel>
-            <DataGrid Height="180" ItemsSource="{Binding Materials}" SelectedItem="{Binding SelectedMaterial}" AutoGenerateColumns="False" IsReadOnly="True">
+            <DataGrid Height="180" ItemsSource="{Binding Shell.Materials}" SelectedItem="{Binding SelectedMaterial}" AutoGenerateColumns="False" IsReadOnly="True">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Наименование" Binding="{Binding Name}" Width="*" />
                 <DataGridTextColumn Header="Ед." Binding="{Binding Unit}" Width="60" />
@@ -100,7 +100,7 @@
         </HeaderedContentControl>
         <HeaderedContentControl Grid.Column="1" Classes="group" Margin="5,0,0,10" Header="Радиомеханики">
           <StackPanel>
-            <DataGrid Height="180" ItemsSource="{Binding Mechanics}" SelectedItem="{Binding SelectedMechanic}" AutoGenerateColumns="False" IsReadOnly="True">
+            <DataGrid Height="180" ItemsSource="{Binding Shell.Mechanics}" SelectedItem="{Binding SelectedMechanic}" AutoGenerateColumns="False" IsReadOnly="True">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="ФИО" Binding="{Binding FullName}" Width="*" />
                 <DataGridTextColumn Header="Должность" Binding="{Binding Position}" Width="140" />
