@@ -40,6 +40,9 @@ public sealed record NewApartmentRequest(
 /// <summary>Через сколько месяцев без оплаты карточка подсвечивается жёлтым.</summary>
 public sealed record PaymentWarningSettings(int Months);
 
+/// <summary>С какой суммы оплату надо подтвердить.</summary>
+public sealed record PaymentConfirmSettings(decimal From);
+
 /// <summary>Новый тариф с месяца: без дома и абонента — всем, иначе дому или одной квартире.</summary>
 public sealed record TariffChangeRequest(int Year, int Month, decimal Tariff, int? HouseId, int? SubscriberId);
 

@@ -44,6 +44,21 @@ public class CardDataTests
     }
 
     [Fact]
+    public void PaymentConfirmFrom_Defaults_AndIsStored()
+    {
+        using var database = new SqliteDatabase();
+        using (var db = database.CreateContext())
+        {
+            Assert.Equal(AppSetting.DefaultPaymentConfirmFrom, Settings.PaymentConfirmFrom(db));
+            Settings.SetPaymentConfirmFrom(db, 2500.50m, "Админ", DateTimeOffset.UnixEpoch);
+            Assert.Throws<ArgumentOutOfRangeException>(() => Settings.SetPaymentConfirmFrom(db, 0, "Админ", DateTimeOffset.UnixEpoch));
+        }
+
+        using var check = database.CreateContext();
+        Assert.Equal(2500.50m, Settings.PaymentConfirmFrom(check));
+    }
+
+    [Fact]
     public void ContractAndPaymentAuthor_RoundTrip()
     {
         using var database = new SqliteDatabase();
