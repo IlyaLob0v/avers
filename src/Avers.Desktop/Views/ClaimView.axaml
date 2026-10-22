@@ -61,9 +61,9 @@
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="data:DocumentInfo">
               <TextBlock>
-                <Run FontWeight="SemiBold" Text="{Binding Kind}" />
-                <Run Text="{Binding Name, StringFormat='· {0}'}" />
-                <Run Classes="hint" Text="{Binding AddedBy, StringFormat='· {0}'}" />
+                <Run FontWeight="SemiBold" Text="{Binding Kind, Mode=OneWay}" />
+                <Run Text="{Binding Name, StringFormat='· {0}', Mode=OneWay}" />
+                <Run Classes="hint" Text="{Binding AddedBy, StringFormat='· {0}', Mode=OneWay}" />
               </TextBlock>
             </DataTemplate>
           </ListBox.ItemTemplate>
