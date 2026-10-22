@@ -154,40 +154,22 @@ public static class TicketEndpoints
 
         var account = await db.Users.AsNoTracking().FirstAsync(u => u.Id == user.AppUserId(), ct);
         var now = time.GetLocalNow().DateTime;
-        var ticket = new WorkTicket
+        var ticket = Avers.Data.Tickets.Accept(db, new WorkTicket
         {
             Date = DateOnly.FromDateTime(now),
             Time = new TimeOnly(now.Hour, now.Minute),
             HouseId = request.HouseId,
             SubscriberId = subscriber?.Id,
-            Section = Clean(request.Section) ?? subscriber?.Section ?? "",
-            Apartment = Clean(request.Apartment) ?? subscriber?.Apartment ?? "",
-            Phone = Clean(request.Phone) ?? subscriber?.Phone ?? "",
+            Section = request.Section ?? "",
+            Apartment = request.Apartment ?? "",
+            Phone = request.Phone ?? "",
             Kind = kind ?? TicketKind.Antenna,
-            Fault = request.Fault.Trim(),
-            Mechanic = Clean(request.Mechanic) ?? "",
-            RisersNote = Clean(request.RisersNote) ?? "",
-            Status = TicketStatus.Accepted,
+            Fault = request.Fault,
+            Mechanic = request.Mechanic ?? "",
+            RisersNote = request.RisersNote ?? "",
             AcceptedBy = account.DisplayName,
             AcceptedByUserId = account.Id
-        };
-
-        // Номер — следующий по порядку; при одновременном приёме уникальный индекс не даст двух одинаковых.
-        for (var attempt = 0; ; attempt++)
-        {
-            ticket.Number = (await db.Tickets.MaxAsync(t => (int?)t.Number, ct) ?? 0) + 1;
-            db.Tickets.Add(ticket);
-            try
-            {
-                await db.SaveChangesAsync(ct);
-                break;
-            }
-            catch (DbUpdateException) when (attempt < 3)
-            {
-                db.Entry(ticket).State = EntityState.Detached;
-                ticket.Id = 0;
-            }
-        }
+        });
 
         var saved = await Query(db).FirstAsync(t => t.Id == ticket.Id, ct);
         return TypedResults.Created($"/api/tickets/{saved.Id}", ToDto(saved, user));
@@ -277,8 +259,6 @@ public static class TicketEndpoints
         if (work is { Length: > 500 }) errors["workDone"] = ["«Что произведено» — не длиннее 500 символов."];
         if (mechanic is { Length: > 120 }) errors["mechanic"] = ["Радиомеханик — не длиннее 120 символов."];
     }
-
-    private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static ValidationProblem Invalid(string field, string message) =>
         TypedResults.ValidationProblem(new Dictionary<string, string[]> { [field] = [message] });

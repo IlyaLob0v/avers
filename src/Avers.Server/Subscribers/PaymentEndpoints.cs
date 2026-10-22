@@ -11,16 +11,10 @@ namespace Avers.Server.Subscribers;
 
 public static class PaymentEndpoints
 {
-    public const string DefaultSource = "Касса";
-
     public static PaymentDto ToDto(YearPayment p) =>
         new(p.Id, p.Year, p.Month, p.Tariff, p.Amount, p.PaidAt, p.Source, p.Amount is not null, p.RecordedBy, p.PayerName);
 
-    /// <summary>
-    /// Вносит оплату за месяц, как кнопка «Внести оплату» в оболочке. Оплаченным месяц считается,
-    /// когда сумма заполнена, в том числе 0 ₽ — так в текущем коде (вопрос к бухгалтерии открыт,
-    /// docs/07-open-questions.md).
-    /// </summary>
+    /// <summary>Вносит оплату за месяц (<see cref="Payments.Record"/>).</summary>
     public static async Task<Results<Ok<PaymentDto>, NotFound, ValidationProblem, ProblemHttpResult>> Record(
         int id, RecordPaymentRequest request, ClaimsPrincipal user, AversDbContext db, TimeProvider time, CancellationToken ct)
     {
@@ -44,56 +38,13 @@ public static class PaymentEndpoints
         if (subscriber is null)
             return TypedResults.NotFound();
 
-        var months = db.Payments.Where(p => p.SubscriberId == id && p.Year == request.Year);
-        var target = request.Month is { } month
-            ? await months.FirstOrDefaultAsync(p => p.Month == month, ct)
-            : await months.Where(p => p.Amount == null).OrderBy(p => p.Month).FirstOrDefaultAsync(ct);
-
-        if (target is null)
-            return request.Month is null
-                ? Conflict($"Все месяцы {request.Year} уже оплачены.")
-                : Conflict($"За {request.Month:00}.{request.Year} у абонента нет начисления.");
-        if (target.Amount is not null)
-            return Conflict($"Месяц {target.Month:00}.{target.Year} уже оплачен.");
-
-        var amount = request.Amount ?? target.Tariff;
-        var paidAt = request.PaidAt ?? time.Today();
-        var source = string.IsNullOrWhiteSpace(request.Source) ? DefaultSource : request.Source.Trim();
-        var payer = string.IsNullOrWhiteSpace(request.PayerName) ? null : request.PayerName.Trim();
         var login = user.Identity?.Name;
         var recordedBy = await db.Users.AsNoTracking().Where(u => u.Login == login)
-            .Select(u => u.DisplayName).FirstOrDefaultAsync(ct) ?? login;
-
-        // Условие Amount == null в самом UPDATE: если два кассира внесут один месяц одновременно,
-        // пройдёт только первый.
-        await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        var updated = await db.Payments
-            .Where(p => p.Id == target.Id && p.Amount == null)
-            .ExecuteUpdateAsync(u => u
-                .SetProperty(p => p.Amount, amount)
-                .SetProperty(p => p.PaidAt, paidAt)
-                .SetProperty(p => p.Source, source)
-                .SetProperty(p => p.RecordedBy, recordedBy)
-                .SetProperty(p => p.PayerName, payer), ct);
-        if (updated == 0)
-            return Conflict($"Месяц {target.Month:00}.{target.Year} уже оплачен.");
-
-        if (subscriber.LastPaymentDate is null || subscriber.LastPaymentDate < paidAt)
-            subscriber.LastPaymentDate = paidAt;
-        ChangeLog.Add(db, time.GetUtcNow(), ChangeLog.Who(db, user.AppUserId()), $"Оплата за {target.Month:00}.{target.Year}",
-            ChangeLog.Account(subscriber), ChangeLog.Diff(
-                ("Сумма", target.Amount, amount),
-                ("Дата оплаты", target.PaidAt, paidAt),
-                ("Источник", target.Source, source),
-                ("Плательщик", target.PayerName, payer)));
-        await db.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
-
-        target.Amount = amount;
-        target.PaidAt = paidAt;
-        target.Source = source;
-        target.RecordedBy = recordedBy;
-        target.PayerName = payer;
+            .Select(u => u.DisplayName).FirstOrDefaultAsync(ct) ?? login ?? "";
+        var (target, error) = Payments.Record(db, subscriber, request.Year, request.Month, request.Amount,
+            request.PaidAt ?? time.Today(), request.Source, request.PayerName, recordedBy, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
+        if (target is null)
+            return Conflict(error!);
         return TypedResults.Ok(ToDto(target));
     }
 

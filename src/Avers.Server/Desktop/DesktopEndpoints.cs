@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Avers.Contracts;
 using Avers.Data;
+using Avers.Domain;
 using Avers.Server.Auth;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -29,26 +30,17 @@ public static class DesktopEndpoints
         if (fields.Any(f => f is { Length: > 1000 }))
             return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["passport"] = ["Поле паспорта — не длиннее 1000 символов."] });
 
-        var house = await db.Houses.Include(h => h.Street).FirstOrDefaultAsync(h => h.Id == id, ct);
-        if (house is null)
+        var draft = new House
+        {
+            Antennas = request.Antennas ?? "",
+            AerialCables = request.AerialCables ?? "",
+            Amplifiers = request.Amplifiers ?? "",
+            PowerSupplies = request.PowerSupplies ?? "",
+            TechFloorKey = request.TechFloorKey ?? "",
+            OtherNotes = request.OtherNotes ?? ""
+        };
+        if (!HousePassport.Save(db, id, draft, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow()))
             return TypedResults.NotFound();
-
-        var changes = ChangeLog.Diff(
-            ("Антенны, подъезды", house.Antennas, request.Antennas),
-            ("Воздушные линии", house.AerialCables, request.AerialCables),
-            ("Усилители", house.Amplifiers, request.Amplifiers),
-            ("Блоки питания", house.PowerSupplies, request.PowerSupplies),
-            ("Ключ техэтажа", house.TechFloorKey, request.TechFloorKey),
-            ("Прочее", house.OtherNotes, request.OtherNotes));
-
-        house.Antennas = request.Antennas?.Trim() ?? "";
-        house.AerialCables = request.AerialCables?.Trim() ?? "";
-        house.Amplifiers = request.Amplifiers?.Trim() ?? "";
-        house.PowerSupplies = request.PowerSupplies?.Trim() ?? "";
-        house.TechFloorKey = request.TechFloorKey?.Trim() ?? "";
-        house.OtherNotes = request.OtherNotes?.Trim() ?? "";
-        ChangeLog.Add(db, time.GetUtcNow(), ChangeLog.Who(db, user.AppUserId()), "Паспорт дома", house.AddressLine, changes);
-        await db.SaveChangesAsync(ct);
         return TypedResults.NoContent();
     }
 }
