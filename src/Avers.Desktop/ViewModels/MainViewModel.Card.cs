@@ -42,6 +42,9 @@ public sealed partial class MainViewModel
     [ObservableProperty] private string _editContractTerminated = "";
     [ObservableProperty] private string _editContractHolder = "";
     [ObservableProperty] private string _editNotes = "";
+    [ObservableProperty] private string _editBenefit = Subscriber.NoBenefit;
+
+    public IReadOnlyList<string> Benefits => Subscriber.Benefits;
 
     public string CardSurname => SelectedSubscriber?.LastName ?? "";
     public string CardNameRest => SelectedSubscriber is null ? "" : $"{SelectedSubscriber.FirstName} {SelectedSubscriber.Patronymic}".Trim();
@@ -180,6 +183,7 @@ public sealed partial class MainViewModel
         EditContractTerminated = s?.ContractTerminated?.ToString("dd.MM.yyyy") ?? "";
         EditContractHolder = s?.ContractHolder ?? "";
         EditNotes = s?.Notes ?? "";
+        EditBenefit = s?.Benefit ?? Subscriber.NoBenefit;
     }
 
     private void RebuildCardPayments()
@@ -238,7 +242,7 @@ public sealed partial class MainViewModel
         await Save(async () =>
         {
             await _store.SaveContractAsync(s.Id, new UpdateContractRequest(
-                EditContractNumber.Trim(), signed, ended, EditContractHolder.Trim(), EditNotes.Trim()));
+                EditContractNumber.Trim(), signed, ended, EditContractHolder.Trim(), EditNotes.Trim(), EditBenefit));
             _cardBoundId = null;
             await ReloadAsync();
             Status = $"Карточка {s.LastName}, кв. {s.Apartment}, сохранена.";

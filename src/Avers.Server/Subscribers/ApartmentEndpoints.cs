@@ -26,6 +26,8 @@ public static class ApartmentEndpoints
             errors["notes"] = [$"Примечание — не длиннее {MaxNotesLength} символов."];
         if (request is { ContractDate: { } signed, ContractTerminated: { } ended } && ended < signed)
             errors["contractTerminated"] = ["Договор не может быть расторгнут раньше, чем заключён."];
+        if (request.Benefit is { } benefit && !Subscriber.Benefits.Contains(benefit))
+            errors["benefit"] = [$"Льгота — одна из: {string.Join(", ", Subscriber.Benefits)}."];
         if (errors.Count > 0)
             return TypedResults.ValidationProblem(errors);
 
@@ -39,7 +41,8 @@ public static class ApartmentEndpoints
             ContractDate = request.ContractDate,
             ContractTerminated = request.ContractTerminated,
             ContractHolder = request.ContractHolder ?? "",
-            Notes = request.Notes ?? ""
+            Notes = request.Notes ?? "",
+            Benefit = request.Benefit ?? Subscriber.NoBenefit
         };
         SubscriberContracts.Save(db, s, draft, time.Today(), ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
         return TypedResults.NoContent();

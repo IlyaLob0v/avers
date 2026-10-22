@@ -25,7 +25,12 @@ public sealed class Subscriber
     public int SettlementFrom { get; set; }
     public DateOnly? LastPaymentDate { get; set; }
     public bool PrintAccountWithPayDate { get; set; } = true;
-    public string Benefit { get; set; } = "не применяется";
+    public const string NoBenefit = "не применяется";
+
+    /// <summary>Льготы, которые ведёт АДС (22.10.2026); остальные оформляет МФЦ. Пока только пометка, на начисления не влияет.</summary>
+    public static IReadOnlyList<string> Benefits { get; } = [NoBenefit, "юридическое лицо", "коллективная оплата", "коллективный усилитель в квартире"];
+
+    public string Benefit { get; set; } = NoBenefit;
 
     public ICollection<YearPayment> Payments { get; set; } = new List<YearPayment>();
     public ICollection<WorkTicket> Tickets { get; set; } = new List<WorkTicket>();

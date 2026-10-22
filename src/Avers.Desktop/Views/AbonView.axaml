@@ -55,7 +55,7 @@
                   <TextBlock Text="{Binding CardContractShort}" TextTrimming="CharacterEllipsis" />
                 </Button>
                 <TextBlock Grid.Row="9" Classes="label" Text="Льгота" />
-                <TextBox Grid.Row="9" Grid.Column="1" Text="{Binding SelectedSubscriber.Benefit}" />
+                <TextBox Grid.Row="9" Grid.Column="1" Text="{Binding SelectedSubscriber.Benefit, Mode=OneWay}" IsReadOnly="True" />
                 <TextBlock Grid.Row="10" Classes="label" Text="Расчёт с" />
                 <TextBox Grid.Row="10" Grid.Column="1" Text="{Binding SelectedSubscriber.SettlementFrom}" IsReadOnly="True" />
               </Grid>

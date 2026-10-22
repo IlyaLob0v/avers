@@ -1,14 +1,16 @@
 namespace Avers.Contracts;
 
 /// <summary>
-/// Правка договора и примечания в карточке. Пустой <c>ContractHolder</c> — договор с самим абонентом. Запрос заменяет все поля целиком.
+/// Правка договора, примечания и льготы в карточке. Пустой <c>ContractHolder</c> — договор с самим абонентом,
+/// пустая льгота — «не применяется». Запрос заменяет все поля целиком.
 /// </summary>
 public sealed record UpdateContractRequest(
     string? ContractNumber,
     DateOnly? ContractDate,
     DateOnly? ContractTerminated,
     string? ContractHolder,
-    string? Notes);
+    string? Notes,
+    string? Benefit = null);
 
 /// <summary>Судебное дело должника. Запрос заменяет все поля целиком.</summary>
 public sealed record CourtCaseRequest(

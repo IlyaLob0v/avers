@@ -3,7 +3,7 @@ using Avers.Domain;
 namespace Avers.Data;
 
 /// <summary>
-/// Договор и примечание абонента. Расторжение — это отключение: неоплаченные месяцы после месяца расторжения
+/// Договор, примечание и льгота абонента. Расторжение — это отключение: неоплаченные месяцы после месяца расторжения
 /// снимаются (месяц расторжения начисляется полностью, Q-18). Снятое расторжение возвращает месяцы — с месяца после
 /// прежнего расторжения или с месяца нового договора, если он позже, по декабрь текущего года по последнему тарифу.
 /// </summary>
@@ -16,13 +16,15 @@ public static class SubscriberContracts
             ("Заключён", s.ContractDate, draft.ContractDate),
             ("Расторгнут", s.ContractTerminated, draft.ContractTerminated),
             ("С кем заключён", s.ContractHolder, draft.ContractHolder),
-            ("Примечание", s.Notes, draft.Notes));
+            ("Примечание", s.Notes, draft.Notes),
+            ("Льгота", s.Benefit, draft.Benefit));
         var before = s.ContractTerminated;
         s.ContractNumber = draft.ContractNumber.Trim();
         s.ContractDate = draft.ContractDate;
         s.ContractTerminated = draft.ContractTerminated;
         s.ContractHolder = draft.ContractHolder.Trim();
         s.Notes = draft.Notes.Trim();
+        s.Benefit = draft.Benefit;
 
         var months = db.Payments.Where(p => p.SubscriberId == s.Id).ToList();
         var stop = s.ContractTerminated is { } end ? Index(end) : int.MaxValue;

@@ -45,7 +45,7 @@
 | `ContractDate`, `ContractTerminated` | `CONTRACT.BEGINDATE`, `ENDDATE` | последний договор по `BEGINDATE` |
 | `ContractNumber` | `CONTRACT.CONTRACTID` | допущение: отдельного номера в JACK нет |
 | `ContractHolder` | — | в JACK нет; возможно, в `CONTRACT.NOTE` — на данных |
-| `Benefit` | `PRIVROLL` → `SOCIAL.SOCIALPOSITIONNAME` | действующая на дату переноса (`ENDDATE is null`); иначе «не применяется» |
+| `Benefit` | `PRIVROLL` → `SOCIAL.SOCIALPOSITIONNAME` | действующая на дату переноса (`ENDDATE is null`), только если это одна из трёх льгот АДС (`Subscriber.Benefits`: юрлицо, коллективная оплата, коллективный усилитель в квартире; названия сверить на данных). Прочие льготы оформляет МФЦ — «не применяется» |
 | `LastPaymentDate` | `ABN_PAY.PAYDATE` | max по абоненту |
 
 Пустые абоненты, которых JACK заводит для заявок на дом (`CreateEmptyClient`), не переносятся. Признак — на данных
