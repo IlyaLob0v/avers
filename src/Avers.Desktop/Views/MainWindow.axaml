@@ -183,7 +183,9 @@
         <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Phonebook}}">
           <views:PhonebookView DataContext="{Binding PhonebookScreen}" />
         </Panel>
-        <views:DomofoView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Domofo}}" />
+        <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Domofo}}">
+          <views:DomofoView DataContext="{Binding IntercomScreen}" />
+        </Panel>
         <views:ReaderView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Reader}}" />
         <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Access}}">
           <views:AccessView DataContext="{Binding AccessScreen}" />

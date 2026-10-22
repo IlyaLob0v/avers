@@ -36,16 +36,19 @@ public sealed partial class MainViewModel : ObservableObject
         ChangeLogScreen = new ChangeLogViewModel(this);
         PhonebookScreen = new PhonebookViewModel(this);
         PprScreen = new PprViewModel(this);
+        IntercomScreen = new IntercomViewModel(this);
     }
 
     internal IAversStore Store => _store;
     internal DateOnly Today => _today;
     internal IReadOnlyList<House> Houses => _houses;
+    internal IReadOnlyList<IntercomTicket> AllIntercomTickets => _intercomTickets;
 
     public AccessViewModel AccessScreen { get; }
     public ChangeLogViewModel ChangeLogScreen { get; }
     public PhonebookViewModel PhonebookScreen { get; }
     public PprViewModel PprScreen { get; }
+    public IntercomViewModel IntercomScreen { get; }
 
     public ObservableCollection<AppUser> Users { get; } = [];
     public ObservableCollection<Street> Streets { get; } = [];
@@ -58,7 +61,6 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<DebtorRow> Debtors { get; } = [];
     public ObservableCollection<ReportMetric> ReportMetrics { get; } = [];
     public ObservableCollection<HouseScheme> Schemes { get; } = [];
-    public ObservableCollection<IntercomTicket> IntercomTickets { get; } = [];
     public ObservableCollection<PaymentGridRow> PaymentRows { get; } = [];
 
     [ObservableProperty] private AppUser? _loginUser;
@@ -86,7 +88,6 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _claimText = "";
     [ObservableProperty] private DateOnly _reportFrom;
     [ObservableProperty] private DateOnly _reportTo;
-    [ObservableProperty] private IntercomPanel? _intercom;
 
     public string LoginRoleTitle => LoginUser is null ? "" : RoleCatalog.Title(LoginUser.Role);
     public bool ShowLogin => User is null;
@@ -280,8 +281,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanEditSettings));
         PprScreen.RefreshRights();
         OnPropertyChanged(nameof(CanEditSchemes));
-        OnPropertyChanged(nameof(CanEditIntercoms));
-        OnPropertyChanged(nameof(CanAcceptIntercomTickets));
+        IntercomScreen.RefreshRights();
         PhonebookScreen.RefreshRights();
         NotifyTicketPanel();
         BindTicket();
@@ -362,20 +362,16 @@ public sealed partial class MainViewModel : ObservableObject
         RebuildPayments();
         RebuildReceiptPeriods();
 
-        if (_intercomHouseId != SelectedHouse?.Id)
+        var houseChanged = _intercomHouseId != SelectedHouse?.Id;
+        if (houseChanged)
         {
             _intercomHouseId = SelectedHouse?.Id;
             Schemes.Clear();
-            IntercomTickets.Clear();
             if (SelectedHouse is not null)
-            {
                 foreach (var s in SelectedHouse.Schemes) Schemes.Add(s);
-                foreach (var t in _intercomTickets.Where(x => x.HouseId == SelectedHouse.Id))
-                    IntercomTickets.Add(t);
-            }
             SelectedScheme = Schemes.FirstOrDefault();
         }
-        Intercom = SelectedHouse?.Intercoms.FirstOrDefault(i => i.Entrance == Intercom?.Entrance) ?? SelectedHouse?.Intercoms.FirstOrDefault();
+        IntercomScreen.Refresh(houseChanged);
 
         OnPropertyChanged(nameof(FaultBanner));
         OnPropertyChanged(nameof(HasFault));
@@ -392,7 +388,6 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(WindowTitle));
         OnPropertyChanged(nameof(ContractDateText));
         OnPropertyChanged(nameof(LastPprText));
-        OnPropertyChanged(nameof(Intercom));
         OnPropertyChanged(nameof(HouseAptLine));
         NotifyTicketPanel();
         RefreshCard();
