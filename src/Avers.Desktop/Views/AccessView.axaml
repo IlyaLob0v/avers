@@ -3,7 +3,7 @@
              xmlns:vm="using:Avers.Desktop.ViewModels"
              xmlns:ctl="using:Avers.Desktop.Controls"
              x:Class="Avers.Desktop.Views.AccessView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:AccessViewModel">
   <StackPanel Margin="16,0,16,12">
     <Grid ColumnDefinitions="*,320">
       <HeaderedContentControl Classes="group" Margin="0,0,10,0" Header="Сотрудники">

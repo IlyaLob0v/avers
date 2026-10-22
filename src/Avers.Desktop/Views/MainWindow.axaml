@@ -181,8 +181,12 @@
         <views:PhonebookView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Phonebook}}" />
         <views:DomofoView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Domofo}}" />
         <views:ReaderView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Reader}}" />
-        <views:AccessView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Access}}" />
-        <views:ChangeLogView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.ChangeLog}}" />
+        <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Access}}">
+          <views:AccessView DataContext="{Binding AccessScreen}" />
+        </Panel>
+        <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.ChangeLog}}">
+          <views:ChangeLogView DataContext="{Binding ChangeLogScreen}" />
+        </Panel>
       </Panel>
     </DockPanel>
   </Grid>

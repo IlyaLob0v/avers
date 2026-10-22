@@ -5,7 +5,7 @@ using Avers.Domain;
 namespace Avers.Desktop.ViewModels;
 
 /// <summary>Журнал изменений: только просмотр, только администратор.</summary>
-public sealed partial class MainViewModel
+public sealed class ChangeLogViewModel(MainViewModel shell)
 {
     public ObservableCollection<ChangeLogRow> ChangeLogRows { get; } = [];
 
@@ -13,11 +13,11 @@ public sealed partial class MainViewModel
         $"Последние {ChangeLog.Shown} записей, новые сверху. Записи журнала нельзя изменить или удалить.";
 
     /// <summary>Журнал перечитываем при каждом входе в модуль.</summary>
-    private Task LoadChangeLogAsync() =>
-        User?.Role == UserRole.Administrator
-            ? Save(async () =>
+    public Task LoadAsync() =>
+        shell.User?.Role == UserRole.Administrator
+            ? shell.Save(async () =>
             {
-                var entries = await _store.LoadChangeLogAsync();
+                var entries = await shell.Store.LoadChangeLogAsync();
                 ChangeLogRows.Clear();
                 foreach (var e in entries)
                     ChangeLogRows.Add(new ChangeLogRow(e));

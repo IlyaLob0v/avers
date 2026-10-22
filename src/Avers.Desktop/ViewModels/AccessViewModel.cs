@@ -6,10 +6,12 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace Avers.Desktop.ViewModels;
 
-/// <summary>Права доступа → сотрудники: администратор заводит, меняет роль и пароль, отключает.</summary>
-public sealed partial class MainViewModel
+/// <summary>Права доступа: сотрудники (администратор заводит, меняет роль и пароль, отключает) и таблица прав ролей.</summary>
+public sealed partial class AccessViewModel(MainViewModel shell) : ObservableObject
 {
     public ObservableCollection<EmployeeRow> Employees { get; } = [];
+
+    public IReadOnlyList<AccessRow> AccessRows { get; } = RoleCatalog.All.Select(r => AccessRow.From(r.Role, r.Title)).ToList();
 
     public IReadOnlyList<RoleOption> RoleOptions { get; } = RoleCatalog.All.Select(r => new RoleOption(r.Role, r.Title)).ToList();
 
@@ -29,12 +31,12 @@ public sealed partial class MainViewModel
         : "Пусто — пароль не меняется.";
 
     /// <summary>Список сотрудников перечитываем при каждом входе в «Права доступа».</summary>
-    private Task LoadEmployeesAsync() =>
-        User?.Role == UserRole.Administrator ? Save(() => ReloadEmployeesAsync(SelectedEmployee?.Login)) : Task.CompletedTask;
+    public Task LoadAsync() =>
+        shell.User?.Role == UserRole.Administrator ? shell.Save(() => ReloadEmployeesAsync(SelectedEmployee?.Login)) : Task.CompletedTask;
 
     private async Task ReloadEmployeesAsync(string? selectLogin)
     {
-        var users = await _store.LoadUsersAsync();
+        var users = await shell.Store.LoadUsersAsync();
         Employees.Clear();
         foreach (var u in users)
             Employees.Add(new EmployeeRow(u));
@@ -61,14 +63,14 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private async Task SaveEmployee()
     {
-        if (User?.Role != UserRole.Administrator)
+        if (shell.User?.Role != UserRole.Administrator)
         {
-            Status = "Сотрудников заводит администратор.";
+            shell.Status = "Сотрудников заводит администратор.";
             return;
         }
         if (EditUserRole is null)
         {
-            Status = "Выберите роль.";
+            shell.Status = "Выберите роль.";
             return;
         }
         var draft = new AppUser
@@ -82,12 +84,12 @@ public sealed partial class MainViewModel
             IsDisabled = EditUserDisabled
         };
         var passwordChanged = EditUserPassword.Length > 0;
-        await Save(async () =>
+        await shell.Save(async () =>
         {
-            await _store.SaveUserAsync(draft, EditUserPassword, User!);
+            await shell.Store.SaveUserAsync(draft, EditUserPassword, shell.User!);
             var login = draft.Login.Trim();
             await ReloadEmployeesAsync(login);
-            Status = draft.Id == 0 ? $"Сотрудник {login} заведён."
+            shell.Status = draft.Id == 0 ? $"Сотрудник {login} заведён."
                 : passwordChanged ? $"Сотрудник {login} сохранён, пароль изменён."
                 : $"Сотрудник {login} сохранён.";
         });
@@ -106,4 +108,37 @@ public sealed class EmployeeRow(AppUser user) : IRowTone
     public string Account => User.CanEditAccount ? "да" : "";
     public string State => User.IsDisabled ? "отключён" : "";
     public RowTone Tone => User.IsDisabled ? RowTone.Off : RowTone.None;
+}
+
+public sealed class AccessRow
+{
+    public static AccessRow From(UserRole role, string title) => new()
+    {
+        Role = title,
+        Pay = Cell(role, AppModule.Abon),
+        Account = role is UserRole.Administrator or UserRole.AdsHead ? "да" : "нет",
+        Tickets = Cell(role, AppModule.Disp),
+        House = Cell(role, AppModule.Anten),
+        Scheme = Cell(role, AppModule.Scheme),
+        Legal = Cell(role, AppModule.Legal),
+        Dict = Cell(role, AppModule.Phonebook)
+    };
+
+    private static string Cell(UserRole role, AppModule m) =>
+        RoleCatalog.Can(role, m, out var level) ? level switch
+        {
+            RoleCatalog.AccessLevel.Edit => "да",
+            RoleCatalog.AccessLevel.View => "смотр",
+            RoleCatalog.AccessLevel.ScreenOnly => "экран",
+            _ => "нет"
+        } : "нет";
+
+    public string Role { get; init; } = "";
+    public string Pay { get; init; } = "";
+    public string Account { get; init; } = "";
+    public string Tickets { get; init; } = "";
+    public string House { get; init; } = "";
+    public string Scheme { get; init; } = "";
+    public string Legal { get; init; } = "";
+    public string Dict { get; init; } = "";
 }
