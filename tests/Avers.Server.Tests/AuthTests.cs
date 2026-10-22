@@ -1,8 +1,11 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Avers.Contracts;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Avers.Server.Tests;
@@ -48,6 +51,24 @@ public class AuthTests
 
         Assert.Equal(HttpStatusCode.TooManyRequests, await Login("203.0.113.1"));
         Assert.Equal(HttpStatusCode.Unauthorized, await Login("203.0.113.2"));
+    }
+
+    [Fact]
+    public async Task Login_SurvivesServerRestart_WhenKeysDirectoryIsSet()
+    {
+        var keys = Directory.CreateTempSubdirectory("avers-keys-").FullName;
+        await using var app = new AversApp();
+        var before = app.WithWebHostBuilder(b => b.UseSetting("Avers:KeysDirectory", keys));
+        var login = await before.CreateClient().PostAsJsonAsync("/api/auth/login", new LoginRequest("admin", "avers"));
+        var token = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("accessToken").GetString();
+
+        var after = app.WithWebHostBuilder(b => b.UseSetting("Avers:KeysDirectory", keys)).CreateClient();
+        after.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var me = await after.GetAsync("/api/auth/me");
+
+        Assert.NotEmpty(Directory.GetFiles(keys, "key-*.xml"));
+        Assert.Equal(HttpStatusCode.OK, me.StatusCode);
+        Directory.Delete(keys, true);
     }
 
     [Theory]

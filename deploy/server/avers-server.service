@@ -9,6 +9,8 @@ User=avers
 WorkingDirectory=/opt/avers-server
 EnvironmentFile=/etc/avers-server.env
 Environment=ASPNETCORE_ENVIRONMENT=Production
+StateDirectory=avers-server
+Environment=Avers__KeysDirectory=/var/lib/avers-server/keys
 Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1
 ExecStart=/opt/avers-server/Avers.Server
 Restart=always
