@@ -4,13 +4,13 @@
              xmlns:ctl="using:Avers.Desktop.Controls"
              xmlns:d="using:Avers.Domain"
              x:Class="Avers.Desktop.Views.ContractView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:ContractsViewModel">
   <DockPanel Margin="16,0,16,12">
     <Border DockPanel.Dock="Top" Classes="card" Padding="12,6">
       <StackPanel>
         <StackPanel Orientation="Horizontal">
           <TextBlock Classes="label" Text="Улица" />
-          <ComboBox Classes="cell" Width="190" Margin="0,0,12,0" ItemsSource="{Binding Streets}" SelectedItem="{Binding SelectedStreet}">
+          <ComboBox Classes="cell" Width="190" Margin="0,0,12,0" ItemsSource="{Binding Shell.Streets}" SelectedItem="{Binding Shell.SelectedStreet}">
             <ComboBox.ItemTemplate>
               <DataTemplate x:DataType="d:Street">
                 <TextBlock Text="{Binding Name}" />
@@ -18,7 +18,7 @@
             </ComboBox.ItemTemplate>
           </ComboBox>
           <TextBlock Classes="label" Text="Дом" />
-          <ComboBox Classes="cell" Width="90" Margin="0,0,12,0" ItemsSource="{Binding HousesOnStreet}" SelectedItem="{Binding SelectedHouse}">
+          <ComboBox Classes="cell" Width="90" Margin="0,0,12,0" ItemsSource="{Binding Shell.HousesOnStreet}" SelectedItem="{Binding Shell.SelectedHouse}">
             <ComboBox.ItemTemplate>
               <DataTemplate x:DataType="d:House">
                 <TextBlock Text="{Binding Number}" />
@@ -26,10 +26,10 @@
             </ComboBox.ItemTemplate>
           </ComboBox>
           <TextBlock Classes="label" Text="Организация" />
-          <TextBox Width="240" Margin="0,0,16,0" Text="{Binding SelectedHouse.Organization.Name, Mode=OneWay}" IsReadOnly="True" />
+          <TextBox Width="240" Margin="0,0,16,0" Text="{Binding Shell.SelectedHouse.Organization.Name, Mode=OneWay}" IsReadOnly="True" />
           <CheckBox Margin="0,0,16,0" Content="Только действующие" IsChecked="{Binding OnlyActiveContracts}" />
           <TextBlock Classes="label" Text="Дата" />
-          <TextBox Width="100" Text="{Binding WorkDateText, Mode=OneWay}" IsReadOnly="True" />
+          <TextBox Width="100" Text="{Binding Shell.WorkDateText, Mode=OneWay}" IsReadOnly="True" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
           <TextBlock Classes="label" Text="Поиск" />
@@ -40,7 +40,7 @@
           </TextBox>
           <Button Classes="primary" Margin="8,0,16,0" Content="Найти" Command="{Binding FindContractCommand}" />
           <Button Content="Реестр в Excel" Command="{Binding ExportContractsCommand}" />
-          <Button Margin="8,0,0,0" Content="Новая квартира" IsVisible="{Binding CanEditCard}" Command="{Binding StartNewApartmentCommand}" />
+          <Button Margin="8,0,0,0" Content="Новая квартира" IsVisible="{Binding Shell.CanEditCard}" Command="{Binding StartNewApartmentCommand}" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Margin="0,6,0,0" Spacing="6" IsVisible="{Binding IsNewApartmentOpen}">
           <TextBox Classes="cell" Width="56" PlaceholderText="Секц" Text="{Binding NewSection}" />
@@ -60,35 +60,35 @@
     </Border>
 
     <!-- Выбранный договор: всё, что нужно, чтобы «провалиться» в него -->
-    <Border DockPanel.Dock="Bottom" Margin="0" Classes.card="{Binding !IsPaymentLate}" Classes.warn="{Binding IsPaymentLate}">
+    <Border DockPanel.Dock="Bottom" Margin="0" Classes.card="{Binding !Shell.IsPaymentLate}" Classes.warn="{Binding Shell.IsPaymentLate}">
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel>
-          <TextBlock FontSize="15" FontWeight="SemiBold" Text="{Binding CardContractLine}" TextWrapping="Wrap" />
-          <TextBlock Margin="0,2,0,0" Text="{Binding CardAddress}" />
-          <TextBlock Text="{Binding CardAccount, StringFormat='Лицевой счёт {0}'}" />
-          <TextBlock Text="{Binding CardOrganization, StringFormat='Обслуживающая организация: {0}'}" />
-          <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding LastPaymentLine}" TextWrapping="Wrap" />
-          <TextBlock Classes="hint" Text="{Binding LastPaymentAgo}" />
-          <TextBlock Classes="hint" Text="{Binding SelectedSubscriber.Notes, StringFormat='Примечание: {0}'}" TextWrapping="Wrap" />
+          <TextBlock FontSize="15" FontWeight="SemiBold" Text="{Binding Shell.CardContractLine}" TextWrapping="Wrap" />
+          <TextBlock Margin="0,2,0,0" Text="{Binding Shell.CardAddress}" />
+          <TextBlock Text="{Binding Shell.CardAccount, StringFormat='Лицевой счёт {0}'}" />
+          <TextBlock Text="{Binding Shell.CardOrganization, StringFormat='Обслуживающая организация: {0}'}" />
+          <TextBlock Margin="0,4,0,0" FontWeight="SemiBold" Text="{Binding Shell.LastPaymentLine}" TextWrapping="Wrap" />
+          <TextBlock Classes="hint" Text="{Binding Shell.LastPaymentAgo}" />
+          <TextBlock Classes="hint" Text="{Binding Shell.SelectedSubscriber.Notes, StringFormat='Примечание: {0}'}" TextWrapping="Wrap" />
         </StackPanel>
         <StackPanel Grid.Column="1" Width="640">
-          <Grid ColumnDefinitions="Auto,*,Auto,96,Auto,96" RowDefinitions="Auto,Auto,Auto" IsVisible="{Binding CanEditCard}">
+          <Grid ColumnDefinitions="Auto,*,Auto,96,Auto,96" RowDefinitions="Auto,Auto,Auto" IsVisible="{Binding Shell.CanEditCard}">
             <TextBlock Classes="label" Text="№ договора" VerticalAlignment="Center" />
-            <TextBox Grid.Column="1" Classes="cell" Text="{Binding EditContractNumber}" />
+            <TextBox Grid.Column="1" Classes="cell" Text="{Binding Shell.EditContractNumber}" />
             <TextBlock Grid.Column="2" Classes="label" Margin="8,0,4,0" Text="Заключён" VerticalAlignment="Center" />
-            <TextBox Grid.Column="3" Classes="cell" PlaceholderText="дд.мм.гггг" Text="{Binding EditContractDate}" />
+            <TextBox Grid.Column="3" Classes="cell" PlaceholderText="дд.мм.гггг" Text="{Binding Shell.EditContractDate}" />
             <TextBlock Grid.Column="4" Classes="label" Margin="8,0,4,0" Text="Расторгнут" VerticalAlignment="Center" />
-            <TextBox Grid.Column="5" Classes="cell" PlaceholderText="дд.мм.гггг" Text="{Binding EditContractTerminated}" />
+            <TextBox Grid.Column="5" Classes="cell" PlaceholderText="дд.мм.гггг" Text="{Binding Shell.EditContractTerminated}" />
             <TextBlock Grid.Row="1" Classes="label" Text="С кем заключён" VerticalAlignment="Center" />
-            <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="5" Classes="cell" PlaceholderText="пусто — с самим абонентом" Text="{Binding EditContractHolder}" />
+            <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="5" Classes="cell" PlaceholderText="пусто — с самим абонентом" Text="{Binding Shell.EditContractHolder}" />
             <TextBlock Grid.Row="2" Classes="label" Text="Примечание" VerticalAlignment="Center" />
-            <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="5" Classes="cell" Text="{Binding EditNotes}" />
+            <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="5" Classes="cell" Text="{Binding Shell.EditNotes}" />
           </Grid>
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
-            <Button Content="Новый договор" IsVisible="{Binding CanEditCard}" Command="{Binding NewContractCommand}" />
-            <Button Content="Расторгнуть" IsVisible="{Binding CanEditCard}" Command="{Binding TerminateContractCommand}" />
-            <Button Content="Бланк договора (Word)" Command="{Binding PrintContractCommand}" />
-            <Button Classes="primary" Content="Сохранить" IsVisible="{Binding CanEditCard}" Command="{Binding SaveCardCommand}" />
+            <Button Content="Новый договор" IsVisible="{Binding Shell.CanEditCard}" Command="{Binding Shell.NewContractCommand}" />
+            <Button Content="Расторгнуть" IsVisible="{Binding Shell.CanEditCard}" Command="{Binding Shell.TerminateContractCommand}" />
+            <Button Content="Бланк договора (Word)" Command="{Binding Shell.PrintContractCommand}" />
+            <Button Classes="primary" Content="Сохранить" IsVisible="{Binding Shell.CanEditCard}" Command="{Binding Shell.SaveCardCommand}" />
             <Button Classes="link" Margin="0" Content="Карточка квартиры" Command="{Binding OpenCardCommand}" />
           </StackPanel>
         </StackPanel>

@@ -12,11 +12,11 @@ public class ContractTests
         using var app = new DesktopApp();
         app.Go(AppModule.Contract);
 
-        app.Vm.ContractQuery = "ТО-2011/180090";
-        await app.Vm.FindContractCommand.ExecuteAsync(null);
+        app.Vm.ContractsScreen.ContractQuery = "ТО-2011/180090";
+        await app.Vm.ContractsScreen.FindContractCommand.ExecuteAsync(null);
 
         Assert.Equal("ул. Братская, д. 18", app.Vm.SelectedHouse?.AddressLine);
-        Assert.Equal("180090", app.Vm.SelectedContractRow?.Account);
+        Assert.Equal("180090", app.Vm.ContractsScreen.SelectedContractRow?.Account);
     }
 
     [AvaloniaFact]
@@ -26,8 +26,8 @@ public class ContractTests
         app.Go(AppModule.Contract);
         var opened = new List<string>();
         app.Vm.OpenFile = opened.Add;
-        app.Vm.ContractQuery = "ТО-2011/180090";
-        await app.Vm.FindContractCommand.ExecuteAsync(null);
+        app.Vm.ContractsScreen.ContractQuery = "ТО-2011/180090";
+        await app.Vm.ContractsScreen.FindContractCommand.ExecuteAsync(null);
 
         app.Vm.PrintContractCommand.Execute(null);
 
@@ -49,10 +49,10 @@ public class ContractTests
         using var app = new DesktopApp();
         app.Go(AppModule.Contract);
 
-        app.Vm.ContractQuery = "Чернова";
-        await app.Vm.FindContractCommand.ExecuteAsync(null);
+        app.Vm.ContractsScreen.ContractQuery = "Чернова";
+        await app.Vm.ContractsScreen.FindContractCommand.ExecuteAsync(null);
 
-        Assert.Equal("ТО-2001/180015", app.Vm.SelectedContractRow?.Number);
+        Assert.Equal("ТО-2001/180015", app.Vm.ContractsScreen.SelectedContractRow?.Number);
     }
 
     [AvaloniaFact]
@@ -62,17 +62,17 @@ public class ContractTests
         app.Go(AppModule.Contract);
         var house = app.Vm.SelectedHouse!;
 
-        app.Vm.StartNewApartmentCommand.Execute(null);
-        app.Vm.NewApartment = "99";
-        app.Vm.NewAccount = "990099";
-        app.Vm.NewLastName = "Смирнов";
-        app.Vm.NewContractNumber = "ТО-2026/990099";
-        app.Vm.NewTariff = "95,50";
-        await app.Vm.AddApartmentCommand.ExecuteAsync(null);
+        app.Vm.ContractsScreen.StartNewApartmentCommand.Execute(null);
+        app.Vm.ContractsScreen.NewApartment = "99";
+        app.Vm.ContractsScreen.NewAccount = "990099";
+        app.Vm.ContractsScreen.NewLastName = "Смирнов";
+        app.Vm.ContractsScreen.NewContractNumber = "ТО-2026/990099";
+        app.Vm.ContractsScreen.NewTariff = "95,50";
+        await app.Vm.ContractsScreen.AddApartmentCommand.ExecuteAsync(null);
 
-        Assert.False(app.Vm.IsNewApartmentOpen);
+        Assert.False(app.Vm.ContractsScreen.IsNewApartmentOpen);
         Assert.Equal(house.Id, app.Vm.SelectedHouse?.Id);
-        Assert.Contains(app.Vm.ContractRows, r => r.Account == "990099" && r.Number == "ТО-2026/990099");
+        Assert.Contains(app.Vm.ContractsScreen.ContractRows, r => r.Account == "990099" && r.Number == "ТО-2026/990099");
         Assert.Equal("990099", app.Vm.SelectedSubscriber?.Account);
         Assert.All(app.Vm.SelectedSubscriber!.Payments, p => Assert.Equal(95.50m, p.Tariff));
         Assert.NotEmpty(app.Vm.SelectedSubscriber.Payments);
@@ -84,15 +84,15 @@ public class ContractTests
         using var app = new DesktopApp();
         app.Go(AppModule.Contract);
 
-        app.Vm.StartNewApartmentCommand.Execute(null);
-        app.Vm.NewApartment = "99";
-        app.Vm.NewAccount = "180090";
-        app.Vm.NewLastName = "Смирнов";
-        app.Vm.NewTariff = "95";
-        await app.Vm.AddApartmentCommand.ExecuteAsync(null);
+        app.Vm.ContractsScreen.StartNewApartmentCommand.Execute(null);
+        app.Vm.ContractsScreen.NewApartment = "99";
+        app.Vm.ContractsScreen.NewAccount = "180090";
+        app.Vm.ContractsScreen.NewLastName = "Смирнов";
+        app.Vm.ContractsScreen.NewTariff = "95";
+        await app.Vm.ContractsScreen.AddApartmentCommand.ExecuteAsync(null);
 
         Assert.Equal("Лицевой счёт 180090 уже есть.", app.Vm.Status);
-        Assert.True(app.Vm.IsNewApartmentOpen);
+        Assert.True(app.Vm.ContractsScreen.IsNewApartmentOpen);
     }
 
     [AvaloniaFact]
@@ -100,15 +100,15 @@ public class ContractTests
     {
         using var app = new DesktopApp();
         app.Go(AppModule.Contract);
-        app.Vm.ContractQuery = "ТО-2011/180090";
-        await app.Vm.FindContractCommand.ExecuteAsync(null);
+        app.Vm.ContractsScreen.ContractQuery = "ТО-2011/180090";
+        await app.Vm.ContractsScreen.FindContractCommand.ExecuteAsync(null);
 
         await app.Vm.TerminateContractCommand.ExecuteAsync(null);
         Assert.Equal(DemoSeeder.WorkDate, app.Vm.SelectedSubscriber?.ContractTerminated);
-        Assert.DoesNotContain(app.Vm.ContractRows, r => r.Account == "180090");
+        Assert.DoesNotContain(app.Vm.ContractsScreen.ContractRows, r => r.Account == "180090");
 
-        app.Vm.OnlyActiveContracts = false;
-        app.Vm.SelectedContractRow = app.Vm.ContractRows.Single(r => r.Account == "180090");
+        app.Vm.ContractsScreen.OnlyActiveContracts = false;
+        app.Vm.ContractsScreen.SelectedContractRow = app.Vm.ContractsScreen.ContractRows.Single(r => r.Account == "180090");
         app.Vm.NewContractCommand.Execute(null);
         app.Vm.EditContractNumber = "ТО-2026/180090";
         await app.Vm.SaveCardCommand.ExecuteAsync(null);
@@ -125,7 +125,7 @@ public class ContractTests
         string? opened = null;
         app.Vm.OpenFile = path => opened = path;
 
-        app.Vm.ExportContractsCommand.Execute(null);
+        app.Vm.ContractsScreen.ExportContractsCommand.Execute(null);
 
         Assert.NotNull(opened);
         Assert.True(new FileInfo(opened).Length > 0);

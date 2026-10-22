@@ -3,7 +3,7 @@
              xmlns:vm="using:Avers.Desktop.ViewModels"
              xmlns:d="using:Avers.Domain"
              x:Class="Avers.Desktop.Views.DispView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:TicketsViewModel">
   <UserControl.Styles>
     <Style Selector="TextBlock.k">
       <Setter Property="FontSize" Value="12" />
@@ -46,9 +46,9 @@
     <Border DockPanel.Dock="Top" Classes="toolbar">
       <StackPanel Orientation="Horizontal">
         <TextBlock Classes="label" Text="Рабочая дата" />
-        <TextBox Width="100" Margin="0,0,12,0" Text="{Binding WorkDateText, Mode=OneWay}" IsReadOnly="True" />
+        <TextBox Width="100" Margin="0,0,12,0" Text="{Binding Shell.WorkDateText, Mode=OneWay}" IsReadOnly="True" />
         <TextBlock Classes="label" Text="Оператор" />
-        <TextBox Width="150" Margin="0,0,16,0" Text="{Binding User.DisplayName, Mode=OneWay}" IsReadOnly="True" />
+        <TextBox Width="150" Margin="0,0,16,0" Text="{Binding Shell.User.DisplayName, Mode=OneWay}" IsReadOnly="True" />
         <Button Classes="primary" Content="Принять заявку" Command="{Binding AcceptTicketCommand}" IsEnabled="{Binding CanAcceptTickets}" />
         <Button Content="Изменить заявку" Command="{Binding EditTicketCommand}" IsEnabled="{Binding CanEditSelectedTicket}" />
         <Button Content="Паспорт дома" Command="{Binding OpenTicketHouseCommand}" />
@@ -59,14 +59,14 @@
     <Grid ColumnDefinitions="200,*,300" Margin="16,0,16,12">
       <!-- Слева: улица и дом -->
       <Grid RowDefinitions="*,10,220">
-        <ListBox Classes="streets" ItemsSource="{Binding Streets}" SelectedItem="{Binding SelectedStreet}">
+        <ListBox Classes="streets" ItemsSource="{Binding Shell.Streets}" SelectedItem="{Binding Shell.SelectedStreet}">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="d:Street">
               <TextBlock Text="{Binding Name}" />
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
-        <DataGrid Grid.Row="2" ItemsSource="{Binding HousesOnStreet}" SelectedItem="{Binding SelectedHouse}" AutoGenerateColumns="False" IsReadOnly="True">
+        <DataGrid Grid.Row="2" ItemsSource="{Binding Shell.HousesOnStreet}" SelectedItem="{Binding Shell.SelectedHouse}" AutoGenerateColumns="False" IsReadOnly="True">
           <DataGrid.Columns>
             <DataGridTextColumn Header="Дом" Binding="{Binding Number}" Width="64" />
             <DataGridTextColumn Header="Под." Binding="{Binding Entrances}" Width="60" />
@@ -152,8 +152,8 @@
         <HeaderedContentControl DockPanel.Dock="Bottom" Classes="group" Margin="0" Padding="10,6,10,8" Header="Новая заявка по выбранному дому">
           <StackPanel>
             <Grid ColumnDefinitions="*,*,*">
-              <StackPanel Classes="f"><TextBlock Text="Дом / под. / кв"/><TextBox Classes="cell" Text="{Binding HouseAptLine, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
-              <StackPanel Grid.Column="1" Classes="f" Margin="8,0"><TextBlock Text="Абонент"/><TextBox Classes="cell" Text="{Binding SelectedSubscriber.FullName, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
+              <StackPanel Classes="f"><TextBlock Text="Дом / под. / кв"/><TextBox Classes="cell" Text="{Binding Shell.HouseAptLine, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
+              <StackPanel Grid.Column="1" Classes="f" Margin="8,0"><TextBlock Text="Абонент"/><TextBox Classes="cell" Text="{Binding Shell.SelectedSubscriber.FullName, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
               <StackPanel Grid.Column="2" Classes="f"><TextBlock Text="Вид заявки"/><ComboBox Classes="cell" ItemsSource="{Binding NewTicketKinds}" SelectedItem="{Binding NewTicketKind}"/></StackPanel>
             </Grid>
             <StackPanel Classes="f">
@@ -193,8 +193,8 @@
       <ScrollViewer Grid.Column="2">
         <StackPanel>
           <!-- Неисправность по выбранному дому: одна плашка на экране, всегда на виду при приёме заявки -->
-          <Border Classes="warn" IsVisible="{Binding HasFault}">
-            <TextBlock Text="{Binding FaultBanner}" TextWrapping="Wrap" />
+          <Border Classes="warn" IsVisible="{Binding Shell.HasFault}">
+            <TextBlock Text="{Binding Shell.FaultBanner}" TextWrapping="Wrap" />
           </Border>
 
           <HeaderedContentControl Classes="group" Header="{Binding TicketHeader}">
@@ -248,24 +248,24 @@
 
           <HeaderedContentControl Classes="group" Header="Дом — данные антенной службы">
             <StackPanel>
-              <TextBlock FontWeight="SemiBold" Text="{Binding HouseCaption}" TextWrapping="Wrap" />
+              <TextBlock FontWeight="SemiBold" Text="{Binding Shell.HouseCaption}" TextWrapping="Wrap" />
               <Grid ColumnDefinitions="114,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                 <TextBlock Classes="k" Text="Домовладелец" />
                 <TextBlock Grid.Column="1" Classes="v" Text="{Binding HouseHomeowner}" />
                 <TextBlock Grid.Row="1" Classes="k" Text="Телефоны" />
                 <TextBlock Grid.Row="1" Grid.Column="1" Classes="v" Text="{Binding HouseHomeownerPhones}" />
                 <TextBlock Grid.Row="2" Classes="k" Text="Антенны" />
-                <TextBlock Grid.Row="2" Grid.Column="1" Classes="v" Text="{Binding SelectedHouse.Antennas}" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Classes="v" Text="{Binding Shell.SelectedHouse.Antennas}" />
                 <TextBlock Grid.Row="3" Classes="k" Text="Усилители" />
-                <TextBlock Grid.Row="3" Grid.Column="1" Classes="v" Text="{Binding SelectedHouse.Amplifiers}" />
+                <TextBlock Grid.Row="3" Grid.Column="1" Classes="v" Text="{Binding Shell.SelectedHouse.Amplifiers}" />
                 <TextBlock Grid.Row="4" Classes="k" Text="Ключ" />
-                <TextBlock Grid.Row="4" Grid.Column="1" Classes="v" Text="{Binding SelectedHouse.TechFloorKey}" />
+                <TextBlock Grid.Row="4" Grid.Column="1" Classes="v" Text="{Binding Shell.SelectedHouse.TechFloorKey}" />
                 <TextBlock Grid.Row="5" Classes="k" Text="Последний ППР" />
-                <TextBlock Grid.Row="5" Grid.Column="1" Classes="v" Text="{Binding LastPprText}" />
+                <TextBlock Grid.Row="5" Grid.Column="1" Classes="v" Text="{Binding Shell.LastPprText}" />
                 <TextBlock Grid.Row="6" Classes="k" Text="Не выполнено" />
                 <TextBlock Grid.Row="6" Grid.Column="1" Classes="v" Text="{Binding HouseOpenTickets}" />
                 <TextBlock Grid.Row="7" Classes="k" Text="Сведения" />
-                <TextBlock Grid.Row="7" Grid.Column="1" Classes="v" Text="{Binding HouseStats}" />
+                <TextBlock Grid.Row="7" Grid.Column="1" Classes="v" Text="{Binding Shell.HouseStats}" />
               </Grid>
             </StackPanel>
           </HeaderedContentControl>
@@ -274,7 +274,7 @@
             <StackPanel>
               <TextBlock Classes="hint" TextWrapping="Wrap" Text="Заявки, отработанные за дату. Если принято больше, чем выполнено — список не выводится." />
               <Border Classes="warn" Margin="0,6,0,0">
-                <TextBlock Text="{Binding OekWarning}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Shell.OekWarning}" TextWrapping="Wrap" />
               </Border>
             </StackPanel>
           </HeaderedContentControl>

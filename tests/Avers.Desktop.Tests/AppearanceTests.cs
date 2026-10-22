@@ -54,7 +54,7 @@ public class AppearanceTests
     {
         using var app = new DesktopApp("orlov");
         app.Go(AppModule.Abon);
-        app.Vm.OnlyActiveContracts = false;
+        app.Vm.ContractsScreen.OnlyActiveContracts = false;
         var subscribers = new List<Subscriber>();
         foreach (var street in app.Vm.Streets.ToList())
         {
@@ -62,7 +62,7 @@ public class AppearanceTests
             foreach (var house in app.Vm.HousesOnStreet.ToList())
             {
                 app.Vm.SelectedHouse = house;
-                subscribers.AddRange(app.Vm.ContractRows.Select(r => r.Subscriber));
+                subscribers.AddRange(app.Vm.ContractsScreen.ContractRows.Select(r => r.Subscriber));
             }
         }
 

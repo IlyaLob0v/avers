@@ -6,7 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace Avers.Desktop.ViewModels;
 
-/// <summary>Печать квитанции и лицевого счёта выбранной квартиры, наряд-заказа по заявке: PDF во временной папке, открывается для печати.</summary>
+/// <summary>Печать квитанции и лицевого счёта выбранной квартиры: PDF во временной папке, открывается для печати.</summary>
 public sealed partial class MainViewModel
 {
     [ObservableProperty] private bool _printWithPayDate = true;
@@ -24,14 +24,6 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private void PrintAccount() =>
         Print("лицевой-счёт", "лицевой счёт", (s, path) => PdfForms.Account(s, _today.Year, PrintWithPayDate, _today, path));
-
-    [RelayCommand]
-    private void PrintWorkOrder()
-    {
-        if (SelectedTicket is not { } t) { Status = "Выберите заявку в журнале."; return; }
-        var address = TicketAddress;
-        OpenPdf(PrintPath("наряд-заказ", t.Number.ToString()), $"наряд-заказ № {t.Number}", path => PdfForms.WorkOrder(t, address, path));
-    }
 
     private void Print(string file, string title, Action<Subscriber, string> write)
     {

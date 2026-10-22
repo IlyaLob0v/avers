@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using Avers.Contracts;
+using Avers.Desktop.Printing;
 using Avers.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -21,8 +22,11 @@ public sealed record TicketOption<T>(T? Value, string Title) where T : struct
 }
 
 /// <summary>Журнал заявок АДС: отбор по периоду, году, дому, квартире и виду; права начальника и пользователя АДС.</summary>
-public sealed partial class MainViewModel
+public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableObject
 {
+    public MainViewModel Shell => shell;
+
+    public ObservableCollection<WorkTicket> Tickets { get; } = [];
     public ObservableCollection<int> TicketYears { get; } = [];
     public ObservableCollection<TicketMonthRow> TicketMonths { get; } = [];
 
@@ -58,6 +62,10 @@ public sealed partial class MainViewModel
     [ObservableProperty] private int _ticketYear;
     [ObservableProperty] private string _ticketSearch = "";
     [ObservableProperty] private string _newTicketFault = "";
+    [ObservableProperty] private WorkTicket? _selectedTicket;
+    [ObservableProperty] private string _ticketFault = "";
+    [ObservableProperty] private string _ticketWork = "";
+    [ObservableProperty] private string _ticketMechanic = "";
 
     private bool _ticketFilterReady;
     private bool _holdTicketRefresh;
@@ -71,12 +79,13 @@ public sealed partial class MainViewModel
         KindFilter = TicketKinds[0];
         NewTicketKind = NewTicketKinds[0];
         StatusFilter = TicketStatuses[0];
-        TicketYear = _today.Year;
-        TicketFrom = new DateTime(_today.Year, 1, 1);
-        TicketTo = new DateTime(_today.Year, 12, 31);
+        TicketYear = shell.Today.Year;
+        TicketFrom = new DateTime(shell.Today.Year, 1, 1);
+        TicketTo = new DateTime(shell.Today.Year, 12, 31);
         _holdTicketRefresh = false;
     }
 
+    partial void OnSelectedTicketChanged(WorkTicket? value) => BindTicket();
     partial void OnScopeFilterChanged(TicketOption<TicketScope> value) => RefreshTickets();
     partial void OnKindFilterChanged(TicketOption<TicketKind> value) => RefreshTickets();
     partial void OnStatusFilterChanged(TicketOption<TicketStatus> value) => RefreshTickets();
@@ -110,13 +119,13 @@ public sealed partial class MainViewModel
 
     public string TicketMonthsCaption => ScopeFilter?.Value switch
     {
-        TicketScope.House when SelectedHouse is not null => $"Заявки за {TicketYear} год · {SelectedHouse.AddressLine}",
-        TicketScope.Apartment when SelectedHouse is not null => $"Заявки за {TicketYear} год · {SelectedHouse.AddressLine}, кв. {ScopeApartment}",
+        TicketScope.House when shell.SelectedHouse is not null => $"Заявки за {TicketYear} год · {shell.SelectedHouse.AddressLine}",
+        TicketScope.Apartment when shell.SelectedHouse is not null => $"Заявки за {TicketYear} год · {shell.SelectedHouse.AddressLine}, кв. {ScopeApartment}",
         _ => $"Заявки за {TicketYear} год · все дома"
     };
 
 
-    public House? TicketHouse => SelectedTicket is null ? null : _houses.FirstOrDefault(h => h.Id == SelectedTicket.HouseId);
+    public House? TicketHouse => SelectedTicket is null ? null : shell.Houses.FirstOrDefault(h => h.Id == SelectedTicket.HouseId);
     public Subscriber? TicketSubscriber => SelectedTicket?.Subscriber;
     public bool HasTicketSubscriber => TicketSubscriber is not null;
 
@@ -146,40 +155,40 @@ public sealed partial class MainViewModel
         var s => $"{ContractNo(s)}от {s.ContractDate:dd.MM.yyyy} с {s.ContractParty}"
     };
     public string TicketLastPayment => TicketSubscriber?.LastPaymentDate is { } d
-        ? $"{d:dd.MM.yyyy} ({PaymentAge.AgoText(d, _today)})"
+        ? $"{d:dd.MM.yyyy} ({PaymentAge.AgoText(d, shell.Today)})"
         : "нет";
-    public bool IsTicketPaymentLate => TicketSubscriber is { } s && PaymentAge.IsLate(s, _today, PaymentWarningMonths);
+    public bool IsTicketPaymentLate => TicketSubscriber is { } s && PaymentAge.IsLate(s, shell.Today, shell.PaymentWarningMonths);
 
     private static string ContractNo(Subscriber s) => string.IsNullOrWhiteSpace(s.ContractNumber) ? "" : $"№ {s.ContractNumber} ";
     public string TicketNotes => TicketSubscriber?.Notes is { Length: > 0 } n ? n : "—";
 
-    public bool CanAcceptTickets => User is not null && RoleCatalog.Can(User.Role, AppModule.Disp, out var level) && level == RoleCatalog.AccessLevel.Edit;
+    public bool CanAcceptTickets => shell.User is not null && RoleCatalog.Can(shell.User.Role, AppModule.Disp, out var level) && level == RoleCatalog.AccessLevel.Edit;
 
-    public bool CanEditSelectedTicket => User is not null && SelectedTicket is not null && CanAcceptTickets &&
-                                         RoleCatalog.CanEditTicket(User.Role, User.Id, SelectedTicket);
+    public bool CanEditSelectedTicket => shell.User is not null && SelectedTicket is not null && CanAcceptTickets &&
+                                         RoleCatalog.CanEditTicket(shell.User.Role, shell.User.Id, SelectedTicket);
 
-    public string TicketRightsHint => User is null || SelectedTicket is null ? ""
+    public string TicketRightsHint => shell.User is null || SelectedTicket is null ? ""
         : CanEditSelectedTicket ? ""
-        : !CanAcceptTickets ? $"Роль «{RoleCatalog.Title(User.Role)}» смотрит заявки без правки."
+        : !CanAcceptTickets ? $"Роль «{RoleCatalog.Title(shell.User.Role)}» смотрит заявки без правки."
         : $"Заявку принял(а) {SelectedTicket.AcceptedBy}: пользователь АДС правит только свои заявки, чужую меняет начальник АДС.";
 
     public bool HasTicketRightsHint => TicketRightsHint.Length > 0;
 
 
-    public string HouseHomeowner => SelectedHouse?.Organization is { } o ? $"{o.Name}, {o.Branch}" : "не указан";
-    public string HouseHomeownerPhones => SelectedHouse?.Organization?.Phones ?? "";
-    public string HouseOpenTickets => SelectedHouse is null ? ""
-        : _tickets.Count(t => t.HouseId == SelectedHouse.Id && t.Status != TicketStatus.Done).ToString();
+    public string HouseHomeowner => shell.SelectedHouse?.Organization is { } o ? $"{o.Name}, {o.Branch}" : "не указан";
+    public string HouseHomeownerPhones => shell.SelectedHouse?.Organization?.Phones ?? "";
+    public string HouseOpenTickets => shell.SelectedHouse is null ? ""
+        : shell.AllTickets.Count(t => t.HouseId == shell.SelectedHouse.Id && t.Status != TicketStatus.Done).ToString();
 
-    private string ScopeApartment => SelectedSubscriber?.HouseId == SelectedHouse?.Id && SelectedSubscriber is not null
-        ? SelectedSubscriber.Apartment
-        : FindApartment.Trim();
+    private string ScopeApartment => shell.SelectedSubscriber?.HouseId == shell.SelectedHouse?.Id && shell.SelectedSubscriber is not null
+        ? shell.SelectedSubscriber.Apartment
+        : shell.FindApartment.Trim();
 
 
-    private void LoadTicketYears()
+    internal void LoadTicketYears()
     {
         EnsureTicketFilter();
-        var years = TicketJournal.Years(_tickets, _today);
+        var years = TicketJournal.Years(shell.AllTickets, shell.Today);
         TicketYears.Clear();
         foreach (var y in years) TicketYears.Add(y);
         OnPropertyChanged(nameof(TicketYear));
@@ -198,28 +207,23 @@ public sealed partial class MainViewModel
         };
         return ScopeFilter?.Value switch
         {
-            TicketScope.House when SelectedHouse is not null => filter with { HouseId = SelectedHouse.Id },
-            TicketScope.Apartment when SelectedHouse is not null =>
-                filter with { HouseId = SelectedHouse.Id, Apartment = ScopeApartment },
+            TicketScope.House when shell.SelectedHouse is not null => filter with { HouseId = shell.SelectedHouse.Id },
+            TicketScope.Apartment when shell.SelectedHouse is not null =>
+                filter with { HouseId = shell.SelectedHouse.Id, Apartment = ScopeApartment },
             _ => filter
         };
     }
 
-    private void RefreshTickets()
+    internal void RefreshTickets()
     {
         EnsureTicketFilter();
         if (_holdTicketRefresh) return;
         var keep = SelectedTicket?.Id;
         Tickets.Clear();
-        foreach (var t in _tickets.Apply(CurrentTicketFilter()).Newest())
+        foreach (var t in shell.AllTickets.Apply(CurrentTicketFilter()).Newest())
             Tickets.Add(t);
         if (keep is not null && SelectedTicket is null)
             SelectedTicket = Tickets.FirstOrDefault(t => t.Id == keep);
-
-        HouseTickets.Clear();
-        if (SelectedHouse is not null)
-            foreach (var t in _tickets.Where(t => t.HouseId == SelectedHouse.Id).Newest())
-                HouseTickets.Add(t);
 
         RefreshTicketMonths();
         OnPropertyChanged(nameof(TicketCountText));
@@ -231,7 +235,7 @@ public sealed partial class MainViewModel
     {
         // Помесячная сводка — за выбранный год, по тому же дому/квартире и виду, без отбора по датам.
         var filter = CurrentTicketFilter() with { From = null, To = null, Status = null, OnlyOpen = false, Text = null };
-        var stats = TicketJournal.ByMonth(_tickets.Apply(filter), TicketYear);
+        var stats = TicketJournal.ByMonth(shell.AllTickets.Apply(filter), TicketYear);
         var from = TicketFrom is { } f ? DateOnly.FromDateTime(f) : (DateOnly?)null;
         var to = TicketTo is { } t ? DateOnly.FromDateTime(t) : (DateOnly?)null;
         TicketMonths.Clear();
@@ -239,11 +243,11 @@ public sealed partial class MainViewModel
         {
             var month = TicketFilter.ForMonth(TicketYear, m.Month);
             var selected = from == month.From && to == month.To;
-            TicketMonths.Add(new TicketMonthRow(Months[m.Month - 1], m, selected, SelectTicketMonthCommand, m.Month));
+            TicketMonths.Add(new TicketMonthRow(shell.Months[m.Month - 1], m, selected, SelectTicketMonthCommand, m.Month));
         }
     }
 
-    private void NotifyTicketPanel()
+    internal void NotifyTicketPanel()
     {
         OnPropertyChanged(nameof(HouseHomeowner));
         OnPropertyChanged(nameof(HouseHomeownerPhones));
@@ -252,7 +256,7 @@ public sealed partial class MainViewModel
         OnPropertyChanged(nameof(TicketMonthsCaption));
     }
 
-    private void BindTicket()
+    internal void BindTicket()
     {
         TicketFault = SelectedTicket?.Fault ?? "";
         TicketWork = SelectedTicket?.WorkDone ?? "";
@@ -277,7 +281,7 @@ public sealed partial class MainViewModel
         OnPropertyChanged(nameof(CanAcceptTickets));
         OnPropertyChanged(nameof(TicketRightsHint));
         OnPropertyChanged(nameof(HasTicketRightsHint));
-        OnPropertyChanged(nameof(WindowTitle));
+        shell.NotifyWindowTitle();
     }
 
     private void SetPeriod(DateOnly? from, DateOnly? to)
@@ -292,10 +296,10 @@ public sealed partial class MainViewModel
 
 
     [RelayCommand]
-    private void PeriodToday() => SetPeriod(_today, _today);
+    private void PeriodToday() => SetPeriod(shell.Today, shell.Today);
 
     [RelayCommand]
-    private void PeriodMonth() => SelectTicketMonth(_today.Year == TicketYear ? _today.Month : 1);
+    private void PeriodMonth() => SelectTicketMonth(shell.Today.Year == TicketYear ? shell.Today.Month : 1);
 
     [RelayCommand]
     private void PeriodYear() => SetPeriod(new DateOnly(TicketYear, 1, 1), new DateOnly(TicketYear, 12, 31));
@@ -311,67 +315,75 @@ public sealed partial class MainViewModel
     }
 
     [RelayCommand]
+    private void PrintWorkOrder()
+    {
+        if (SelectedTicket is not { } t) { shell.Status = "Выберите заявку в журнале."; return; }
+        var address = TicketAddress;
+        shell.OpenPdf(MainViewModel.PrintPath("наряд-заказ", t.Number.ToString()), $"наряд-заказ № {t.Number}", path => PdfForms.WorkOrder(t, address, path));
+    }
+
+    [RelayCommand]
     private async Task OpenTicketSubscriber()
     {
-        if (TicketSubscriber is not { } s) { Status = "У заявки нет лицевого счёта."; return; }
+        if (TicketSubscriber is not { } s) { shell.Status = "У заявки нет лицевого счёта."; return; }
         await SelectSubscriberOf(s);
-        Go(AppModule.Subscriber);
+        shell.GoCommand.Execute(AppModule.Subscriber);
     }
 
     [RelayCommand]
     private async Task OpenTicketContract()
     {
-        if (TicketSubscriber is not { } s) { Status = "У заявки нет лицевого счёта, договора не найти."; return; }
+        if (TicketSubscriber is not { } s) { shell.Status = "У заявки нет лицевого счёта, договора не найти."; return; }
         await SelectSubscriberOf(s);
-        OpenContract();
+        shell.OpenContractCommand.Execute(null);
     }
 
     [RelayCommand]
     private void OpenTicketHouse()
     {
         if (TicketHouse is not { } h) return;
-        SelectedStreet = Streets.FirstOrDefault(x => x.Id == h.StreetId);
-        SelectedHouse = HousesOnStreet.FirstOrDefault(x => x.Id == h.Id);
-        Go(AppModule.Anten);
+        shell.SelectedStreet = shell.Streets.FirstOrDefault(x => x.Id == h.StreetId);
+        shell.SelectedHouse = shell.HousesOnStreet.FirstOrDefault(x => x.Id == h.Id);
+        shell.GoCommand.Execute(AppModule.Anten);
     }
 
     [RelayCommand]
     private void EditTicket()
     {
-        if (SelectedTicket is null) { Status = "Выберите заявку в журнале."; return; }
-        if (!CanEditSelectedTicket) { Status = TicketRightsHint; return; }
-        Go(AppModule.Ticket);
+        if (SelectedTicket is null) { shell.Status = "Выберите заявку в журнале."; return; }
+        if (!CanEditSelectedTicket) { shell.Status = TicketRightsHint; return; }
+        shell.GoCommand.Execute(AppModule.Ticket);
     }
 
     private async Task SelectSubscriberOf(Subscriber s)
     {
         var keep = SelectedTicket;
-        await ShowSubscriberAsync(s.Id, s.HouseId);
+        await shell.ShowSubscriberAsync(s.Id, s.HouseId);
         SelectedTicket = keep;
     }
 
     [RelayCommand]
     private async Task AcceptTicket()
     {
-        if (SelectedHouse is null || User is null) return;
-        if (!CanAcceptTickets) { Status = $"Роль «{RoleCatalog.Title(User.Role)}» не принимает заявки."; return; }
-        var subscriber = SelectedSubscriber?.HouseId == SelectedHouse.Id ? SelectedSubscriber : null;
+        if (shell.SelectedHouse is null || shell.User is null) return;
+        if (!CanAcceptTickets) { shell.Status = $"Роль «{RoleCatalog.Title(shell.User.Role)}» не принимает заявки."; return; }
+        var subscriber = shell.SelectedSubscriber?.HouseId == shell.SelectedHouse.Id ? shell.SelectedSubscriber : null;
         var request = new CreateTicketRequest(
-            SelectedHouse.Id,
+            shell.SelectedHouse.Id,
             string.IsNullOrWhiteSpace(NewTicketFault) ? "Принята с рабочего места диспетчера" : NewTicketFault.Trim(),
             (NewTicketKind?.Value ?? TicketKind.Antenna).ToString(),
             subscriber?.Id,
-            subscriber?.Section ?? FindSection,
-            subscriber?.Apartment ?? FindApartment,
+            subscriber?.Section ?? shell.FindSection,
+            subscriber?.Apartment ?? shell.FindApartment,
             subscriber?.Phone ?? "");
-        await Save(async () =>
+        await shell.Save(async () =>
         {
-            var number = await _store.AcceptTicketAsync(request, User);
-            await ReloadAsync();
+            var number = await shell.Store.AcceptTicketAsync(request, shell.User);
+            await shell.ReloadAsync();
             NewTicketFault = "";
             SelectedTicket = Tickets.FirstOrDefault(t => t.Number == number);
-            Status = $"Принята заявка № {number}.";
-            Module = AppModule.Disp;
+            shell.Status = $"Принята заявка № {number}.";
+            shell.Module = AppModule.Disp;
         });
     }
 
@@ -379,15 +391,15 @@ public sealed partial class MainViewModel
     private async Task SaveTicket()
     {
         if (SelectedTicket is null) return;
-        if (!CanEditSelectedTicket) { Status = TicketRightsHint; return; }
+        if (!CanEditSelectedTicket) { shell.Status = TicketRightsHint; return; }
         var (id, number) = (SelectedTicket.Id, SelectedTicket.Number);
-        await Save(async () =>
+        await shell.Save(async () =>
         {
-            await _store.SaveTicketAsync(id, TicketFault.Trim(), TicketMechanic.Trim(), TicketWork);
-            await ReloadAsync();
-            SelectedTicket = Tickets.FirstOrDefault(x => x.Number == number) ?? _tickets.FirstOrDefault(x => x.Number == number);
-            Status = $"Заявка № {number} записана.";
-            Module = AppModule.Disp;
+            await shell.Store.SaveTicketAsync(id, TicketFault.Trim(), TicketMechanic.Trim(), TicketWork);
+            await shell.ReloadAsync();
+            SelectedTicket = Tickets.FirstOrDefault(x => x.Number == number) ?? shell.AllTickets.FirstOrDefault(x => x.Number == number);
+            shell.Status = $"Заявка № {number} записана.";
+            shell.Module = AppModule.Disp;
         });
     }
 }

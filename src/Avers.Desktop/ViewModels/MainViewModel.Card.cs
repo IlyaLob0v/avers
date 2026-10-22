@@ -3,6 +3,7 @@ using System.Globalization;
 using Avers.Contracts;
 using Avers.Data;
 using Avers.Desktop.Controls;
+using Avers.Desktop.Printing;
 using Avers.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -19,13 +20,11 @@ public sealed partial class MainViewModel
     internal static readonly CultureInfo Ru = CultureInfo.GetCultureInfo("ru-RU");
     private int? _cardBoundId;
 
-    public ObservableCollection<ContractRow> ContractRows { get; } = [];
     public ObservableCollection<CardPaymentRow> CardPayments { get; } = [];
     public ObservableCollection<WorkTicket> ApartmentTicketRows { get; } = [];
     public ObservableCollection<int> CardPaymentYears { get; } = [];
     public ObservableCollection<YearOption> CardTicketYears { get; } = [];
 
-    [ObservableProperty] private ContractRow? _selectedContractRow;
     [ObservableProperty] private int? _cardPaymentYear;
     [ObservableProperty] private CardPaymentRow? _selectedCardPayment;
     [ObservableProperty] private YearOption? _cardTicketYear;
@@ -119,22 +118,10 @@ public sealed partial class MainViewModel
         RefreshCard();
     }
 
-    partial void OnSelectedContractRowChanged(ContractRow? value)
-    {
-        if (value is not null && SelectedSubscriber?.Id != value.Subscriber.Id)
-            SelectedSubscriber = value.Subscriber;
-    }
-
     /// <summary>Вызывается из <c>RefreshDerived</c>: всё, что зависит от выбранной квартиры.</summary>
     private void RefreshCard()
     {
-        ContractRows.Clear();
-        var list = _subscribers.AsEnumerable();
-        if (SelectedHouse is not null) list = list.Where(s => s.HouseId == SelectedHouse.Id);
-        if (OnlyActiveContracts) list = list.Where(s => s.ContractTerminated is null);
-        foreach (var s in list.OrderBy(s => s.Section).ThenBy(s => s.Apartment, NaturalOrder.Instance))
-            ContractRows.Add(new ContractRow(s, _today, PaymentWarningMonths));
-        SelectedContractRow = ContractRows.FirstOrDefault(r => r.Subscriber.Id == SelectedSubscriber?.Id);
+        ContractsScreen.RebuildRows();
 
         if (_cardBoundId != SelectedSubscriber?.Id)
         {
@@ -207,15 +194,34 @@ public sealed partial class MainViewModel
     {
         if (SelectedSubscriber is null) return;
         Go(AppModule.Contract);
-        SelectedContractRow = ContractRows.FirstOrDefault(r => r.Subscriber.Id == SelectedSubscriber.Id);
+        ContractsScreen.SelectedContractRow = ContractsScreen.ContractRows.FirstOrDefault(r => r.Subscriber.Id == SelectedSubscriber.Id);
     }
 
     [RelayCommand]
-    private void OpenCard(ContractRow? row)
+    private void NewContract()
     {
-        if (row is not null) SelectedSubscriber = row.Subscriber;
-        if (SelectedSubscriber is null) return;
-        Go(AppModule.Subscriber);
+        if (SelectedSubscriber is not { } s) return;
+        EditContractNumber = "";
+        EditContractDate = _today.ToString("dd.MM.yyyy");
+        EditContractTerminated = "";
+        EditContractHolder = "";
+        Status = $"Новый договор для кв. {s.Apartment}: впишите номер и нажмите «Сохранить». Прежний договор останется в журнале изменений.";
+    }
+
+    [RelayCommand]
+    private async Task TerminateContract()
+    {
+        if (SelectedSubscriber is null || !CanEditCard) return;
+        EditContractTerminated = _today.ToString("dd.MM.yyyy");
+        await SaveCard();
+    }
+
+    /// <summary>Бланк договора с согласием на обработку ПнД в Word: паспорт, ИНН и СНИЛС вписывают от руки.</summary>
+    [RelayCommand]
+    private void PrintContract()
+    {
+        if (SelectedSubscriber is not { } s) return;
+        OpenWord(PrintPath("договор", s.Account, ".docx"), $"договор {s.FullName}", path => WordForms.Contract(ContractForm.Text(s), path));
     }
 
     [RelayCommand]
@@ -373,24 +379,6 @@ public sealed partial class MainViewModel
 
 public sealed record YearOption(int? Year, string Title);
 
-/// <summary>Строка реестра договоров по дому: жёлтая — давно не было оплаты, серая — договор расторгнут.</summary>
-public sealed class ContractRow(Subscriber s, DateOnly today, int warningMonths) : IRowTone
-{
-    public Subscriber Subscriber { get; } = s;
-    public string Section => Subscriber.Section;
-    public string Apartment => Subscriber.Apartment;
-    public string Account => Subscriber.Account;
-    public string FullName => Subscriber.FullName;
-    public string Number => Subscriber.ContractNumber;
-    public string Party => Subscriber.ContractParty;
-    public string Signed => Subscriber.ContractDate?.ToString("dd.MM.yyyy") ?? "";
-    public string Terminated => Subscriber.ContractTerminated?.ToString("dd.MM.yyyy") ?? "";
-    public string Notes => Subscriber.Notes;
-    public string LastPay => Subscriber.LastPaymentDate?.ToString("dd.MM.yyyy") ?? "нет";
-    public string MonthsWithoutPay => PaymentAge.MonthsSince(Subscriber.LastPaymentDate, today)?.ToString(CultureInfo.InvariantCulture) ?? "—";
-    public bool IsLate { get; } = PaymentAge.IsLate(s, today, warningMonths);
-    public RowTone Tone => Subscriber.ContractTerminated is not null ? RowTone.Off : IsLate ? RowTone.Warn : RowTone.None;
-}
 
 /// <summary>Месяц в таблице оплат карточки: кто внёс и кто оплатил.</summary>
 public sealed class CardPaymentRow(YearPayment p, string monthName)

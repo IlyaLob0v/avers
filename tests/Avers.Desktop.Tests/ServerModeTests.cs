@@ -47,7 +47,7 @@ public sealed class ServerModeTests : IAsyncDisposable
         Assert.Equal(other.HouseId, vm.SelectedHouse!.Id);
         Assert.Equal(other.House.StreetId, vm.SelectedStreet!.Id);
         Assert.NotEmpty(vm.SelectedSubscriber.Payments);
-        Assert.All(vm.ContractRows, r => Assert.Equal(other.HouseId, r.Subscriber.HouseId));
+        Assert.All(vm.ContractsScreen.ContractRows, r => Assert.Equal(other.HouseId, r.Subscriber.HouseId));
     }
 
     [Fact]
