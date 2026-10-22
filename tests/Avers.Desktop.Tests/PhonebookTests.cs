@@ -10,17 +10,17 @@ public class PhonebookTests
     {
         using var app = new DesktopApp("engineer");
         app.Go(AppModule.Phonebook);
-        Assert.True(app.Vm.CanEditPhonebook);
+        Assert.True(app.Vm.PhonebookScreen.CanEditPhonebook);
 
-        app.Vm.StreetName = "Звёздная";
-        await app.Vm.AddStreetCommand.ExecuteAsync(null);
+        app.Vm.PhonebookScreen.StreetName = "Звёздная";
+        await app.Vm.PhonebookScreen.AddStreetCommand.ExecuteAsync(null);
         Assert.Equal("Звёздная", app.Vm.SelectedStreet?.Name);
         Assert.Empty(app.Vm.HousesOnStreet);
 
-        app.Vm.NewHouseCommand.Execute(null);
-        app.Vm.EditHouse!.Number = "7А";
-        app.Vm.EditHouse.Floors = 5;
-        await app.Vm.SaveHouseDataCommand.ExecuteAsync(null);
+        app.Vm.PhonebookScreen.NewHouseCommand.Execute(null);
+        app.Vm.PhonebookScreen.EditHouse!.Number = "7А";
+        app.Vm.PhonebookScreen.EditHouse.Floors = 5;
+        await app.Vm.PhonebookScreen.SaveHouseDataCommand.ExecuteAsync(null);
 
         Assert.Equal("Дом 7А сохранён.", app.Vm.Status);
         Assert.Equal("Звёздная", app.Vm.SelectedStreet?.Name);
@@ -33,11 +33,11 @@ public class PhonebookTests
         using var app = new DesktopApp("engineer");
         app.Go(AppModule.Phonebook);
         var count = app.Vm.Mechanics.Count;
-        app.Vm.SelectedMechanic = app.Vm.Mechanics[0];
+        app.Vm.PhonebookScreen.SelectedMechanic = app.Vm.Mechanics[0];
 
-        await app.Vm.DeleteMechanicCommand.ExecuteAsync(null);
+        await app.Vm.PhonebookScreen.DeleteMechanicCommand.ExecuteAsync(null);
         Assert.Equal(count, app.Vm.Mechanics.Count);
-        await app.Vm.DeleteMechanicCommand.ExecuteAsync(null);
+        await app.Vm.PhonebookScreen.DeleteMechanicCommand.ExecuteAsync(null);
 
         Assert.Equal(count - 1, app.Vm.Mechanics.Count);
     }
@@ -49,8 +49,8 @@ public class PhonebookTests
         app.Go(AppModule.Phonebook);
         var house = app.Vm.SelectedHouse!;
 
-        await app.Vm.DeleteHouseCommand.ExecuteAsync(null);
-        await app.Vm.DeleteHouseCommand.ExecuteAsync(null);
+        await app.Vm.PhonebookScreen.DeleteHouseCommand.ExecuteAsync(null);
+        await app.Vm.PhonebookScreen.DeleteHouseCommand.ExecuteAsync(null);
 
         Assert.StartsWith("У дома есть абоненты", app.Vm.Status);
         Assert.Contains(app.Vm.HousesOnStreet, h => h.Id == house.Id);
@@ -62,6 +62,6 @@ public class PhonebookTests
         using var app = new DesktopApp("orlova");
         app.Go(AppModule.Phonebook);
 
-        Assert.False(app.Vm.CanEditPhonebook);
+        Assert.False(app.Vm.PhonebookScreen.CanEditPhonebook);
     }
 }
