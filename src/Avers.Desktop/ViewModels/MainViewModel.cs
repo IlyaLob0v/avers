@@ -35,13 +35,17 @@ public sealed partial class MainViewModel : ObservableObject
         AccessScreen = new AccessViewModel(this);
         ChangeLogScreen = new ChangeLogViewModel(this);
         PhonebookScreen = new PhonebookViewModel(this);
+        PprScreen = new PprViewModel(this);
     }
 
     internal IAversStore Store => _store;
+    internal DateOnly Today => _today;
+    internal IReadOnlyList<House> Houses => _houses;
 
     public AccessViewModel AccessScreen { get; }
     public ChangeLogViewModel ChangeLogScreen { get; }
     public PhonebookViewModel PhonebookScreen { get; }
+    public PprViewModel PprScreen { get; }
 
     public ObservableCollection<AppUser> Users { get; } = [];
     public ObservableCollection<Street> Streets { get; } = [];
@@ -52,7 +56,6 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<Material> Materials { get; } = [];
     public ObservableCollection<UnifiedReceipt> Receipts { get; } = [];
     public ObservableCollection<DebtorRow> Debtors { get; } = [];
-    public ObservableCollection<PprRow> PprRows { get; } = [];
     public ObservableCollection<ReportMetric> ReportMetrics { get; } = [];
     public ObservableCollection<HouseScheme> Schemes { get; } = [];
     public ObservableCollection<IntercomTicket> IntercomTickets { get; } = [];
@@ -275,7 +278,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowShell));
         OnPropertyChanged(nameof(CanEditCard));
         OnPropertyChanged(nameof(CanEditSettings));
-        OnPropertyChanged(nameof(CanEditPpr));
+        PprScreen.RefreshRights();
         OnPropertyChanged(nameof(CanEditSchemes));
         OnPropertyChanged(nameof(CanEditIntercoms));
         OnPropertyChanged(nameof(CanAcceptIntercomTickets));
@@ -346,7 +349,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Сводки по всей базе (ППР, отчёт): меняются только после записи, считаем их в <see cref="Apply"/>.</summary>
     private void RefreshTotals()
     {
-        LoadPprYears();
+        PprScreen.LoadPprYears();
 
         RefreshReport();
     }

@@ -9,10 +9,11 @@ namespace Avers.Desktop.ViewModels;
 /// Графики ППР: план по домам на год, отметка о выполнении щелчком по месяцу, итоги по месяцам,
 /// процент выполнения на рабочую дату, просроченные работы и перенос плана на следующий год.
 /// </summary>
-public sealed partial class MainViewModel
+public sealed partial class PprViewModel(MainViewModel shell) : ObservableObject
 {
     public const string PprAllHouses = "все дома";
 
+    public ObservableCollection<PprRow> PprRows { get; } = [];
     public ObservableCollection<int> PprYears { get; } = [];
     public ObservableCollection<string> PprFilters { get; } = [];
     public ObservableCollection<PprTotalRow> PprTotals { get; } = [];
@@ -23,8 +24,11 @@ public sealed partial class MainViewModel
     [ObservableProperty] private bool _pprOnlyOverdue;
     [ObservableProperty] private string _pprSummary = "";
 
-    public bool CanEditPpr => User is { } u && RoleCatalog.Can(u.Role, AppModule.Anten, out var level) && level == RoleCatalog.AccessLevel.Edit;
+    public bool CanEditPpr => shell.User is { } u && RoleCatalog.Can(u.Role, AppModule.Anten, out var level) && level == RoleCatalog.AccessLevel.Edit;
     public string PprCopyTitle => $"Скопировать план на {PprYear + 1}";
+
+    /// <summary>Сменился пользователь: права на отметки.</summary>
+    internal void RefreshRights() => OnPropertyChanged(nameof(CanEditPpr));
 
     partial void OnPprYearChanged(int value)
     {
@@ -37,19 +41,19 @@ public sealed partial class MainViewModel
     partial void OnPprOnlyOverdueChanged(bool value) => RefreshPpr();
 
     /// <summary>Годы, по которым есть план, и следующий за последним — чтобы было куда копировать.</summary>
-    private void LoadPprYears()
+    internal void LoadPprYears()
     {
-        var years = _houses.SelectMany(h => h.Ppr).Select(e => e.Year).Append(_today.Year).Distinct().Order().ToList();
+        var years = shell.Houses.SelectMany(h => h.Ppr).Select(e => e.Year).Append(shell.Today.Year).Distinct().Order().ToList();
         years.Add(years[^1] + 1);
         PprYears.Clear();
         foreach (var y in years) PprYears.Add(y);
-        if (PprYear == 0) PprYear = _today.Year;
+        if (PprYear == 0) PprYear = shell.Today.Year;
         LoadPprFilters();
     }
 
     private void LoadPprFilters()
     {
-        var names = (PprByZone ? _houses.Select(h => h.Zone) : _houses.Select(h => h.Organization?.Name ?? ""))
+        var names = (PprByZone ? shell.Houses.Select(h => h.Zone) : shell.Houses.Select(h => h.Organization?.Name ?? ""))
             .Where(n => n != "").Distinct().Order().Prepend(PprAllHouses).ToList();
         if (!names.SequenceEqual(PprFilters))
         {
@@ -65,9 +69,9 @@ public sealed partial class MainViewModel
 
     private void RefreshPpr()
     {
-        var houses = _houses.Where(h => h.Serviced && MatchesPprFilter(h))
+        var houses = shell.Houses.Where(h => h.Serviced && MatchesPprFilter(h))
             .OrderBy(h => h.Street.Name).ThenBy(h => h.Number, NaturalOrder.Instance)
-            .Select(h => new PprRow(h, PprYear, _today))
+            .Select(h => new PprRow(h, PprYear, shell.Today))
             .Where(r => !PprOnlyOverdue || r.HasOverdue)
             .ToList();
 
@@ -87,7 +91,7 @@ public sealed partial class MainViewModel
 
         var entries = houses.SelectMany(r => r.House.Ppr.Where(e => e.Year == PprYear));
         var overdue = houses.Sum(r => r.Cells.Count(c => c.Status == PprStatus.Overdue));
-        PprSummary = $"Выполнено на {_today:dd.MM.yyyy}: {PprSchedule.DonePercent(entries, _today)} %" +
+        PprSummary = $"Выполнено на {shell.Today:dd.MM.yyyy}: {PprSchedule.DonePercent(entries, shell.Today)} %" +
                      (overdue > 0 ? $" · просрочено работ: {overdue}" : "");
     }
 
@@ -99,11 +103,11 @@ public sealed partial class MainViewModel
     {
         if (cell is null || !CanEditPpr) return;
         var status = PprSchedule.Next(cell.Status);
-        await Save(async () =>
+        await shell.Save(async () =>
         {
-            await _store.MarkPprAsync(cell.HouseId, cell.Year, cell.Month, status);
-            await ReloadAsync();
-            Status = $"ППР {cell.Address}, {Months[cell.Month - 1].ToLowerInvariant()} {cell.Year}: {PprStatusText(status)}.";
+            await shell.Store.MarkPprAsync(cell.HouseId, cell.Year, cell.Month, status);
+            await shell.ReloadAsync();
+            shell.Status = $"ППР {cell.Address}, {shell.Months[cell.Month - 1].ToLowerInvariant()} {cell.Year}: {PprStatusText(status)}.";
         });
     }
 
@@ -112,12 +116,12 @@ public sealed partial class MainViewModel
     {
         if (!CanEditPpr) return;
         var year = PprYear;
-        await Save(async () =>
+        await shell.Save(async () =>
         {
-            var copied = await _store.CopyPprAsync(year);
-            await ReloadAsync();
+            var copied = await shell.Store.CopyPprAsync(year);
+            await shell.ReloadAsync();
             PprYear = year + 1;
-            Status = $"План ППР перенесён на {year + 1} год: {copied} работ.";
+            shell.Status = $"План ППР перенесён на {year + 1} год: {copied} работ.";
         });
     }
 

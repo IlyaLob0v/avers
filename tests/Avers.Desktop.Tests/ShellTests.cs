@@ -411,19 +411,19 @@ public class ShellTests
     {
         using var app = new DesktopApp("engineer");
         app.Go(AppModule.Ppr);
-        var row = app.Vm.PprRows.First(r => r.Cells[7].Status == PprStatus.Empty);
+        var row = app.Vm.PprScreen.PprRows.First(r => r.Cells[7].Status == PprStatus.Empty);
         var houseId = row.House.Id;
 
-        app.Vm.MarkPprCommand.Execute(row.Cells[7]);
+        app.Vm.PprScreen.MarkPprCommand.Execute(row.Cells[7]);
         app.Pump();
-        app.Vm.MarkPprCommand.Execute(app.Vm.PprRows.Single(r => r.House.Id == houseId).Cells[7]);
+        app.Vm.PprScreen.MarkPprCommand.Execute(app.Vm.PprScreen.PprRows.Single(r => r.House.Id == houseId).Cells[7]);
         app.Pump();
 
-        var marked = app.Vm.PprRows.Single(r => r.House.Id == houseId);
+        var marked = app.Vm.PprScreen.PprRows.Single(r => r.House.Id == houseId);
         Assert.Equal(PprStatus.Done, marked.Cells[7].Status);
         Assert.Equal(DemoSeeder.WorkDate, marked.House.LastPpr);
-        Assert.StartsWith($"Выполнено на {DemoSeeder.WorkDate:dd.MM.yyyy}:", app.Vm.PprSummary);
-        Assert.Equal(app.Vm.PprRows.Count(r => r.Cells[7].Status != PprStatus.Empty), app.Vm.PprTotals[0].Values[7]);
+        Assert.StartsWith($"Выполнено на {DemoSeeder.WorkDate:dd.MM.yyyy}:", app.Vm.PprScreen.PprSummary);
+        Assert.Equal(app.Vm.PprScreen.PprRows.Count(r => r.Cells[7].Status != PprStatus.Empty), app.Vm.PprScreen.PprTotals[0].Values[7]);
     }
 
     [AvaloniaFact]
@@ -432,10 +432,10 @@ public class ShellTests
         using var app = new DesktopApp("engineer");
         app.Go(AppModule.Ppr);
 
-        app.Vm.PprOnlyOverdue = true;
+        app.Vm.PprScreen.PprOnlyOverdue = true;
 
-        Assert.NotEmpty(app.Vm.PprRows);
-        Assert.All(app.Vm.PprRows, r => Assert.True(r.HasOverdue));
+        Assert.NotEmpty(app.Vm.PprScreen.PprRows);
+        Assert.All(app.Vm.PprScreen.PprRows, r => Assert.True(r.HasOverdue));
     }
 
     [AvaloniaFact]
@@ -443,12 +443,12 @@ public class ShellTests
     {
         using var app = new DesktopApp("sokolova");
         app.Go(AppModule.Ppr);
-        var cell = app.Vm.PprRows.First().Cells[11];
+        var cell = app.Vm.PprScreen.PprRows.First().Cells[11];
 
-        app.Vm.MarkPprCommand.Execute(cell);
+        app.Vm.PprScreen.MarkPprCommand.Execute(cell);
 
-        Assert.False(app.Vm.CanEditPpr);
-        Assert.Equal(cell.Status, app.Vm.PprRows.First().Cells[11].Status);
+        Assert.False(app.Vm.PprScreen.CanEditPpr);
+        Assert.Equal(cell.Status, app.Vm.PprScreen.PprRows.First().Cells[11].Status);
     }
 
     [AvaloniaFact]
