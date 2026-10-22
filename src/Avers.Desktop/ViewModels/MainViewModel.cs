@@ -29,8 +29,6 @@ public sealed partial class MainViewModel : ObservableObject
     {
         _store = store;
         _today = store.Today;
-        _reportFrom = new DateOnly(_today.Year, 1, 1);
-        _reportTo = _today;
         _oekMonth = _today.AddMonths(-1).ToString("MM.yyyy");
         AccessScreen = new AccessViewModel(this);
         ChangeLogScreen = new ChangeLogViewModel(this);
@@ -38,12 +36,15 @@ public sealed partial class MainViewModel : ObservableObject
         PprScreen = new PprViewModel(this);
         IntercomScreen = new IntercomViewModel(this);
         SchemeScreen = new SchemeViewModel(this);
+        ReportsScreen = new ReportsViewModel(this);
     }
 
     internal IAversStore Store => _store;
     internal DateOnly Today => _today;
     internal IReadOnlyList<House> Houses => _houses;
     internal IReadOnlyList<IntercomTicket> AllIntercomTickets => _intercomTickets;
+    internal IReadOnlyList<WorkTicket> AllTickets => _tickets;
+    internal IReadOnlyDictionary<int, decimal> DebtByHouse => _debtByHouse;
 
     public AccessViewModel AccessScreen { get; }
     public ChangeLogViewModel ChangeLogScreen { get; }
@@ -51,6 +52,7 @@ public sealed partial class MainViewModel : ObservableObject
     public PprViewModel PprScreen { get; }
     public IntercomViewModel IntercomScreen { get; }
     public SchemeViewModel SchemeScreen { get; }
+    public ReportsViewModel ReportsScreen { get; }
 
     public ObservableCollection<AppUser> Users { get; } = [];
     public ObservableCollection<Street> Streets { get; } = [];
@@ -61,7 +63,6 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<Material> Materials { get; } = [];
     public ObservableCollection<UnifiedReceipt> Receipts { get; } = [];
     public ObservableCollection<DebtorRow> Debtors { get; } = [];
-    public ObservableCollection<ReportMetric> ReportMetrics { get; } = [];
     public ObservableCollection<PaymentGridRow> PaymentRows { get; } = [];
 
     [ObservableProperty] private AppUser? _loginUser;
@@ -87,8 +88,6 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _ticketWork = "";
     [ObservableProperty] private string _ticketMechanic = "";
     [ObservableProperty] private string _claimText = "";
-    [ObservableProperty] private DateOnly _reportFrom;
-    [ObservableProperty] private DateOnly _reportTo;
 
     public string LoginRoleTitle => LoginUser is null ? "" : RoleCatalog.Title(LoginUser.Role);
     public bool ShowLogin => User is null;
@@ -269,7 +268,7 @@ public sealed partial class MainViewModel : ObservableObject
             Debtors.Add(new DebtorRow(d, houses[d.HouseId]));
         SelectedDebtor = Debtors.FirstOrDefault(d => d.SubscriberId == keepDebtor) ?? Debtors.FirstOrDefault();
         _debtByHouse = debts.ByHouse;
-        RefreshReport();
+        ReportsScreen.RefreshReport();
     }
 
     partial void OnLoginUserChanged(AppUser? value) => OnPropertyChanged(nameof(LoginRoleTitle));
@@ -352,7 +351,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         PprScreen.LoadPprYears();
 
-        RefreshReport();
+        ReportsScreen.RefreshReport();
     }
 
     /// <summary>Всё, что зависит от выбранного дома и квартиры.</summary>
@@ -559,7 +558,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    private static string Money(decimal value) => value.ToString("N2") + " ₽";
+    internal static string Money(decimal value) => value.ToString("N2") + " ₽";
 }
 
 public sealed class PaymentGridRow

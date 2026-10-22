@@ -181,7 +181,9 @@
         </Panel>
         <views:LegalView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Legal}}" />
         <views:ClaimView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Claim}}" />
-        <views:ReportsView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Reports}}" />
+        <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Reports}}">
+          <views:ReportsView DataContext="{Binding ReportsScreen}" />
+        </Panel>
         <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Phonebook}}">
           <views:PhonebookView DataContext="{Binding PhonebookScreen}" />
         </Panel>
