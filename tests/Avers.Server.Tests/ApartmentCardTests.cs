@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Avers.Contracts;
+using Avers.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace Avers.Server.Tests;
@@ -70,6 +71,21 @@ public class ApartmentCardTests
         Assert.Equal(2, read!.Months);
         Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+    }
+
+    [Fact]
+    public async Task OekImport_HeadLoads_LawyerCannot()
+    {
+        await using var app = new AversApp();
+        var lawyer = await app.LoginAsync("lawyer");
+        var head = await app.LoginAsync("orlov");
+        var file = new OekImportRequest(2026, 8, [new OekRow("83072480817", "000-нет", "", "", 150, 150, null)]);
+
+        var forbidden = await lawyer.PostAsJsonAsync("/api/oek/import", file);
+        var result = await (await head.PostAsJsonAsync("/api/oek/import", file)).Content.ReadFromJsonAsync<OekImportResult>();
+
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        Assert.Equal("нет в Аверсе", Assert.Single(result!.Mismatches).Problem);
     }
 
     [Fact]

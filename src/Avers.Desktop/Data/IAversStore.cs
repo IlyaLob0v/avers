@@ -45,6 +45,8 @@ public interface IAversStore
 
     Task CancelPaymentAsync(int subscriberId, int paymentId);
 
+    Task<OekImportResult> ImportOekAsync(OekImportRequest request);
+
     /// <summary>Новая квартира: абонент с договором и тариф начислений.</summary>
     Task AddApartmentAsync(Subscriber draft, decimal tariff);
 

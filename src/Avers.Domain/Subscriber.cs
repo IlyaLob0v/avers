@@ -22,6 +22,9 @@ public sealed class Subscriber
     public string Notes { get; set; } = "";
     public string PzhreuIndex { get; set; } = "";
     public string PzhreuAccount { get; set; } = "";
+
+    /// <summary>Лицевой счёт в едином платёжном документе ОЭК (11 цифр); заполняется загрузкой файла ОЭК.</summary>
+    public string OekAccount { get; set; } = "";
     public int SettlementFrom { get; set; }
     public DateOnly? LastPaymentDate { get; set; }
     public bool PrintAccountWithPayDate { get; set; } = true;

@@ -107,4 +107,15 @@ public static class PaymentEndpoints
             ? TypedResults.NoContent()
             : TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["payment"] = [error] });
     }
+
+    /// <summary>Файл начислений ОЭК за месяц: оплаты в карточки и список расхождений (<see cref="OekImport"/>).</summary>
+    public static Results<Ok<OekImportResult>, ValidationProblem> ImportOek(
+        OekImportRequest request, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
+    {
+        if (request.Year is < 2000 or > 2100 || request.Month is < 1 or > 12)
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["month"] = ["Месяц файла — мм.гггг."] });
+        if (request.Rows.Count == 0)
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["rows"] = ["В файле нет строк."] });
+        return TypedResults.Ok(OekImport.Apply(db, request, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow()));
+    }
 }

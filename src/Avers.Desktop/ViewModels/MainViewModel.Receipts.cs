@@ -1,5 +1,11 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Platform.Storage;
+using Avers.Data;
 using Avers.Desktop.Data;
+using Avers.Desktop.Reports;
 using Avers.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -8,7 +14,7 @@ namespace Avers.Desktop.ViewModels;
 
 /// <summary>
 /// Единые квитанции ПЖРЭУ: поиск квартиры по любому лицевому счёту во всей базе и отбор строк по месяцу.
-/// Загрузки файлов ПЖРЭУ пока нет: ждём образец файла.
+/// Квитанции делает ОЭК (мы в них услуга с кодом 38): её файл начислений загружается здесь же.
 /// </summary>
 public sealed partial class MainViewModel
 {
@@ -18,6 +24,9 @@ public sealed partial class MainViewModel
 
     [ObservableProperty] private ReceiptPeriod? _selectedReceiptPeriod;
     [ObservableProperty] private string _receiptAccount = "";
+
+    /// <summary>Месяц файла ОЭК, мм.гггг; по умолчанию прошлый: файл за месяц приходит в следующем.</summary>
+    [ObservableProperty] private string _oekMonth = "";
 
     public string ReceiptOwner => SelectedSubscriber is { } s ? $"{s.FullName} · {s.House.AddressLine}, кв. {s.Apartment}" : "";
 
@@ -74,6 +83,62 @@ public sealed partial class MainViewModel
         Status = Receipts.Count == 0
             ? $"По лицевому счёту {SelectedSubscriber?.Account} единых квитанций нет."
             : $"Лицевой счёт {SelectedSubscriber?.Account}: строк — {Receipts.Count}.";
+    }
+
+    [RelayCommand]
+    private async Task ImportOek()
+    {
+        if (await PickOekFileAsync() is { } path)
+            await ImportOekFileAsync(path);
+    }
+
+    /// <summary>Загружает файл ОЭК за <see cref="OekMonth"/>; расхождения открываются в Excel.</summary>
+    public async Task ImportOekFileAsync(string path)
+    {
+        if (!CanEditSettings)
+        {
+            Status = "Файл ОЭК загружают администратор и начальник АДС.";
+            return;
+        }
+        if (!DateOnly.TryParseExact("01." + OekMonth.Trim(), ["dd.MM.yyyy", "dd.M.yyyy"], Ru, DateTimeStyles.None, out var month))
+        {
+            Status = "Месяц файла ОЭК — в виде мм.гггг.";
+            return;
+        }
+        List<OekRow> rows;
+        try
+        {
+            rows = OekFile.Read(path);
+        }
+        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            Status = $"Не удалось прочитать файл ОЭК: {e.Message}";
+            return;
+        }
+        await Save(async () =>
+        {
+            var r = await _store.ImportOekAsync(new OekImportRequest(month.Year, month.Month, rows));
+            await ReloadAsync();
+            if (r.Mismatches.Count > 0)
+                Export("сверка-оэк", "сверка с ОЭК", file => XlsxTable.Write(file,
+                    $"Сверка с ОЭК за {month:MM.yyyy}: строки, которые надо разобрать",
+                    ["Л/с ОЭК", "Л/с Аверса", "Адрес", "Кв.", "Начислено ОЭК", "Тариф Аверса", "Оплачено ОЭК", "Что не так"],
+                    r.Mismatches.Select(m => new object?[] { m.OekAccount, m.Account, m.Address, m.Apartment, m.OekAccrued, m.AversTariff, m.OekPaid, m.Problem })));
+            Status = $"Файл ОЭК за {month:MM.yyyy}: строк {r.Rows}, найдено квартир {r.Matched}, загружено оплат {r.Payments} на {Money(r.PaidTotal)}, " +
+                     $"уже были загружены {r.AlreadyLoaded}, расхождений {r.Mismatches.Count}.";
+        });
+    }
+
+    private static async Task<string?> PickOekFileAsync()
+    {
+        if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime { MainWindow: { } window })
+            return null;
+        var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Файл начислений ОЭК",
+            FileTypeFilter = [new FilePickerFileType("Excel") { Patterns = ["*.xlsx"] }]
+        });
+        return files.Count == 0 ? null : files[0].TryGetLocalPath();
     }
 }
 
