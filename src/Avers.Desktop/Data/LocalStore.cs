@@ -73,26 +73,12 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
     public Task<PaymentDto> RecordPaymentAsync(int subscriberId, int year, decimal? amount, AppUser user)
     {
         using var ctx = db.CreateDbContext();
-        var next = ctx.Payments.Where(p => p.SubscriberId == subscriberId && p.Year == year && p.Amount == null)
-                       .OrderBy(p => p.Month).FirstOrDefault()
-                   ?? throw new StoreException($"Все месяцы {year} уже оплачены.");
-        var paid = amount ?? next.Tariff;
-        var changes = ChangeLog.Diff(
-            ("Сумма", next.Amount, paid),
-            ("Дата оплаты", next.PaidAt, Today),
-            ("Источник", next.Source, "Касса"));
-        next.Amount = paid;
-        next.Source = "Касса";
-        next.PaidAt = Today;
-        next.RecordedBy = user.DisplayName;
         var subscriber = ctx.Subscribers.First(s => s.Id == subscriberId);
-        if (subscriber.LastPaymentDate is null || subscriber.LastPaymentDate < Today)
-            subscriber.LastPaymentDate = Today;
-        ChangeLog.Add(ctx, DateTimeOffset.UtcNow, ChangeLog.Who(ctx, user.Id), $"Оплата за {next.Month:00}.{next.Year}",
-            ChangeLog.Account(subscriber), changes);
-        ctx.SaveChanges();
-        return Task.FromResult(new PaymentDto(next.Id, next.Year, next.Month, next.Tariff, next.Amount, next.PaidAt,
-            next.Source, true, next.RecordedBy));
+        var (p, error) = Payments.Record(ctx, subscriber, year, null, amount, Today, null, null, user.DisplayName,
+            ChangeLog.Who(ctx, user.Id), DateTimeOffset.UtcNow);
+        return p is null
+            ? throw new StoreException(error!)
+            : Task.FromResult(new PaymentDto(p.Id, p.Year, p.Month, p.Tariff, p.Amount, p.PaidAt, p.Source, true, p.RecordedBy));
     }
 
     public Task SaveCourtCaseAsync(int subscriberId, CourtCase draft) =>
@@ -158,21 +144,15 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
     public Task SaveHousePassportAsync(int houseId, HousePassportRequest request)
     {
         using var ctx = db.CreateDbContext();
-        var h = ctx.Houses.Include(x => x.Street).First(x => x.Id == houseId);
-        ChangeLog.Add(ctx, DateTimeOffset.UtcNow, ChangeLog.Who(ctx, _userId), "Паспорт дома", h.AddressLine, ChangeLog.Diff(
-            ("Антенны, подъезды", h.Antennas, request.Antennas),
-            ("Воздушные линии", h.AerialCables, request.AerialCables),
-            ("Усилители", h.Amplifiers, request.Amplifiers),
-            ("Блоки питания", h.PowerSupplies, request.PowerSupplies),
-            ("Ключ техэтажа", h.TechFloorKey, request.TechFloorKey),
-            ("Прочее", h.OtherNotes, request.OtherNotes)));
-        h.Antennas = request.Antennas ?? "";
-        h.AerialCables = request.AerialCables ?? "";
-        h.Amplifiers = request.Amplifiers ?? "";
-        h.PowerSupplies = request.PowerSupplies ?? "";
-        h.TechFloorKey = request.TechFloorKey ?? "";
-        h.OtherNotes = request.OtherNotes ?? "";
-        ctx.SaveChanges();
+        HousePassport.Save(ctx, houseId, new House
+        {
+            Antennas = request.Antennas ?? "",
+            AerialCables = request.AerialCables ?? "",
+            Amplifiers = request.Amplifiers ?? "",
+            PowerSupplies = request.PowerSupplies ?? "",
+            TechFloorKey = request.TechFloorKey ?? "",
+            OtherNotes = request.OtherNotes ?? ""
+        }, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
         return Task.CompletedTask;
     }
 
@@ -287,24 +267,23 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
     public Task<int> AcceptTicketAsync(CreateTicketRequest request, AppUser user)
     {
         using var ctx = db.CreateDbContext();
-        var ticket = new WorkTicket
+        var now = DateTime.Now;
+        var ticket = Tickets.Accept(ctx, new WorkTicket
         {
-            Number = (ctx.Tickets.Max(t => (int?)t.Number) ?? 0) + 1,
             Date = Today,
-            Time = TimeOnly.FromDateTime(DateTime.Now),
+            Time = new TimeOnly(now.Hour, now.Minute),
             HouseId = request.HouseId,
             SubscriberId = request.SubscriberId,
-            Apartment = request.Apartment ?? "",
             Section = request.Section ?? "",
+            Apartment = request.Apartment ?? "",
             Phone = request.Phone ?? "",
             Kind = Enum.TryParse<TicketKind>(request.Kind, out var kind) ? kind : TicketKind.Antenna,
             Fault = request.Fault,
-            Status = TicketStatus.Accepted,
+            Mechanic = request.Mechanic ?? "",
+            RisersNote = request.RisersNote ?? "",
             AcceptedBy = user.DisplayName,
             AcceptedByUserId = user.Id
-        };
-        ctx.Tickets.Add(ticket);
-        ctx.SaveChanges();
+        });
         return Task.FromResult(ticket.Number);
     }
 
