@@ -27,7 +27,6 @@ public sealed partial class MainViewModel
         : "";
 
     private int _caseId;
-    [ObservableProperty] private string _caseNumber = "";
     [ObservableProperty] private string _caseOrder = "";
     [ObservableProperty] private string _caseDate = "";
     [ObservableProperty] private string _caseCourt = "";
@@ -46,7 +45,6 @@ public sealed partial class MainViewModel
     {
         var c = SelectedDebtor?.CourtCase;
         _caseId = c?.Id ?? 0;
-        CaseNumber = c?.DelaAversId ?? "";
         CaseOrder = c?.OrderNumber ?? "";
         CaseDate = c?.OrderDate.ToString("dd.MM.yyyy") ?? "";
         CaseCourt = c?.Court ?? "";
@@ -64,7 +62,7 @@ public sealed partial class MainViewModel
     {
         if (SelectedDebtor is not { } d) return;
         _caseId = 0;
-        CaseNumber = CaseOrder = CaseCourt = CaseStatus = CaseDuty = CaseWritTo = CaseWritDate = CaseReceipts = CaseNotes = "";
+        CaseOrder = CaseCourt = CaseStatus = CaseDuty = CaseWritTo = CaseWritDate = CaseReceipts = CaseNotes = "";
         CaseDate = _today.ToString("dd.MM.yyyy");
         CaseAmount = d.Debt.ToString("0.00", Ru);
         Status = $"Новое дело для {d.FullName}: заполните и нажмите «Сохранить дело».";
@@ -100,7 +98,6 @@ public sealed partial class MainViewModel
             await _store.SaveCourtCaseAsync(d.SubscriberId, new CourtCase
             {
                 Id = _caseId,
-                DelaAversId = CaseNumber,
                 OrderNumber = CaseOrder,
                 OrderDate = date.Value,
                 Court = CaseCourt,

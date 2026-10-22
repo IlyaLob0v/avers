@@ -36,14 +36,12 @@
     <HeaderedContentControl Grid.Row="1" Grid.ColumnSpan="2" Classes="group" Margin="0,10,0,0" Header="Судебное дело (последнее)">
       <StackPanel>
         <Grid ColumnDefinitions="Auto,140,Auto,140,Auto,110,Auto,110" RowDefinitions="Auto,Auto,Auto,Auto,Auto" IsEnabled="{Binding CanEditCourtCases}">
-          <TextBlock Classes="label" VerticalAlignment="Center" Text="Дело-Аверс №" />
-          <TextBox Grid.Column="1" Classes="cell" Text="{Binding CaseNumber}" />
-          <TextBlock Grid.Column="2" Classes="label" Margin="8,0,4,0" VerticalAlignment="Center" Text="Приказ №" />
-          <TextBox Grid.Column="3" Classes="cell" Text="{Binding CaseOrder}" />
-          <TextBlock Grid.Column="4" Classes="label" Margin="8,0,4,0" VerticalAlignment="Center" Text="от" />
-          <TextBox Grid.Column="5" Classes="cell" PlaceholderText="дд.мм.гггг" Text="{Binding CaseDate}" />
-          <TextBlock Grid.Column="6" Classes="label" Margin="8,0,4,0" VerticalAlignment="Center" Text="Сумма" />
-          <TextBox Grid.Column="7" Classes="cell" Text="{Binding CaseAmount}" />
+          <TextBlock Classes="label" VerticalAlignment="Center" Text="Приказ №" />
+          <TextBox Grid.Column="1" Classes="cell" Text="{Binding CaseOrder}" />
+          <TextBlock Grid.Column="2" Classes="label" Margin="8,0,4,0" VerticalAlignment="Center" Text="от" />
+          <TextBox Grid.Column="3" Classes="cell" PlaceholderText="дд.мм.гггг" Text="{Binding CaseDate}" />
+          <TextBlock Grid.Column="4" Classes="label" Margin="8,0,4,0" VerticalAlignment="Center" Text="Сумма" />
+          <TextBox Grid.Column="5" Classes="cell" Text="{Binding CaseAmount}" />
           <TextBlock Grid.Row="1" Classes="label" VerticalAlignment="Center" Text="Суд" />
           <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Classes="cell" Text="{Binding CaseCourt}" />
           <TextBlock Grid.Row="1" Grid.Column="4" Classes="label" Margin="8,0,4,0" VerticalAlignment="Center" Text="Состояние" />

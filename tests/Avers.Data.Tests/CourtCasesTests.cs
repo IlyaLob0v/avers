@@ -8,7 +8,7 @@ public class CourtCasesTests
     private static readonly DateTimeOffset At = new(2026, 10, 21, 10, 0, 0, TimeSpan.Zero);
 
     private static CourtCase Draft(int id = 0, string order = "2-1/2026") =>
-        new() { Id = id, DelaAversId = "ДА-1", OrderNumber = order, OrderDate = new DateOnly(2026, 10, 1), Court = "с/у № 47", Amount = 475, Status = "Подано" };
+        new() { Id = id, OrderNumber = order, OrderDate = new DateOnly(2026, 10, 1), Court = "с/у № 47", Amount = 475, Status = "Подано" };
 
     [Fact]
     public void Save_AddsThenEdits_DebtorsShowLatestCase()
@@ -104,7 +104,7 @@ public class CourtCasesTests
         Assert.Null(CourtCases.Save(db, a.Id, Draft(), "Юрист", At));
         var id = db.CourtCases.Single().Id;
 
-        Assert.Equal("Укажите номер дела или номер судебного приказа.",
+        Assert.Equal("Укажите номер судебного приказа.",
             CourtCases.Save(db, a.Id, new CourtCase { OrderDate = Today }, "Юрист", At));
         Assert.Equal("Дело не найдено.", CourtCases.Save(db, b.Id, Draft(id), "Юрист", At));
     }

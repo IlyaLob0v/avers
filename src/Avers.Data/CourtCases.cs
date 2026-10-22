@@ -10,12 +10,12 @@ public static class CourtCases
     /// <summary>Сохраняет дело абонента; черновик с Id = 0 — новое дело. Правка попадает в журнал изменений.</summary>
     public static string? Save(AversDbContext db, int subscriberId, CourtCase draft, string who, DateTimeOffset at)
     {
-        if (draft.DelaAversId.Trim().Length > 40 || draft.OrderNumber.Trim().Length > 40)
-            return "Номер дела и номер приказа — до 40 символов.";
+        if (draft.OrderNumber.Trim().Length > 40)
+            return "Номер приказа — до 40 символов.";
         if (draft.Court.Trim().Length > 200 || draft.Status.Trim().Length > 200)
             return "Суд и состояние дела — до 200 символов.";
-        if (draft.DelaAversId.Trim() == "" && draft.OrderNumber.Trim() == "")
-            return "Укажите номер дела или номер судебного приказа.";
+        if (draft.OrderNumber.Trim() == "")
+            return "Укажите номер судебного приказа.";
         if (draft.WritSentTo.Trim().Length > 40)
             return "Куда направлен лист — до 40 символов.";
         if (draft.Receipts.Trim().Length > MaxTextLength || draft.Notes.Trim().Length > MaxTextLength)
@@ -31,7 +31,6 @@ public static class CourtCases
 
         var isNew = draft.Id == 0;
         ChangeLog.Add(db, at, who, isNew ? "Новое судебное дело" : "Судебное дело", ChangeLog.Account(subscriber), ChangeLog.Diff(
-            ("Дело-Аверс", isNew ? null : item.DelaAversId, draft.DelaAversId),
             ("Приказ", isNew ? null : item.OrderNumber, draft.OrderNumber),
             ("Дата приказа", isNew ? null : item.OrderDate, draft.OrderDate),
             ("Суд", isNew ? null : item.Court, draft.Court),
@@ -42,7 +41,6 @@ public static class CourtCases
             ("Дата направления", isNew ? null : item.WritSentDate, draft.WritSentDate),
             ("Поступления", isNew ? null : item.Receipts, draft.Receipts),
             ("Примечание", isNew ? null : item.Notes, draft.Notes)));
-        item.DelaAversId = draft.DelaAversId.Trim();
         item.OrderNumber = draft.OrderNumber.Trim();
         item.OrderDate = draft.OrderDate;
         item.Court = draft.Court.Trim();
