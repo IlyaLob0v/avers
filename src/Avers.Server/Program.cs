@@ -9,12 +9,17 @@ using Avers.Server.Subscribers;
 using Avers.Server.Tickets;
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddAversDatabase();
 builder.Services.AddSingleton(TimeProvider.System);
+
+// Ключи, которыми подписаны входы. Без папки они живут в памяти, и после перезапуска сервера все входят заново.
+if (builder.Configuration["Avers:KeysDirectory"] is { Length: > 0 } keys)
+    builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keys));
 
 builder.Services.AddAuthentication(BearerTokenDefaults.AuthenticationScheme)
     .AddBearerToken(o => o.BearerTokenExpiration = TimeSpan.FromHours(12));

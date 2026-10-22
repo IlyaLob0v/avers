@@ -43,6 +43,9 @@ dotnet tool restore
 dotnet ef migrations add <Название> --project src/Avers.Data --output-dir Migrations
 ```
 
+`Avers:KeysDirectory` — папка ключей, которыми подписаны входы. Без неё ключи живут в памяти и после перезапуска
+сервера все входят заново. Служба на сервере держит их в `/var/lib/avers-server/keys`.
+
 Строка подключения — `ConnectionStrings:Avers`. Пароль в `appsettings.json` не писать: user-secrets или
 переменная окружения `ConnectionStrings__Avers`.
 
