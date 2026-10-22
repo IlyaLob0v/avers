@@ -171,7 +171,7 @@ public sealed partial class MainViewModel
         OnPropertyChanged(nameof(LastPaymentLine));
         OnPropertyChanged(nameof(PaymentWarningHint));
         OnPropertyChanged(nameof(CanEditCard));
-        OnPropertyChanged(nameof(CanEditCourtCases));
+        LegalScreen.RefreshRights();
         OnPropertyChanged(nameof(CanEditSettings));
     }
 
@@ -356,7 +356,7 @@ public sealed partial class MainViewModel
         });
     }
 
-    private static bool TryParseDate(string text, out DateOnly? date)
+    internal static bool TryParseDate(string text, out DateOnly? date)
     {
         date = null;
         if (string.IsNullOrWhiteSpace(text)) return true;

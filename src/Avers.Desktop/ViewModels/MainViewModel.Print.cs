@@ -39,7 +39,7 @@ public sealed partial class MainViewModel
         OpenPdf(PrintPath(file, s.Account), $"{title} {s.FullName}", path => write(s, path));
     }
 
-    private void OpenPdf(string path, string title, Action<string> write)
+    internal void OpenPdf(string path, string title, Action<string> write)
     {
         try
         {
@@ -54,7 +54,7 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>Пишет документ Word и открывает его.</summary>
-    private void OpenWord(string path, string title, Action<string> write)
+    internal void OpenWord(string path, string title, Action<string> write)
     {
         try
         {
@@ -68,7 +68,7 @@ public sealed partial class MainViewModel
         }
     }
 
-    private static string PrintPath(string kind, string key, string extension = ".pdf")
+    internal static string PrintPath(string kind, string key, string extension = ".pdf")
     {
         var dir = Path.Combine(Path.GetTempPath(), "Avers");
         Directory.CreateDirectory(dir);

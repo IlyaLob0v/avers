@@ -160,8 +160,8 @@ public class ShellTests
     {
         using var app = new DesktopApp("lawyer");
 
-        Assert.NotEmpty(app.Vm.Debtors);
-        Assert.All(app.Vm.Debtors, d => Assert.Equal(d.IsDebt ? RowTone.Debt : RowTone.Warn, d.Tone));
+        Assert.NotEmpty(app.Vm.LegalScreen.Debtors);
+        Assert.All(app.Vm.LegalScreen.Debtors, d => Assert.Equal(d.IsDebt ? RowTone.Debt : RowTone.Warn, d.Tone));
     }
 
     [AvaloniaFact]
@@ -169,16 +169,16 @@ public class ShellTests
     {
         using var app = new DesktopApp("lawyer");
 
-        foreach (var debtor in app.Vm.Debtors.ToList())
+        foreach (var debtor in app.Vm.LegalScreen.Debtors.ToList())
         {
-            app.Vm.SelectedDebtor = debtor;
-            Assert.Contains(MoneyWords.Rubles(debtor.Debt), app.Vm.ClaimText);
-            Assert.Contains($"г. Омск, {debtor.Address}", app.Vm.ClaimText);
-            Assert.Contains("10 (десяти) календарных дней", app.Vm.ClaimText);
+            app.Vm.LegalScreen.SelectedDebtor = debtor;
+            Assert.Contains(MoneyWords.Rubles(debtor.Debt), app.Vm.LegalScreen.ClaimText);
+            Assert.Contains($"г. Омск, {debtor.Address}", app.Vm.LegalScreen.ClaimText);
+            Assert.Contains("10 (десяти) календарных дней", app.Vm.LegalScreen.ClaimText);
         }
 
-        app.Vm.ClaimVariant = app.Vm.ClaimVariants[1];
-        Assert.StartsWith("Досудебное уведомление о погашении задолженности", app.Vm.ClaimText);
+        app.Vm.LegalScreen.ClaimVariant = app.Vm.LegalScreen.ClaimVariants[1];
+        Assert.StartsWith("Досудебное уведомление о погашении задолженности", app.Vm.LegalScreen.ClaimText);
     }
 
     [AvaloniaFact]
@@ -251,24 +251,24 @@ public class ShellTests
         using var app = new DesktopApp("lawyer");
         app.Go(AppModule.Claim);
         app.Pump();
-        var debtor = app.Vm.Debtors.First(d => d.CourtCase is null);
-        app.Vm.SelectedDebtor = debtor;
+        var debtor = app.Vm.LegalScreen.Debtors.First(d => d.CourtCase is null);
+        app.Vm.LegalScreen.SelectedDebtor = debtor;
 
-        app.Vm.NewCourtCaseCommand.Execute(null);
-        app.Vm.CaseOrder = "2-9/2026";
-        app.Vm.CaseDate = "20.08.2026";
-        app.Vm.CaseCourt = "Мировой судья с/у № 47";
-        app.Vm.CaseDuty = "200";
-        app.Vm.CaseWritTo = "ОСП";
-        app.Vm.CaseWritDate = "15.08.2026";
-        app.Vm.CaseReceipts = "100,00-30.08.26";
-        app.Vm.CaseNotes = "Пенсионер";
-        await app.Vm.SaveCourtCaseCommand.ExecuteAsync(null);
+        app.Vm.LegalScreen.NewCourtCaseCommand.Execute(null);
+        app.Vm.LegalScreen.CaseOrder = "2-9/2026";
+        app.Vm.LegalScreen.CaseDate = "20.08.2026";
+        app.Vm.LegalScreen.CaseCourt = "Мировой судья с/у № 47";
+        app.Vm.LegalScreen.CaseDuty = "200";
+        app.Vm.LegalScreen.CaseWritTo = "ОСП";
+        app.Vm.LegalScreen.CaseWritDate = "15.08.2026";
+        app.Vm.LegalScreen.CaseReceipts = "100,00-30.08.26";
+        app.Vm.LegalScreen.CaseNotes = "Пенсионер";
+        await app.Vm.LegalScreen.SaveCourtCaseCommand.ExecuteAsync(null);
 
-        Assert.True(app.Vm.CanEditCourtCases);
-        Assert.Equal("2-9/2026 от 20.08.2026", app.Vm.Debtors.Single(d => d.SubscriberId == debtor.SubscriberId).Case);
+        Assert.True(app.Vm.LegalScreen.CanEditCourtCases);
+        Assert.Equal("2-9/2026 от 20.08.2026", app.Vm.LegalScreen.Debtors.Single(d => d.SubscriberId == debtor.SubscriberId).Case);
         Assert.Equal(("2-9/2026", "200,00", "ОСП", "15.08.2026", "100,00-30.08.26", "Пенсионер"),
-            (app.Vm.CaseOrder, app.Vm.CaseDuty, app.Vm.CaseWritTo, app.Vm.CaseWritDate, app.Vm.CaseReceipts, app.Vm.CaseNotes));
+            (app.Vm.LegalScreen.CaseOrder, app.Vm.LegalScreen.CaseDuty, app.Vm.LegalScreen.CaseWritTo, app.Vm.LegalScreen.CaseWritDate, app.Vm.LegalScreen.CaseReceipts, app.Vm.LegalScreen.CaseNotes));
     }
 
     [AvaloniaFact]
@@ -284,18 +284,18 @@ public class ShellTests
             var opened = new List<string>();
             app.Vm.OpenFile = opened.Add;
 
-            app.Vm.PickDocumentFile = () => Task.FromResult<string?>(file);
-            await app.Vm.AddDocumentCommand.ExecuteAsync(null);
-            app.Vm.SelectedDocument = app.Vm.Documents.Single();
-            await app.Vm.OpenDocumentCommand.ExecuteAsync(null);
+            app.Vm.LegalScreen.PickDocumentFile = () => Task.FromResult<string?>(file);
+            await app.Vm.LegalScreen.AddDocumentCommand.ExecuteAsync(null);
+            app.Vm.LegalScreen.SelectedDocument = app.Vm.LegalScreen.Documents.Single();
+            await app.Vm.LegalScreen.OpenDocumentCommand.ExecuteAsync(null);
 
-            Assert.Equal(("Договор", Path.GetFileNameWithoutExtension(file)), (app.Vm.SelectedDocument!.Kind, app.Vm.SelectedDocument.Name));
+            Assert.Equal(("Договор", Path.GetFileNameWithoutExtension(file)), (app.Vm.LegalScreen.SelectedDocument!.Kind, app.Vm.LegalScreen.SelectedDocument.Name));
             Assert.EndsWith(".pdf", opened.Single());
             Assert.StartsWith("%PDF", File.ReadAllText(opened.Single()));
 
-            await app.Vm.DeleteDocumentCommand.ExecuteAsync(null);
-            await app.Vm.DeleteDocumentCommand.ExecuteAsync(null);
-            Assert.Empty(app.Vm.Documents);
+            await app.Vm.LegalScreen.DeleteDocumentCommand.ExecuteAsync(null);
+            await app.Vm.LegalScreen.DeleteDocumentCommand.ExecuteAsync(null);
+            Assert.Empty(app.Vm.LegalScreen.Documents);
         }
         finally
         {
@@ -310,9 +310,9 @@ public class ShellTests
         app.Go(AppModule.Claim);
         var opened = new List<string>();
         app.Vm.OpenFile = opened.Add;
-        var debtor = app.Vm.SelectedDebtor!;
+        var debtor = app.Vm.LegalScreen.SelectedDebtor!;
 
-        await app.Vm.PrintCourtOrderCommand.ExecuteAsync(null);
+        await app.Vm.LegalScreen.PrintCourtOrderCommand.ExecuteAsync(null);
 
         using var word = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(opened.Single(), false);
         var text = word.MainDocumentPart!.Document!.Body!.InnerText;
@@ -329,10 +329,10 @@ public class ShellTests
         app.Pump();
         var opened = new List<string>();
         app.Vm.OpenFile = opened.Add;
-        app.Vm.SelectedDebtor = app.Vm.Debtors.First(d => d.CourtCase is { OrderNumber: not "" });
-        var order = app.Vm.SelectedDebtor.CourtCase!;
+        app.Vm.LegalScreen.SelectedDebtor = app.Vm.LegalScreen.Debtors.First(d => d.CourtCase is { OrderNumber: not "" });
+        var order = app.Vm.LegalScreen.SelectedDebtor.CourtCase!;
 
-        await app.Vm.PrintEnforcementCommand.ExecuteAsync(null);
+        await app.Vm.LegalScreen.PrintEnforcementCommand.ExecuteAsync(null);
 
         using var word = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(opened.Single(), false);
         var text = word.MainDocumentPart!.Document!.Body!.InnerText;
@@ -349,8 +349,8 @@ public class ShellTests
         var opened = new List<string>();
         app.Vm.OpenFile = opened.Add;
 
-        app.Vm.PenaltyDate = new DateTime(2026, 11, 1);
-        await app.Vm.PrintPenaltyCommand.ExecuteAsync(null);
+        app.Vm.LegalScreen.PenaltyDate = new DateTime(2026, 11, 1);
+        await app.Vm.LegalScreen.PrintPenaltyCommand.ExecuteAsync(null);
 
         Assert.StartsWith("%PDF", File.ReadAllText(opened.Single())[..4]);
         Assert.Contains("расчёт неустойки", app.Vm.Status);
@@ -364,8 +364,8 @@ public class ShellTests
         var opened = new List<string>();
         app.Vm.OpenFile = opened.Add;
 
-        app.Vm.PrintClaimCommand.Execute(null);
-        await app.Vm.ExportCourtPackageCommand.ExecuteAsync(null);
+        app.Vm.LegalScreen.PrintClaimCommand.Execute(null);
+        await app.Vm.LegalScreen.ExportCourtPackageCommand.ExecuteAsync(null);
 
         Assert.Equal(2, opened.Count);
         using (var word = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(opened[0], false))
@@ -457,9 +457,9 @@ public class ShellTests
         using var app = new DesktopApp("lawyer");
         app.Go(AppModule.Legal);
 
-        app.Vm.LegalStart = new DateTime(2026, 8, 3);
+        app.Vm.LegalScreen.LegalStart = new DateTime(2026, 8, 3);
 
-        Assert.Equal("осталось 2 дн. (до 02.09.2026)", app.Vm.LegalRemaining);
+        Assert.Equal("осталось 2 дн. (до 02.09.2026)", app.Vm.LegalScreen.LegalRemaining);
     }
 
     [AvaloniaFact]
@@ -487,9 +487,9 @@ public class ShellTests
         string? opened = null;
         app.Vm.OpenFile = path => opened = path;
 
-        app.Vm.ExportDebtorsCommand.Execute(null);
+        app.Vm.LegalScreen.ExportDebtorsCommand.Execute(null);
 
         using var book = new ClosedXML.Excel.XLWorkbook(opened!);
-        Assert.Equal(app.Vm.Debtors.Count, book.Worksheet(1).RowsUsed().Count() - 2);
+        Assert.Equal(app.Vm.LegalScreen.Debtors.Count, book.Worksheet(1).RowsUsed().Count() - 2);
     }
 }

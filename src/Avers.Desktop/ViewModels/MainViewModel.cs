@@ -37,6 +37,7 @@ public sealed partial class MainViewModel : ObservableObject
         SchemeScreen = new SchemeViewModel(this);
         ReportsScreen = new ReportsViewModel(this);
         ReceiptsScreen = new ReceiptsViewModel(this);
+        LegalScreen = new LegalViewModel(this);
     }
 
     internal IAversStore Store => _store;
@@ -54,6 +55,7 @@ public sealed partial class MainViewModel : ObservableObject
     public SchemeViewModel SchemeScreen { get; }
     public ReportsViewModel ReportsScreen { get; }
     public ReceiptsViewModel ReceiptsScreen { get; }
+    public LegalViewModel LegalScreen { get; }
 
     public ObservableCollection<AppUser> Users { get; } = [];
     public ObservableCollection<Street> Streets { get; } = [];
@@ -62,7 +64,6 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<WorkTicket> HouseTickets { get; } = [];
     public ObservableCollection<Mechanic> Mechanics { get; } = [];
     public ObservableCollection<Material> Materials { get; } = [];
-    public ObservableCollection<DebtorRow> Debtors { get; } = [];
     public ObservableCollection<PaymentGridRow> PaymentRows { get; } = [];
 
     [ObservableProperty] private AppUser? _loginUser;
@@ -75,7 +76,6 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private House? _selectedHouse;
     [ObservableProperty] private Subscriber? _selectedSubscriber;
     [ObservableProperty] private WorkTicket? _selectedTicket;
-    [ObservableProperty] private DebtorRow? _selectedDebtor;
     [ObservableProperty] private SearchMode _searchMode = SearchMode.Address;
     [ObservableProperty] private string _findStreet = DemoSeeder.StartStreet;
     [ObservableProperty] private string _findHouse = DemoSeeder.StartHouse;
@@ -87,7 +87,6 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _ticketFault = "";
     [ObservableProperty] private string _ticketWork = "";
     [ObservableProperty] private string _ticketMechanic = "";
-    [ObservableProperty] private string _claimText = "";
 
     public string LoginRoleTitle => LoginUser is null ? "" : RoleCatalog.Title(LoginUser.Role);
     public bool ShowLogin => User is null;
@@ -248,7 +247,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>Должники и долги по домам: сервер считает их по всей базе, когда открывают юристов или отчёты.</summary>
-    private async Task LoadDebtsAsync()
+    internal async Task LoadDebtsAsync()
     {
         if (!_seesSubscribers) return;
         Debts debts;
@@ -262,11 +261,7 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         }
         var houses = _houses.ToDictionary(h => h.Id);
-        var keepDebtor = SelectedDebtor?.SubscriberId;
-        Debtors.Clear();
-        foreach (var d in debts.Debtors)
-            Debtors.Add(new DebtorRow(d, houses[d.HouseId]));
-        SelectedDebtor = Debtors.FirstOrDefault(d => d.SubscriberId == keepDebtor) ?? Debtors.FirstOrDefault();
+        LegalScreen.ShowDebtors(debts.Debtors.Select(d => new DebtorRow(d, houses[d.HouseId])));
         _debtByHouse = debts.ByHouse;
         ReportsScreen.RefreshReport();
     }
@@ -330,12 +325,6 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     partial void OnSelectedTicketChanged(WorkTicket? value) => BindTicket();
-    partial void OnSelectedDebtorChanged(DebtorRow? value)
-    {
-        BuildClaim();
-        BindCourtCase();
-        _ = LoadDocumentsAsync();
-    }
     partial void OnOnlyActiveContractsChanged(bool value) => RefreshDerived();
 
     private void RefreshHouses()
@@ -388,7 +377,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(HouseAptLine));
         NotifyTicketPanel();
         RefreshCard();
-        BuildClaim();
+        LegalScreen.BuildClaim();
     }
 
     private void RebuildPayments()
@@ -400,12 +389,6 @@ public sealed partial class MainViewModel : ObservableObject
         PaymentRows.Add(new PaymentGridRow("Сумма", pays.Select(p => p.Amount is null ? "" : p.Amount.Value.ToString("N2")).ToArray()));
         PaymentRows.Add(new PaymentGridRow("Дата опл.", pays.Select(p => p.PaidAt is null ? "" : p.PaidAt.Value.ToString("dd.MM")).ToArray()));
         PaymentRows.Add(new PaymentGridRow("Внёс", pays.Select(p => p.RecordedBy ?? "").ToArray()));
-    }
-
-    private void BuildClaim()
-    {
-        var row = SelectedDebtor ?? Debtors.FirstOrDefault(d => d.Unpaid >= Billing.ClaimUnpaidMonths);
-        ClaimText = row is null ? "" : ClaimNotice.Text(ClaimVariant.Kind, $"г. Омск, {row.Address}", row.Debt, row.ContractTerminated);
     }
 
     [RelayCommand]
@@ -444,7 +427,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         _store.SignOut();
         User = null;
-        Debtors.Clear();
+        LegalScreen.Debtors.Clear();
         _debtByHouse = [];
         _history.Clear();
         BackCommand.NotifyCanExecuteChanged();
@@ -583,49 +566,6 @@ public sealed class PaymentGridRow
     public string Oct { get; }
     public string Nov { get; }
     public string Dec { get; }
-}
-
-/// <summary>Строка списка должников: красная — долг от <see cref="Billing.DebtHighlight"/> ₽, жёлтая — давно не платил.</summary>
-public sealed class DebtorRow : IRowTone
-{
-    public DebtorRow(Debtor d, House house)
-    {
-        SubscriberId = d.SubscriberId;
-        HouseId = d.HouseId;
-        Account = d.Account;
-        FullName = d.FullName;
-        Address = $"{house.AddressLine}, кв. {d.Apartment}";
-        Debt = d.Debt;
-        ContractTerminated = d.ContractTerminated;
-        DebtText = d.Debt.ToString("N2") + " ₽";
-        Unpaid = d.Unpaid;
-        LastPay = d.LastPaymentDate is { } date ? date.ToString("dd.MM.yyyy") + (d.IsOld ? " (≥ 3 лет)" : "") : "нет";
-        Limitation = d.LimitationEnds is { } end ? $"{d.OldestUnpaid:MM.yyyy} — до {end:dd.MM.yyyy}" : "";
-        CourtCase = d.Case;
-        Case = d.Case is { } c ? $"{c.OrderNumber} от {c.OrderDate:dd.MM.yyyy}" : "—";
-        IsDebt = d.Debt >= Billing.DebtHighlight;
-        IsOld = d.IsOld && !IsDebt;
-    }
-    public int SubscriberId { get; }
-    public int HouseId { get; }
-    public string Account { get; }
-    public string FullName { get; }
-    public string Address { get; }
-    public decimal Debt { get; }
-    public DateOnly? ContractTerminated { get; }
-    public string DebtText { get; }
-    public int Unpaid { get; }
-    public string LastPay { get; }
-
-    /// <summary>Самый старый неоплаченный месяц и последний день, когда его можно взыскать.</summary>
-    public string Limitation { get; }
-    public string Case { get; }
-
-    /// <summary>Последнее судебное дело должника.</summary>
-    public CourtCase? CourtCase { get; }
-    public bool IsDebt { get; }
-    public bool IsOld { get; }
-    public RowTone Tone => IsDebt ? RowTone.Debt : IsOld ? RowTone.Warn : RowTone.None;
 }
 
 public sealed class ReportMetric(string name, string value, bool on)

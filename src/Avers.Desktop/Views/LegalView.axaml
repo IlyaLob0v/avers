@@ -4,7 +4,7 @@
              xmlns:d="using:Avers.Domain"
              xmlns:ctl="using:Avers.Desktop.Controls"
              x:Class="Avers.Desktop.Views.LegalView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:LegalViewModel">
   <DockPanel Margin="16,0,16,12">
     <Border DockPanel.Dock="Bottom" Classes="card" Margin="0">
       <StackPanel Orientation="Horizontal" Spacing="8">
@@ -16,9 +16,9 @@
       </StackPanel>
     </Border>
     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,0,0,10">
-      <Button Classes="primary" Content="Сформировать претензии (долг ≥ 3 мес.)" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Claim}" />
+      <Button Classes="primary" Content="Сформировать претензии (долг ≥ 3 мес.)" Command="{Binding Shell.GoCommand}" CommandParameter="{x:Static d:AppModule.Claim}" />
       <Button Content="Отчёт по должникам" Command="{Binding ExportDebtorsCommand}" />
-      <Button Content="Пакет документов для суда" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Claim}" />
+      <Button Content="Пакет документов для суда" Command="{Binding Shell.GoCommand}" CommandParameter="{x:Static d:AppModule.Claim}" />
     </StackPanel>
     <HeaderedContentControl Classes="group" Padding="0">
       <HeaderedContentControl.Header>
