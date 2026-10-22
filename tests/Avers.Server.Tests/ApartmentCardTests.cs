@@ -171,8 +171,9 @@ public class ApartmentCardTests
         Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, created.StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, edited.StatusCode);
-        Assert.Equal(("Выдан", 200m, "ОСФР", (DateOnly?)new DateOnly(2026, 8, 25), "100,00-30.08.26", "Пенсионер"), await app.WithDbAsync(db => db.CourtCases
-            .Where(c => c.Id == caseId).Select(c => ValueTuple.Create(c.Status, c.StateDuty, c.WritSentTo, c.WritSentDate, c.Receipts, c.Notes)).SingleAsync()));
+        var saved = await app.WithDbAsync(db => db.CourtCases.SingleAsync(c => c.Id == caseId));
+        Assert.Equal(("Выдан", 200m, "ОСФР", (DateOnly?)new DateOnly(2026, 8, 25), "100,00-30.08.26", "Пенсионер"),
+            (saved.Status, saved.StateDuty, saved.WritSentTo, saved.WritSentDate, saved.Receipts, saved.Notes));
         Assert.Contains(debts!.Debtors, d => d.Case is { DelaAversId: "ДА-88421" });
     }
 
