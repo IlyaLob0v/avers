@@ -17,16 +17,16 @@ public class SchemeTests
         try
         {
             app.Go(AppModule.Scheme);
-            Assert.True(app.Vm.CanEditSchemes);
+            Assert.True(app.Vm.SchemeScreen.CanEditSchemes);
 
-            app.Vm.PickSchemeFile = () => Task.FromResult<string?>(file);
-            await app.Vm.AddSchemeCommand.ExecuteAsync(null);
+            app.Vm.SchemeScreen.PickSchemeFile = () => Task.FromResult<string?>(file);
+            await app.Vm.SchemeScreen.AddSchemeCommand.ExecuteAsync(null);
             app.Pump();
 
-            Assert.Equal(Path.GetFileNameWithoutExtension(file), app.Vm.SelectedScheme?.Name);
-            Assert.Equal("PNG", app.Vm.SelectedScheme?.Format);
-            Assert.NotNull(app.Vm.SchemeImage);
-            Assert.Equal("", app.Vm.SchemeNote);
+            Assert.Equal(Path.GetFileNameWithoutExtension(file), app.Vm.SchemeScreen.SelectedScheme?.Name);
+            Assert.Equal("PNG", app.Vm.SchemeScreen.SelectedScheme?.Format);
+            Assert.NotNull(app.Vm.SchemeScreen.SchemeImage);
+            Assert.Equal("", app.Vm.SchemeScreen.SchemeNote);
         }
         finally
         {
@@ -43,13 +43,13 @@ public class SchemeTests
         try
         {
             app.Go(AppModule.Scheme);
-            var count = app.Vm.Schemes.Count;
+            var count = app.Vm.SchemeScreen.Schemes.Count;
 
-            app.Vm.PickSchemeFile = () => Task.FromResult<string?>(file);
-            await app.Vm.AddSchemeCommand.ExecuteAsync(null);
+            app.Vm.SchemeScreen.PickSchemeFile = () => Task.FromResult<string?>(file);
+            await app.Vm.SchemeScreen.AddSchemeCommand.ExecuteAsync(null);
 
             Assert.Equal("Схема должна быть картинкой JPG или PNG.", app.Vm.Status);
-            Assert.Equal(count, app.Vm.Schemes.Count);
+            Assert.Equal(count, app.Vm.SchemeScreen.Schemes.Count);
         }
         finally
         {
@@ -62,30 +62,30 @@ public class SchemeTests
     {
         using var app = new DesktopApp("engineer");
         app.Go(AppModule.Scheme);
-        var count = app.Vm.Schemes.Count;
+        var count = app.Vm.SchemeScreen.Schemes.Count;
         var file = Path.Combine(Path.GetTempPath(), $"IMG-{Guid.NewGuid():N}.png");
         await File.WriteAllBytesAsync(file, Png);
         try
         {
-            app.Vm.PickSchemeFile = () => Task.FromResult<string?>(file);
-            await app.Vm.AddSchemeCommand.ExecuteAsync(null);
+            app.Vm.SchemeScreen.PickSchemeFile = () => Task.FromResult<string?>(file);
+            await app.Vm.SchemeScreen.AddSchemeCommand.ExecuteAsync(null);
         }
         finally
         {
             File.Delete(file);
         }
 
-        app.Vm.SchemeName = "Стояки, подъезд 1";
-        await app.Vm.RenameSchemeCommand.ExecuteAsync(null);
-        Assert.Equal("Стояки, подъезд 1", app.Vm.SelectedScheme?.Name);
+        app.Vm.SchemeScreen.SchemeName = "Стояки, подъезд 1";
+        await app.Vm.SchemeScreen.RenameSchemeCommand.ExecuteAsync(null);
+        Assert.Equal("Стояки, подъезд 1", app.Vm.SchemeScreen.SelectedScheme?.Name);
 
-        await app.Vm.DeleteSchemeCommand.ExecuteAsync(null);
-        Assert.Equal(count + 1, app.Vm.Schemes.Count);
-        await app.Vm.DeleteSchemeCommand.ExecuteAsync(null);
+        await app.Vm.SchemeScreen.DeleteSchemeCommand.ExecuteAsync(null);
+        Assert.Equal(count + 1, app.Vm.SchemeScreen.Schemes.Count);
+        await app.Vm.SchemeScreen.DeleteSchemeCommand.ExecuteAsync(null);
         app.Pump();
 
         Assert.Equal("Схема «Стояки, подъезд 1» удалена.", app.Vm.Status);
-        Assert.Equal(count, app.Vm.Schemes.Count);
+        Assert.Equal(count, app.Vm.SchemeScreen.Schemes.Count);
     }
 
     [AvaloniaFact]
@@ -95,9 +95,9 @@ public class SchemeTests
 
         app.Go(AppModule.Scheme);
 
-        Assert.Equal("PNG", app.Vm.SelectedScheme?.Format);
-        Assert.NotNull(app.Vm.SchemeImage);
-        Assert.Equal("", app.Vm.SchemeNote);
+        Assert.Equal("PNG", app.Vm.SchemeScreen.SelectedScheme?.Format);
+        Assert.NotNull(app.Vm.SchemeScreen.SchemeImage);
+        Assert.Equal("", app.Vm.SchemeScreen.SchemeNote);
     }
 
     [AvaloniaFact]
@@ -105,6 +105,6 @@ public class SchemeTests
     {
         using var app = new DesktopApp("novikov");
 
-        Assert.False(app.Vm.CanEditSchemes);
+        Assert.False(app.Vm.SchemeScreen.CanEditSchemes);
     }
 }

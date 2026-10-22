@@ -37,6 +37,7 @@ public sealed partial class MainViewModel : ObservableObject
         PhonebookScreen = new PhonebookViewModel(this);
         PprScreen = new PprViewModel(this);
         IntercomScreen = new IntercomViewModel(this);
+        SchemeScreen = new SchemeViewModel(this);
     }
 
     internal IAversStore Store => _store;
@@ -49,6 +50,7 @@ public sealed partial class MainViewModel : ObservableObject
     public PhonebookViewModel PhonebookScreen { get; }
     public PprViewModel PprScreen { get; }
     public IntercomViewModel IntercomScreen { get; }
+    public SchemeViewModel SchemeScreen { get; }
 
     public ObservableCollection<AppUser> Users { get; } = [];
     public ObservableCollection<Street> Streets { get; } = [];
@@ -60,7 +62,6 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<UnifiedReceipt> Receipts { get; } = [];
     public ObservableCollection<DebtorRow> Debtors { get; } = [];
     public ObservableCollection<ReportMetric> ReportMetrics { get; } = [];
-    public ObservableCollection<HouseScheme> Schemes { get; } = [];
     public ObservableCollection<PaymentGridRow> PaymentRows { get; } = [];
 
     [ObservableProperty] private AppUser? _loginUser;
@@ -280,7 +281,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanEditCard));
         OnPropertyChanged(nameof(CanEditSettings));
         PprScreen.RefreshRights();
-        OnPropertyChanged(nameof(CanEditSchemes));
+        SchemeScreen.RefreshRights();
         IntercomScreen.RefreshRights();
         PhonebookScreen.RefreshRights();
         NotifyTicketPanel();
@@ -303,7 +304,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (value == AppModule.ChangeLog)
             _ = ChangeLogScreen.LoadAsync();
         if (value == AppModule.Scheme)
-            _ = ShowSchemeAsync();
+            _ = SchemeScreen.ShowSchemeAsync();
         if (value is AppModule.Legal or AppModule.Claim or AppModule.Reports)
             _ = LoadDebtsAsync();
     }
@@ -366,10 +367,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (houseChanged)
         {
             _intercomHouseId = SelectedHouse?.Id;
-            Schemes.Clear();
-            if (SelectedHouse is not null)
-                foreach (var s in SelectedHouse.Schemes) Schemes.Add(s);
-            SelectedScheme = Schemes.FirstOrDefault();
+            SchemeScreen.ShowHouse(SelectedHouse);
         }
         IntercomScreen.Refresh(houseChanged);
 
