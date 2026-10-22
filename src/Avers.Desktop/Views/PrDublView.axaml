@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Avers.Desktop.ViewModels"
              x:Class="Avers.Desktop.Views.PrDublView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:ReceiptsViewModel">
   <StackPanel Margin="16,0,16,12">
     <Border Classes="card" Padding="12,6,4,8">
       <StackPanel>
@@ -23,8 +23,8 @@
               </ComboBox.ItemTemplate>
             </ComboBox>
           </StackPanel>
-          <StackPanel Grid.Column="2" Margin="0,0,8,0"><TextBlock Classes="hint" Text="Вн. код"/><TextBox Classes="cell" Text="{Binding SelectedSubscriber.InnerCode, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
-          <StackPanel Grid.Column="3" Margin="0,0,8,0"><TextBlock Classes="hint" Text="Индекс ПЖРУ"/><TextBox Classes="cell" Text="{Binding SelectedSubscriber.PzhreuIndex, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
+          <StackPanel Grid.Column="2" Margin="0,0,8,0"><TextBlock Classes="hint" Text="Вн. код"/><TextBox Classes="cell" Text="{Binding Shell.SelectedSubscriber.InnerCode, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
+          <StackPanel Grid.Column="3" Margin="0,0,8,0"><TextBlock Classes="hint" Text="Индекс ПЖРУ"/><TextBox Classes="cell" Text="{Binding Shell.SelectedSubscriber.PzhreuIndex, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
           <Button Grid.Column="4" Classes="primary" VerticalAlignment="Bottom" Content="Найти" Command="{Binding FindReceiptsCommand}" />
         </Grid>
         <TextBlock Classes="hint" Margin="0,6,0,0" Text="{Binding ReceiptOwner}" />
@@ -44,7 +44,7 @@
         <DataGridTextColumn Header="N_КВИТ" Binding="{Binding NKvit}" Width="*" />
       </DataGrid.Columns>
     </DataGrid>
-    <Border Classes="card" Margin="0,10,0,0" Padding="12,8" IsVisible="{Binding CanEditSettings}">
+    <Border Classes="card" Margin="0,10,0,0" Padding="12,8" IsVisible="{Binding Shell.CanEditSettings}">
       <StackPanel Orientation="Horizontal" Spacing="8">
         <TextBlock VerticalAlignment="Center" Text="Файл начислений ОЭК (nachММГГГГ_an, Excel) за месяц" />
         <TextBox Classes="cell" Width="90" Text="{Binding OekMonth}" PlaceholderText="мм.гггг" />

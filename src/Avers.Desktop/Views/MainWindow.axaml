@@ -173,14 +173,20 @@
           <views:SchemeView DataContext="{Binding SchemeScreen}" />
         </Panel>
         <views:SubscriberView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Subscriber}}" />
-        <views:PrDublView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.PrDubl}}" />
+        <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.PrDubl}}">
+          <views:PrDublView DataContext="{Binding ReceiptsScreen}" />
+        </Panel>
         <views:ContractView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Contract}}" />
         <views:PrintView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Print}}" />
         <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Ppr}}">
           <views:PprView DataContext="{Binding PprScreen}" />
         </Panel>
-        <views:LegalView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Legal}}" />
-        <views:ClaimView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Claim}}" />
+        <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Legal}}">
+          <views:LegalView DataContext="{Binding LegalScreen}" />
+        </Panel>
+        <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Claim}}">
+          <views:ClaimView DataContext="{Binding LegalScreen}" />
+        </Panel>
         <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Reports}}">
           <views:ReportsView DataContext="{Binding ReportsScreen}" />
         </Panel>

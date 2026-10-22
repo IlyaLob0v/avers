@@ -86,7 +86,7 @@ public sealed class ServerModeTests : IAsyncDisposable
 
         Assert.Equal(UserRole.Reader, vm.User!.Role);
         Assert.Null(vm.SelectedSubscriber);
-        Assert.Empty(vm.Debtors);
+        Assert.Empty(vm.LegalScreen.Debtors);
     }
 
     private async Task<MainViewModel> SignIn(string login)
