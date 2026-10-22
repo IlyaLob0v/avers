@@ -48,12 +48,12 @@ public class PaymentTests
         // Так в текущем коде; вопрос к бухгалтерии открыт (docs/07-open-questions.md).
         await using var app = new AversApp();
         var client = await app.LoginAsync("admin");
-        var before = await client.GetFromJsonAsync<SubscriberCard>("/api/subscribers/1");
+        var before = await client.GetFromJsonAsync<SubscriberCard>("/api/subscribers/3");
 
-        var response = await client.PostAsJsonAsync("/api/subscribers/1/payments", new RecordPaymentRequest(2026, Amount: 0m));
+        var response = await client.PostAsJsonAsync("/api/subscribers/3/payments", new RecordPaymentRequest(2026, Amount: 0m));
 
         response.EnsureSuccessStatusCode();
-        var after = await client.GetFromJsonAsync<SubscriberCard>("/api/subscribers/1");
+        var after = await client.GetFromJsonAsync<SubscriberCard>("/api/subscribers/3");
         Assert.Equal(before!.UnpaidMonths - 1, after!.UnpaidMonths);
         Assert.Equal(before.Debt, after.Debt);
     }

@@ -24,7 +24,7 @@ public sealed record Debtor(
 
 /// <summary>
 /// Долги по всей базе: суммы оплат по абонентам считает СУБД, в память приходит по строке на абонента.
-/// Правила те же, что в <see cref="Billing"/>: месяцы по текущий включительно.
+/// Правила те же, что в <see cref="Billing.Due"/>: месяцы до текущего.
 /// </summary>
 public sealed class Debts
 {
@@ -35,7 +35,7 @@ public sealed class Debts
 
     public static Debts Load(AversDbContext db, DateOnly today)
     {
-        var dueMonth = today.Year * 12 + today.Month;
+        var dueMonth = Billing.LastDueMonth(today);
         var sums = db.Payments
             .Where(p => p.Year * 12 + p.Month <= dueMonth)
             .GroupBy(p => p.SubscriberId)

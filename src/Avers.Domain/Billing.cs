@@ -6,9 +6,14 @@ public static class Billing
     public const int OldPaymentYears = 3;
     public const int ClaimUnpaidMonths = 3;
 
-    /// <summary>Месяцы по текущий включительно: начисления на весь год заводятся заранее, будущие месяцы ещё не долг.</summary>
+    /// <summary>
+    /// Последний месяц, который уже долг (Year * 12 + Month): предыдущий. Начисления на год заводятся заранее,
+    /// а текущий месяц, как в старой программе, долгом ещё не считается.
+    /// </summary>
+    public static int LastDueMonth(DateOnly today) => today.Year * 12 + today.Month - 1;
+
     public static List<YearPayment> Due(IEnumerable<YearPayment> payments, DateOnly today) =>
-        payments.Where(p => p.Year * 12 + p.Month <= today.Year * 12 + today.Month).ToList();
+        payments.Where(p => p.Year * 12 + p.Month <= LastDueMonth(today)).ToList();
 
     public static decimal Charged(IEnumerable<YearPayment> payments) =>
         payments.Sum(p => p.Tariff);

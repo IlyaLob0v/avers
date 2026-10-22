@@ -15,8 +15,12 @@ public static class PdfForms
 
     /// <summary>Неоплаченные месяцы по текущий включительно — то, что идёт в квитанцию.</summary>
     public static List<YearPayment> DueUnpaid(Subscriber s, DateOnly today) =>
-        Billing.Due(s.Payments, today).Where(p => p.Amount is null)
+        ToPay(s, today).Where(p => p.Amount is null)
             .OrderBy(p => p.Year).ThenBy(p => p.Month).ToList();
+
+    /// <summary>Долг (<see cref="Billing.Due"/>) и текущий месяц: квитанция выставляется и за него.</summary>
+    private static List<YearPayment> ToPay(Subscriber s, DateOnly today) =>
+        s.Payments.Where(p => p.Year * 12 + p.Month <= Billing.LastDueMonth(today) + 1).ToList();
 
     /// <summary>Квитанция на оплату ТО СКПТ: неоплаченные месяцы по текущий и сумма к оплате.</summary>
     public static void Receipt(Subscriber s, DateOnly today, string path)
@@ -78,7 +82,7 @@ public static class PdfForms
         pdf.Row(true, ("Неоплаченный месяц", 0), ("Сумма, руб.", 420));
         foreach (var p in unpaid)
             pdf.Row(false, (Month(p), 0), (Money(p.Tariff), 420));
-        pdf.Row(true, ("Задолженность", 0), (Money(Billing.Debt(Billing.Due(s.Payments, today))), 420));
+        pdf.Row(true, ("Задолженность", 0), (Money(Billing.Debt(ToPay(s, today))), 420));
         pdf.Gap();
         pdf.Field("Дата", today.ToString("dd.MM.yyyy"));
         pdf.Field("Подпись", "");
