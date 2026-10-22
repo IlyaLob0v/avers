@@ -32,6 +32,14 @@ public class PenaltyTests
     }
 
     [Fact]
+    public void Calculate_SkipsMonthOfDate()
+    {
+        var payments = new[] { Month(2026, 9, 150), Month(2026, 10, 150) };
+
+        Assert.Equal([(2026, 9)], Penalty.Calculate(payments, new DateOnly(2026, 10, 21)).Select(l => (l.Year, l.Month)));
+    }
+
+    [Fact]
     public void Claimed_IsReducedToDebt()
     {
         var lines = Penalty.Calculate([Month(2025, 1, 150), Month(2026, 9, 150)], new DateOnly(2026, 10, 21));

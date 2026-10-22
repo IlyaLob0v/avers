@@ -10,10 +10,10 @@ public static class Penalty
 
     public sealed record Line(int Year, int Month, decimal Debt, int Days, decimal Amount);
 
-    /// <summary>Месяцы с долгом по месяц даты расчёта включительно; частичная оплата уменьшает долг месяца.</summary>
+    /// <summary>Месяцы с долгом на дату расчёта (<see cref="Billing.Due"/>); частичная оплата уменьшает долг месяца.</summary>
     public static List<Line> Calculate(IEnumerable<YearPayment> payments, DateOnly date) =>
-        payments
-            .Where(p => p.Year * 12 + p.Month <= date.Year * 12 + date.Month && p.Tariff > (p.Amount ?? 0))
+        Billing.Due(payments, date)
+            .Where(p => p.Tariff > (p.Amount ?? 0))
             .OrderBy(p => p.Year).ThenBy(p => p.Month)
             .Select(p =>
             {

@@ -64,7 +64,7 @@ public static class SubscriberEndpoints
             return TypedResults.ValidationProblem(new Dictionary<string, string[]> { [field] = [error] });
 
         var today = time.Today();
-        var dueMonth = today.Year * 12 + today.Month;
+        var dueMonth = Billing.LastDueMonth(today);
         var found = await query
             .OrderBy(s => s.LastName).ThenBy(s => s.Id)
             .Take(MaxResults)
