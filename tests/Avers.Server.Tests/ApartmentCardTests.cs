@@ -73,6 +73,26 @@ public class ApartmentCardTests
     }
 
     [Fact]
+    public async Task PaymentConfirm_HeadChanges_LawyerCannot()
+    {
+        await using var app = new AversApp();
+        var lawyer = await app.LoginAsync("lawyer");
+        var head = await app.LoginAsync("orlov");
+
+        var read = await lawyer.GetFromJsonAsync<PaymentConfirmSettings>("/api/settings/payment-confirm");
+        var forbidden = await lawyer.PutAsJsonAsync("/api/settings/payment-confirm", new PaymentConfirmSettings(500));
+        var invalid = await head.PutAsJsonAsync("/api/settings/payment-confirm", new PaymentConfirmSettings(0));
+        var put = await head.PutAsJsonAsync("/api/settings/payment-confirm", new PaymentConfirmSettings(2000));
+        var after = await lawyer.GetFromJsonAsync<PaymentConfirmSettings>("/api/settings/payment-confirm");
+
+        Assert.Equal(1000m, read!.From);
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+        put.EnsureSuccessStatusCode();
+        Assert.Equal(2000m, after!.From);
+    }
+
+    [Fact]
     public async Task ChangeTariff_ForOneApartment_OnlyUnpaidMonths_LawyerIsForbidden()
     {
         await using var app = new AversApp();

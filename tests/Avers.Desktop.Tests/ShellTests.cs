@@ -125,6 +125,25 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public void RecordPayment_FromThreshold_NeedsSecondPress()
+    {
+        using var app = new DesktopApp("orlov");
+        app.Go(AppModule.Abon);
+        var paidBefore = app.Vm.SelectedSubscriber!.Payments.Count(p => p.Amount is not null);
+
+        app.Vm.PaymentAmount = "1 200,50";
+        app.Vm.RecordPaymentCommand.Execute(null);
+        app.Pump();
+        Assert.EndsWith("Нажмите «Внести оплату» ещё раз.", app.Vm.Status);
+        Assert.Equal(paidBefore, app.Vm.SelectedSubscriber!.Payments.Count(p => p.Amount is not null));
+
+        app.Vm.RecordPaymentCommand.Execute(null);
+        app.Pump();
+        Assert.Contains(app.Vm.SelectedSubscriber!.Payments, p => p.Amount == 1200.50m && p.PaidAt == DemoSeeder.WorkDate);
+        Assert.Equal("", app.Vm.PaymentAmount);
+    }
+
+    [AvaloniaFact]
     public void Dispatcher_CannotRecordPayment()
     {
         using var app = new DesktopApp("sokolova");

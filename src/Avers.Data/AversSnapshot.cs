@@ -12,6 +12,7 @@ namespace Avers.Data;
 public sealed class AversSnapshot
 {
     public int PaymentWarningMonths { get; set; } = PaymentAge.DefaultWarningMonths;
+    public decimal PaymentConfirmFrom { get; set; } = AppSetting.DefaultPaymentConfirmFrom;
     public List<Organization> Organizations { get; set; } = [];
     public List<Street> Streets { get; set; } = [];
     public List<House> Houses { get; set; } = [];
@@ -29,6 +30,7 @@ public sealed class AversSnapshot
         var snapshot = new AversSnapshot
         {
             PaymentWarningMonths = Settings.PaymentWarningMonths(db),
+            PaymentConfirmFrom = Settings.PaymentConfirmFrom(db),
             Organizations = db.Organizations.AsNoTracking().ToList(),
             Streets = db.Streets.AsNoTracking().OrderBy(x => x.Name).ToList(),
             Houses = db.Houses.AsNoTracking().ToList(),

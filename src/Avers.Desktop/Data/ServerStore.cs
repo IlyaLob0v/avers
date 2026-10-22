@@ -70,8 +70,8 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public Task<AccountingReport> LoadAccountingAsync(int year, int month) =>
         Read<AccountingReport>(() => http.GetAsync($"api/reports/accounting?year={year}&month={month}"));
 
-    public Task<PaymentDto> RecordPaymentAsync(int subscriberId, int year, AppUser user) =>
-        Read<PaymentDto>(() => http.PostAsJsonAsync($"api/subscribers/{subscriberId}/payments", new RecordPaymentRequest(year), Json));
+    public Task<PaymentDto> RecordPaymentAsync(int subscriberId, int year, decimal? amount, AppUser user) =>
+        Read<PaymentDto>(() => http.PostAsJsonAsync($"api/subscribers/{subscriberId}/payments", new RecordPaymentRequest(year, Amount: amount), Json));
 
     public Task SaveCourtCaseAsync(int subscriberId, CourtCase draft)
     {
@@ -94,6 +94,9 @@ public sealed class ServerStore(HttpClient http) : IAversStore
 
     public Task SetPaymentWarningMonthsAsync(int months) =>
         Write(() => http.PutAsJsonAsync("api/settings/payment-warning", new PaymentWarningSettings(months), Json));
+
+    public Task SetPaymentConfirmFromAsync(decimal amount) =>
+        Write(() => http.PutAsJsonAsync("api/settings/payment-confirm", new PaymentConfirmSettings(amount), Json));
 
     public async Task<int> ChangeTariffAsync(TariffChangeRequest request) =>
         (await Read<TariffChangeResult>(() => http.PutAsJsonAsync("api/tariff", request, Json))).Months;

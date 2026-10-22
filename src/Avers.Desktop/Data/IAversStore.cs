@@ -36,7 +36,8 @@ public interface IAversStore
 
     Task<AccountingReport> LoadAccountingAsync(int year, int month);
 
-    Task<PaymentDto> RecordPaymentAsync(int subscriberId, int year, AppUser user);
+    /// <summary>Оплата первого неоплаченного месяца года; сумма null — по тарифу месяца.</summary>
+    Task<PaymentDto> RecordPaymentAsync(int subscriberId, int year, decimal? amount, AppUser user);
 
     Task SaveContractAsync(int subscriberId, UpdateContractRequest request);
 
@@ -49,6 +50,8 @@ public interface IAversStore
     Task AddApartmentAsync(Subscriber draft, decimal tariff);
 
     Task SetPaymentWarningMonthsAsync(int months);
+
+    Task SetPaymentConfirmFromAsync(decimal amount);
 
     /// <summary>Новый тариф с месяца; возвращает число изменённых месяцев.</summary>
     Task<int> ChangeTariffAsync(TariffChangeRequest request);

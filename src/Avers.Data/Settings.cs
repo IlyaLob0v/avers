@@ -35,4 +35,30 @@ public static class Settings
             row.Value = value;
         db.SaveChanges();
     }
+
+    /// <summary>С какой суммы оплату надо подтвердить.</summary>
+    public static decimal PaymentConfirmFrom(AversDbContext db)
+    {
+        var raw = db.Settings.AsNoTracking().Where(x => x.Key == AppSetting.PaymentConfirmFrom)
+            .Select(x => x.Value).FirstOrDefault();
+        return decimal.TryParse(raw, NumberStyles.Number, CultureInfo.InvariantCulture, out var amount) && amount > 0
+            ? amount
+            : AppSetting.DefaultPaymentConfirmFrom;
+    }
+
+    public static void SetPaymentConfirmFrom(AversDbContext db, decimal amount, string who, DateTimeOffset at)
+    {
+        if (amount <= 0)
+            throw new ArgumentOutOfRangeException(nameof(amount), amount, "Порог подтверждения — больше 0 ₽.");
+
+        ChangeLog.Add(db, at, who, "Настройки", "все рабочие места",
+            ChangeLog.Diff(("Подтверждение оплаты от, ₽", PaymentConfirmFrom(db), amount)));
+        var value = amount.ToString(CultureInfo.InvariantCulture);
+        var row = db.Settings.FirstOrDefault(x => x.Key == AppSetting.PaymentConfirmFrom);
+        if (row is null)
+            db.Settings.Add(new AppSetting { Key = AppSetting.PaymentConfirmFrom, Value = value });
+        else
+            row.Value = value;
+        db.SaveChanges();
+    }
 }
