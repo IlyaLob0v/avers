@@ -212,6 +212,20 @@ public class ApartmentCardTests
     }
 
     [Fact]
+    public async Task UpdateContract_Termination_StopsAccrualsAfterItsMonth()
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("orlov");
+
+        await client.PutAsJsonAsync("/api/subscribers/3/contract", new UpdateContractRequest(
+            "ТО-2020/3", new DateOnly(2020, 1, 1), new DateOnly(2026, 6, 15), null, null));
+        var payments = await client.GetFromJsonAsync<List<PaymentDto>>("/api/subscribers/3/payments?year=2026");
+
+        Assert.DoesNotContain(payments!, p => p.Month > 6 && !p.IsPaid);
+        Assert.Contains(payments!, p => p.Month == 6);
+    }
+
+    [Fact]
     public async Task UpdateContract_LawyerIsForbidden()
     {
         await using var app = new AversApp();
