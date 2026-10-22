@@ -159,7 +159,8 @@ public class ApartmentCardTests
         await using var app = new AversApp();
         var lawyer = await app.LoginAsync("lawyer");
         var head = await app.LoginAsync("orlov");
-        var request = new CourtCaseRequest("ДА-90001", "2-9/2026", new DateOnly(2026, 8, 20), "Мировой судья с/у № 47", 475m, "Подано");
+        var request = new CourtCaseRequest("ДА-90001", "2-9/2026", new DateOnly(2026, 8, 20), "Мировой судья с/у № 47", 475m, "Подано",
+            200m, "ОСФР", new DateOnly(2026, 8, 25), "100,00-30.08.26", "Пенсионер");
 
         var forbidden = await head.PostAsJsonAsync("/api/subscribers/3/court-cases", request);
         var created = await lawyer.PostAsJsonAsync("/api/subscribers/3/court-cases", request);
@@ -170,7 +171,9 @@ public class ApartmentCardTests
         Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, created.StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, edited.StatusCode);
-        Assert.Equal("Выдан", await app.WithDbAsync(db => db.CourtCases.Where(c => c.Id == caseId).Select(c => c.Status).SingleAsync()));
+        var saved = await app.WithDbAsync(db => db.CourtCases.SingleAsync(c => c.Id == caseId));
+        Assert.Equal(("Выдан", 200m, "ОСФР", (DateOnly?)new DateOnly(2026, 8, 25), "100,00-30.08.26", "Пенсионер"),
+            (saved.Status, saved.StateDuty, saved.WritSentTo, saved.WritSentDate, saved.Receipts, saved.Notes));
         Assert.Contains(debts!.Debtors, d => d.Case is { DelaAversId: "ДА-88421" });
     }
 

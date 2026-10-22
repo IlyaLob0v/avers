@@ -238,11 +238,17 @@ public class ShellTests
         app.Vm.NewCourtCaseCommand.Execute(null);
         app.Vm.CaseOrder = "2-9/2026";
         app.Vm.CaseCourt = "Мировой судья с/у № 47";
+        app.Vm.CaseDuty = "200";
+        app.Vm.CaseWritTo = "ОСП";
+        app.Vm.CaseWritDate = "15.08.2026";
+        app.Vm.CaseReceipts = "100,00-30.08.26";
+        app.Vm.CaseNotes = "Пенсионер";
         await app.Vm.SaveCourtCaseCommand.ExecuteAsync(null);
 
         Assert.True(app.Vm.CanEditCourtCases);
         Assert.Equal(" · 2-9/2026", app.Vm.Debtors.Single(d => d.SubscriberId == debtor.SubscriberId).Case);
-        Assert.Equal("2-9/2026", app.Vm.CaseOrder);
+        Assert.Equal(("2-9/2026", "200,00", "ОСП", "15.08.2026", "100,00-30.08.26", "Пенсионер"),
+            (app.Vm.CaseOrder, app.Vm.CaseDuty, app.Vm.CaseWritTo, app.Vm.CaseWritDate, app.Vm.CaseReceipts, app.Vm.CaseNotes));
     }
 
     [AvaloniaFact]

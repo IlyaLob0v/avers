@@ -33,6 +33,47 @@ public class CourtCasesTests
     }
 
     [Fact]
+    public void Save_KeepsDutyWritAndReceipts_InJournal()
+    {
+        using var database = new SqliteDatabase();
+        using var db = database.CreateContext();
+        var s = new Subscriber { House = new House { Street = new Street { Name = "Братская" }, Number = "10" }, Account = "1", LastName = "Смирнов" };
+        db.Subscribers.Add(s);
+        db.SaveChanges();
+        Assert.Null(CourtCases.Save(db, s.Id, Draft(), "Юрист", At));
+        var draft = Draft(db.CourtCases.Single().Id);
+        draft.StateDuty = 200;
+        draft.WritSentTo = " ОСП ";
+        draft.WritSentDate = new DateOnly(2026, 10, 15);
+        draft.Receipts = "901,58-28.11.24 + 214,93-24.12.24";
+        draft.Notes = "ПОЛНАЯ ОПЛАТА";
+
+        Assert.Null(CourtCases.Save(db, s.Id, draft, "Юрист", At));
+
+        var c = db.CourtCases.Single();
+        Assert.Equal((200m, "ОСП", new DateOnly(2026, 10, 15), "901,58-28.11.24 + 214,93-24.12.24", "ПОЛНАЯ ОПЛАТА"),
+            (c.StateDuty, c.WritSentTo, c.WritSentDate, c.Receipts, c.Notes));
+        var journal = db.ChangeLog.OrderBy(e => e.Id).Last().Changes;
+        Assert.Contains("Госпошлина", journal);
+        Assert.Contains("Лист направлен", journal);
+        Assert.Contains("Поступления", journal);
+    }
+
+    [Fact]
+    public void Save_RejectsNegativeDuty()
+    {
+        using var database = new SqliteDatabase();
+        using var db = database.CreateContext();
+        var s = new Subscriber { House = new House { Street = new Street { Name = "Братская" }, Number = "10" }, Account = "1", LastName = "Смирнов" };
+        db.Subscribers.Add(s);
+        db.SaveChanges();
+        var draft = Draft();
+        draft.StateDuty = -1;
+
+        Assert.Equal("Сумма и госпошлина — не меньше нуля, не больше двух знаков после запятой.", CourtCases.Save(db, s.Id, draft, "Юрист", At));
+    }
+
+    [Fact]
     public void Debtors_ShowLimitationOfOldestUnpaidMonth()
     {
         using var database = new SqliteDatabase();

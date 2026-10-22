@@ -33,6 +33,11 @@ public sealed partial class MainViewModel
     [ObservableProperty] private string _caseCourt = "";
     [ObservableProperty] private string _caseAmount = "";
     [ObservableProperty] private string _caseStatus = "";
+    [ObservableProperty] private string _caseDuty = "";
+    [ObservableProperty] private string _caseWritTo = "";
+    [ObservableProperty] private string _caseWritDate = "";
+    [ObservableProperty] private string _caseReceipts = "";
+    [ObservableProperty] private string _caseNotes = "";
 
     public bool CanEditCourtCases => User is { } u && RoleCatalog.Can(u.Role, AppModule.Legal, out var level) && level == RoleCatalog.AccessLevel.Edit;
 
@@ -47,6 +52,11 @@ public sealed partial class MainViewModel
         CaseCourt = c?.Court ?? "";
         CaseAmount = c?.Amount.ToString("0.00", Ru) ?? SelectedDebtor?.Debt.ToString("0.00", Ru) ?? "";
         CaseStatus = c?.Status ?? "";
+        CaseDuty = c?.StateDuty.ToString("0.00", Ru) ?? "";
+        CaseWritTo = c?.WritSentTo ?? "";
+        CaseWritDate = c?.WritSentDate?.ToString("dd.MM.yyyy") ?? "";
+        CaseReceipts = c?.Receipts ?? "";
+        CaseNotes = c?.Notes ?? "";
     }
 
     [RelayCommand]
@@ -54,7 +64,7 @@ public sealed partial class MainViewModel
     {
         if (SelectedDebtor is not { } d) return;
         _caseId = 0;
-        CaseNumber = CaseOrder = CaseCourt = CaseStatus = "";
+        CaseNumber = CaseOrder = CaseCourt = CaseStatus = CaseDuty = CaseWritTo = CaseWritDate = CaseReceipts = CaseNotes = "";
         CaseDate = _today.ToString("dd.MM.yyyy");
         CaseAmount = d.Debt.ToString("0.00", Ru);
         Status = $"Новое дело для {d.FullName}: заполните и нажмите «Сохранить дело».";
@@ -74,6 +84,17 @@ public sealed partial class MainViewModel
             Status = "Сумма — в рублях, например 475 или 475,50.";
             return;
         }
+        var duty = 0m;
+        if (CaseDuty.Trim() != "" && !decimal.TryParse(CaseDuty.Trim(), System.Globalization.NumberStyles.Number, Ru, out duty))
+        {
+            Status = "Госпошлина — в рублях, например 200 или 200,50.";
+            return;
+        }
+        if (!TryParseDate(CaseWritDate, out var writDate))
+        {
+            Status = "Дата направления листа — в виде дд.мм.гггг.";
+            return;
+        }
         await Save(async () =>
         {
             await _store.SaveCourtCaseAsync(d.SubscriberId, new CourtCase
@@ -84,7 +105,12 @@ public sealed partial class MainViewModel
                 OrderDate = date.Value,
                 Court = CaseCourt,
                 Amount = amount,
-                Status = CaseStatus
+                Status = CaseStatus,
+                StateDuty = duty,
+                WritSentTo = CaseWritTo,
+                WritSentDate = writDate,
+                Receipts = CaseReceipts,
+                Notes = CaseNotes
             });
             await LoadDebtsAsync();
             Status = $"Дело {d.FullName} сохранено.";
