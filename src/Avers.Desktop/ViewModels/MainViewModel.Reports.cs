@@ -90,7 +90,7 @@ public sealed partial class MainViewModel
     private void ExportDebtors() =>
         Export("должники", "отчёт по должникам", path => XlsxTable.Write(path,
             $"Должники на {_today:dd.MM.yyyy}",
-            ["ФИО", "Адрес", "Лиц. счёт", "Долг, руб.", "Неоплачено мес.", "Последняя оплата", "Дело-Аверс"],
+            ["ФИО", "Адрес", "Лиц. счёт", "Долг, руб.", "Неоплачено мес.", "Последняя оплата", "Судебный приказ"],
             Debtors.Select(d => new object?[] { d.FullName, d.Address, d.Account, d.Debt, d.Unpaid, d.LastPay, d.Case })));
 
     /// <summary>Итоги месяца начальной даты для 1С: отгрузка по тарифам и поступления по источникам.</summary>

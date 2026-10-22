@@ -107,7 +107,7 @@ public static class DemoSeeder
         var saveliev = Sub(hBr18, "55190", "180090", "Савельев", "Игорь", "Дмитриевич", "8-913-200-7744", "90", "3",
             new(2011, 9, 1), "Задолженность более трёх месяцев.", "0104", "0104-180090", 2011, new(2026, 2, 26));
         var chernova = Sub(hBr18, "55115", "180015", "Чернова", "Наталья", "Александровна", "8-904-329-6610", "15", "1",
-            new(2001, 2, 20), "Долг свыше 450 ₽. Судебный приказ в Дело-Аверс.", "0104", "0104-180015", 2001, new(2025, 12, 12));
+            new(2001, 2, 20), "Долг свыше 450 ₽. Выдан судебный приказ.", "0104", "0104-180015", 2001, new(2025, 12, 12));
         var kozlov = Sub(hAv12, "88003", "1200003", "Козлов", "Виктор", "Семёнович", "8-3812-55-19-02", "3", "1",
             new(1998, 10, 1), "Последняя оплата более трёх лет назад.", "0402", "0402-1200003", 1996, new(2022, 6, 14));
         db.Subscribers.AddRange(ivanova, belousov, petrov, gromova, saveliev, chernova, kozlov);
@@ -133,8 +133,8 @@ public static class DemoSeeder
         julyIvanova.RecordedBy = "Импорт реестра ОЭК";
         julyIvanova.PayerName = "Иванов Павел Сергеевич";
 
-        chernova.CourtCases.Add(new CourtCase { DelaAversId = "ДА-88421", OrderNumber = "2-1140/2026", OrderDate = new(2026, 5, 21), Court = "Мировой судья с/у № 47", Amount = 1140, Status = "Выдан, направлен приставам" });
-        kozlov.CourtCases.Add(new CourtCase { DelaAversId = "ДА-77109", OrderNumber = "2-0881/2025", OrderDate = new(2025, 11, 3), Court = "Мировой судья с/у № 12", Amount = 3420, Status = "В производстве" });
+        chernova.CourtCases.Add(new CourtCase { OrderNumber = "2-1140/2026", OrderDate = new(2026, 5, 21), Court = "Мировой судья с/у № 47", Amount = 1140, Status = "Выдан, направлен приставам" });
+        kozlov.CourtCases.Add(new CourtCase { OrderNumber = "2-0881/2025", OrderDate = new(2025, 11, 3), Court = "Мировой судья с/у № 12", Amount = 3420, Status = "В производстве" });
 
         ivanova.Receipts.Add(new UnifiedReceipt { InnerCode = "104412", PzhreuIndex = "0402", Account = "1932068", Moment = new(2026, 7, 9), Amount = 95, Paid = 95, NOs = "8812", NKass = "02", NOper = "44190", NKvit = "КВ-33811" });
         ivanova.Receipts.Add(new UnifiedReceipt { InnerCode = "104412", PzhreuIndex = "0402", Account = "1932068", Moment = new(2026, 6, 10), Amount = 95, Paid = 95, NOs = "8701", NKass = "02", NOper = "43902", NKvit = "КВ-33004" });

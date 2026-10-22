@@ -12,7 +12,6 @@ public sealed record UpdateContractRequest(
 
 /// <summary>Судебное дело должника. Запрос заменяет все поля целиком.</summary>
 public sealed record CourtCaseRequest(
-    string? DelaAversId,
     string? OrderNumber,
     DateOnly OrderDate,
     string? Court,

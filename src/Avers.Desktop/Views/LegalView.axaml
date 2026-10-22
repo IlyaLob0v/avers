@@ -45,7 +45,7 @@
           <DataGridTextColumn Header="Неоплачено мес." Binding="{Binding Unpaid}" Width="140" />
           <DataGridTextColumn Header="Последняя оплата" Binding="{Binding LastPay}" Width="200" />
           <DataGridTextColumn Header="Давность старшего долга" Binding="{Binding Limitation}" Width="210" />
-          <DataGridTextColumn Header="Дело-Аверс" Binding="{Binding Case}" Width="*" />
+          <DataGridTextColumn Header="Судебный приказ" Binding="{Binding Case}" Width="*" />
         </DataGrid.Columns>
       </DataGrid>
     </HeaderedContentControl>

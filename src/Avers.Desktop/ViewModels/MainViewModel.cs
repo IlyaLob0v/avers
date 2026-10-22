@@ -94,7 +94,7 @@ public sealed partial class MainViewModel : ObservableObject
         AppModule.Contract => SelectedHouse is null ? "Договоры" : $"Договоры · {SelectedHouse.AddressLine}",
         AppModule.Print => "Квитанция на оплату ТО СКПТ",
         AppModule.Ppr => "Сервис → Графики ППР",
-        AppModule.Legal => "Должники · юристы + Дело-Аверс",
+        AppModule.Legal => "Должники · юристы, суд",
         AppModule.Claim => "Досудебное уведомление",
         AppModule.Reports => "Отчёты · Excel",
         AppModule.Phonebook => "Словарь",
@@ -578,7 +578,7 @@ public sealed class DebtorRow : IRowTone
         LastPay = d.LastPaymentDate is { } date ? date.ToString("dd.MM.yyyy") + (d.IsOld ? " (≥ 3 лет)" : "") : "нет";
         Limitation = d.LimitationEnds is { } end ? $"{d.OldestUnpaid:MM.yyyy} — до {end:dd.MM.yyyy}" : "";
         CourtCase = d.Case;
-        Case = d.Case is { } c ? $"{c.DelaAversId} · {c.OrderNumber}" : "—";
+        Case = d.Case is { } c ? $"{c.OrderNumber} от {c.OrderDate:dd.MM.yyyy}" : "—";
         IsDebt = d.Debt >= Billing.DebtHighlight;
         IsOld = d.IsOld && !IsDebt;
     }

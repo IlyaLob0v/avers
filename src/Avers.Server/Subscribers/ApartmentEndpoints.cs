@@ -51,7 +51,6 @@ public static class ApartmentEndpoints
         var error = CourtCases.Save(db, id, new CourtCase
         {
             Id = caseId,
-            DelaAversId = r.DelaAversId ?? "",
             OrderNumber = r.OrderNumber ?? "",
             OrderDate = r.OrderDate,
             Court = r.Court ?? "",

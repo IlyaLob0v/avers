@@ -75,7 +75,7 @@ public sealed class ServerStore(HttpClient http) : IAversStore
 
     public Task SaveCourtCaseAsync(int subscriberId, CourtCase draft)
     {
-        var request = new CourtCaseRequest(draft.DelaAversId, draft.OrderNumber, draft.OrderDate, draft.Court, draft.Amount, draft.Status,
+        var request = new CourtCaseRequest(draft.OrderNumber, draft.OrderDate, draft.Court, draft.Amount, draft.Status,
             draft.StateDuty, draft.WritSentTo, draft.WritSentDate, draft.Receipts, draft.Notes);
         return Write(() => draft.Id == 0
             ? http.PostAsJsonAsync($"api/subscribers/{subscriberId}/court-cases", request, Json)

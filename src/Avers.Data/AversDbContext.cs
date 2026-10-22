@@ -108,7 +108,6 @@ public sealed class AversDbContext : DbContext
         model.Entity<CourtCase>(e =>
         {
             e.Property(x => x.Amount).HasPrecision(12, 2);
-            e.Property(x => x.DelaAversId).HasMaxLength(40);
             e.Property(x => x.OrderNumber).HasMaxLength(40);
             e.Property(x => x.StateDuty).HasPrecision(12, 2);
             e.Property(x => x.WritSentTo).HasMaxLength(40);

@@ -131,11 +131,6 @@ namespace Avers.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("DelaAversId")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)");
-
                     b.Property<string>("Notes")
                         .IsRequired()
                         .HasMaxLength(2000)
