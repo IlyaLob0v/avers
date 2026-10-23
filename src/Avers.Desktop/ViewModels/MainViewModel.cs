@@ -447,21 +447,16 @@ public sealed partial class MainViewModel : ObservableObject
     private void Go(AppModule page)
     {
         if (User is null) return;
+        // Право на окно — как у кнопки модуля, которому оно принадлежит (NavCatalog).
+        if (NavCatalog.Owner(page) is { } owner && !NavCatalog.IsAvailable(User.Role, owner))
+        {
+            Status = $"Раздел «{owner.Title}» для роли «{RoleCatalog.Title(User.Role)}» закрыт.";
+            return;
+        }
         if (page != Module)
             Remember(Module);
         Module = page;
-        var check = page switch
-        {
-            AppModule.Ticket => AppModule.Disp,
-            AppModule.Subscriber or AppModule.Print or AppModule.PrDubl => AppModule.Abon,
-            AppModule.Scheme or AppModule.AntenInfo or AppModule.Ppr => AppModule.Anten,
-            AppModule.Claim => AppModule.Legal,
-            _ => page
-        };
-        if (page is not AppModule.Desktop && User.Role != UserRole.Administrator && !RoleCatalog.Can(User.Role, check, out _))
-            Status = $"Макет окна открыт. Для роли «{RoleCatalog.Title(User.Role)}» это место в работе будет с ограниченными правами.";
-        else
-            Status = WindowTitle;
+        Status = WindowTitle;
     }
 
     [RelayCommand]

@@ -22,12 +22,25 @@ public class ShellTests
     {
         using var app = new DesktopApp(login);
 
-        foreach (var module in Enum.GetValues<AppModule>())
+        foreach (var module in Enum.GetValues<AppModule>().Where(m => NavCatalog.Owner(m) is not { } owner || NavCatalog.IsAvailable(app.Vm.User!.Role, owner)))
         {
             app.Go(module);
             Assert.Equal(module, app.Vm.Module);
+            Assert.DoesNotContain("Макет", app.Vm.Status);
             Assert.NotNull(app.Window.CaptureRenderedFrame());
         }
+    }
+
+    [AvaloniaFact]
+    public void ClosedModule_DoesNotOpen()
+    {
+        using var app = new DesktopApp("lawyer");
+        app.Go(AppModule.Legal);
+
+        app.Go(AppModule.Disp);
+
+        Assert.Equal(AppModule.Legal, app.Vm.Module);
+        Assert.Equal("Раздел «Заявки АДС» для роли «Юрист» закрыт.", app.Vm.Status);
     }
 
     [AvaloniaFact]
