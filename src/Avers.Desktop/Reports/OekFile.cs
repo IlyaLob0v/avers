@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avers.Data;
 using ClosedXML.Excel;
 
@@ -27,11 +28,15 @@ public static class OekFile
         foreach (var row in sheet.RowsUsed().Skip(1))
         {
             string Text(string c) => row.Cell(columns[c]).GetFormattedString().Trim();
-            decimal Money(string c) => row.Cell(columns[c]).TryGetValue(out decimal v) ? v : 0;
+            // Суммы и даты бывают и текстом («115,50», «14.08.2026»): запятая — десятичная, а не разделитель тысяч.
+            decimal Money(string c) => row.Cell(columns[c]).DataType == XLDataType.Number
+                ? row.Cell(columns[c]).GetValue<decimal>()
+                : decimal.TryParse(Text(c).Replace(" ", "").Replace("\u00A0", "").Replace(',', '.'), NumberStyles.Number, CultureInfo.InvariantCulture, out var v) ? v : 0;
             var account = Text("ACCOUNT");
             if (account == "")
                 continue;
-            var paidAt = row.Cell(columns["DATE_PAY"]).TryGetValue(out DateTime d) ? DateOnly.FromDateTime(d) : (DateOnly?)null;
+            var paidAt = row.Cell(columns["DATE_PAY"]).TryGetValue(out DateTime d) ? DateOnly.FromDateTime(d)
+                : DateOnly.TryParseExact(Text("DATE_PAY"), "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var t) ? t : (DateOnly?)null;
             rows.Add(new OekRow(account, Text("LS"), Text("ADDRESS"), Text("NKWART"), Money("NACH_AN"), Money("SUMMA_AN"), paidAt));
         }
         return rows;
