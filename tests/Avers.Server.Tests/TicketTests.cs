@@ -141,6 +141,43 @@ public class TicketTests
     }
 
     [Fact]
+    public async Task Dispatcher_SetsDoneDateAndDefersWithWorkNote()
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("sokolova");
+        var house = await Vol19dAsync(client);
+        var created = (await (await client.PostAsJsonAsync("/api/tickets", new CreateTicketRequest(house.Id, "Нет сигнала")))
+            .Content.ReadFromJsonAsync<TicketDto>())!;
+
+        var deferred = await client.PutAsJsonAsync($"/api/tickets/{created.Id}",
+            new UpdateTicketRequest(WorkDone: "Осмотр, нет доступа на техэтаж", Status: "Deferred"));
+        var future = await client.PutAsJsonAsync($"/api/tickets/{created.Id}",
+            new UpdateTicketRequest(WorkDone: "Заменён штекер", Status: "Done", DoneDate: new DateOnly(2026, 9, 1)));
+        var beforeAccepted = await client.PutAsJsonAsync($"/api/tickets/{created.Id}",
+            new UpdateTicketRequest(WorkDone: "Заменён штекер", Status: "Done", DoneDate: new DateOnly(2026, 8, 30)));
+        var done = await client.PutAsJsonAsync($"/api/tickets/{created.Id}",
+            new UpdateTicketRequest(WorkDone: "Заменён штекер", Status: "Done", DoneDate: new DateOnly(2026, 8, 31)));
+
+        var d = (await deferred.Content.ReadFromJsonAsync<TicketDto>())!;
+        Assert.Equal(("Deferred", (DateOnly?)null), (d.Status, d.DoneDate));
+        Assert.Equal((HttpStatusCode.BadRequest, HttpStatusCode.BadRequest), (future.StatusCode, beforeAccepted.StatusCode));
+        var t = (await done.Content.ReadFromJsonAsync<TicketDto>())!;
+        Assert.Equal(("Done", (DateOnly?)new DateOnly(2026, 8, 31)), (t.Status, t.DoneDate));
+    }
+
+    [Fact]
+    public async Task Create_CallerPhone_OverridesCardPhone()
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("sokolova");
+        var house = await Vol19dAsync(client);
+
+        var response = await client.PostAsJsonAsync("/api/tickets", new CreateTicketRequest(house.Id, "Нет сигнала", Phone: "8-913-000-00-00"));
+
+        Assert.Equal("8-913-000-00-00", (await response.Content.ReadFromJsonAsync<TicketDto>())!.Phone);
+    }
+
+    [Fact]
     public async Task Dispatcher_CannotEditSomeoneElsesTicket_HeadCan()
     {
         await using var app = new AversApp();

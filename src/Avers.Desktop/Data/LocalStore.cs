@@ -293,14 +293,14 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
         return Task.FromResult(ticket.Number);
     }
 
-    public Task SaveTicketAsync(int ticketId, string fault, string mechanic, string workDone)
+    public Task SaveTicketAsync(int ticketId, string fault, string mechanic, string workDone, TicketStatus status, DateOnly? doneDate)
     {
         using var ctx = db.CreateDbContext();
         var t = ctx.Tickets.First(x => x.Id == ticketId);
         var before = ChangeLog.TicketState(t);
         t.Fault = fault;
         t.Mechanic = mechanic;
-        TicketJournal.ApplyWork(t, workDone, Today);
+        TicketJournal.SetResult(t, workDone, status, doneDate, Today);
         ChangeLog.TicketEdit(ctx, DateTimeOffset.UtcNow, ChangeLog.Who(ctx, _userId), t, before);
         ctx.SaveChanges();
         return Task.CompletedTask;

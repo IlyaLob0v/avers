@@ -156,10 +156,16 @@
               <StackPanel Grid.Column="1" Classes="f" Margin="8,0"><TextBlock Text="Абонент"/><TextBox Classes="cell" Text="{Binding Shell.SelectedSubscriber.FullName, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
               <StackPanel Grid.Column="2" Classes="f"><TextBlock Text="Вид заявки"/><ComboBox Classes="cell" ItemsSource="{Binding NewTicketKinds}" SelectedItem="{Binding NewTicketKind}"/></StackPanel>
             </Grid>
-            <StackPanel Classes="f">
-              <TextBlock Text="Характер неисправности" />
-              <TextBox Classes="cell" MinHeight="28" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding NewTicketFault}" PlaceholderText="Что случилось — со слов жильца" />
-            </StackPanel>
+            <Grid ColumnDefinitions="*,200">
+              <StackPanel Classes="f">
+                <TextBlock Text="Характер неисправности" />
+                <TextBox Classes="cell" MinHeight="28" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding NewTicketFault}" PlaceholderText="Что случилось — со слов жильца" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Classes="f" Margin="8,0,0,0">
+                <TextBlock Text="Телефон заявителя" />
+                <TextBox Classes="cell" Text="{Binding NewTicketPhone}" PlaceholderText="пусто — из карточки" />
+              </StackPanel>
+            </Grid>
           </StackPanel>
         </HeaderedContentControl>
 

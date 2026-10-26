@@ -66,6 +66,37 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     [ObservableProperty] private string _ticketFault = "";
     [ObservableProperty] private string _ticketWork = "";
     [ObservableProperty] private string _ticketMechanic = "";
+    [ObservableProperty] private TicketOption<TicketStatus>? _ticketState;
+    [ObservableProperty] private string _ticketDoneDate = "";
+    [ObservableProperty] private string _newTicketPhone = "";
+
+    /// <summary>Состояние на экране заявки: выполненной нужна дата работы.</summary>
+    public IReadOnlyList<TicketOption<TicketStatus>> TicketStates { get; } =
+    [
+        new(TicketStatus.Accepted, "принята"),
+        new(TicketStatus.InProgress, "в работе"),
+        new(TicketStatus.Deferred, "отложена"),
+        new(TicketStatus.Done, "выполнена")
+    ];
+
+    public IEnumerable<string> MechanicNames => shell.Mechanics.Select(m => m.FullName);
+
+    public bool IsTicketDone => TicketState?.Value == TicketStatus.Done;
+
+    partial void OnTicketStateChanged(TicketOption<TicketStatus>? value)
+    {
+        if (value?.Value == TicketStatus.Done && TicketDoneDate == "")
+            TicketDoneDate = shell.Today.ToString("dd.MM.yyyy");
+        OnPropertyChanged(nameof(IsTicketDone));
+    }
+
+    /// <summary>Как раньше: вписали, что сделано, в принятую заявку — она становится выполненной.</summary>
+    partial void OnTicketWorkChanged(string? oldValue, string newValue)
+    {
+        if (string.IsNullOrWhiteSpace(oldValue) && !string.IsNullOrWhiteSpace(newValue)
+            && TicketState?.Value is TicketStatus.Accepted or TicketStatus.InProgress)
+            TicketState = TicketStates.Single(s => s.Value == TicketStatus.Done);
+    }
 
     private bool _ticketFilterReady;
     private bool _holdTicketRefresh;
@@ -258,9 +289,13 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
 
     internal void BindTicket()
     {
+        TicketState = null;
         TicketFault = SelectedTicket?.Fault ?? "";
         TicketWork = SelectedTicket?.WorkDone ?? "";
         TicketMechanic = SelectedTicket?.Mechanic ?? "";
+        TicketDoneDate = SelectedTicket?.DoneDate?.ToString("dd.MM.yyyy") ?? "";
+        TicketState = SelectedTicket is { } t ? TicketStates.Single(s => s.Value == t.Status) : null;
+        OnPropertyChanged(nameof(MechanicNames));
         OnPropertyChanged(nameof(TicketHouse));
         OnPropertyChanged(nameof(TicketSubscriber));
         OnPropertyChanged(nameof(HasTicketSubscriber));
@@ -375,12 +410,13 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
             subscriber?.Id,
             subscriber?.Section ?? shell.FindSection,
             subscriber?.Apartment ?? shell.FindApartment,
-            subscriber?.Phone ?? "");
+            string.IsNullOrWhiteSpace(NewTicketPhone) ? subscriber?.Phone ?? "" : NewTicketPhone.Trim());
         await shell.Save(async () =>
         {
             var number = await shell.Store.AcceptTicketAsync(request, shell.User);
             await shell.ReloadAsync();
             NewTicketFault = "";
+            NewTicketPhone = "";
             SelectedTicket = Tickets.FirstOrDefault(t => t.Number == number);
             shell.Status = $"Принята заявка № {number}.";
             shell.Module = AppModule.Disp;
@@ -392,10 +428,20 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     {
         if (SelectedTicket is null) return;
         if (!CanEditSelectedTicket) { shell.Status = TicketRightsHint; return; }
-        var (id, number) = (SelectedTicket.Id, SelectedTicket.Number);
+        var (id, number, accepted) = (SelectedTicket.Id, SelectedTicket.Number, SelectedTicket.Date);
+        var status = TicketState?.Value ?? SelectedTicket.Status;
+        DateOnly? doneDate = null;
+        if (status == TicketStatus.Done)
+        {
+            if (!MainViewModel.TryParseDate(TicketDoneDate, out doneDate) || doneDate is not { } d || d > shell.Today || d < accepted)
+            {
+                shell.Status = $"Дата выполнения — дд.мм.гггг, с {accepted:dd.MM.yyyy} по {shell.Today:dd.MM.yyyy}.";
+                return;
+            }
+        }
         await shell.Save(async () =>
         {
-            await shell.Store.SaveTicketAsync(id, TicketFault.Trim(), TicketMechanic.Trim(), TicketWork);
+            await shell.Store.SaveTicketAsync(id, TicketFault.Trim(), (TicketMechanic ?? "").Trim(), TicketWork, status, doneDate);
             await shell.ReloadAsync();
             SelectedTicket = Tickets.FirstOrDefault(x => x.Number == number) ?? shell.AllTickets.FirstOrDefault(x => x.Number == number);
             shell.Status = $"Заявка № {number} записана.";

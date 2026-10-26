@@ -193,8 +193,9 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public async Task<int> AcceptTicketAsync(CreateTicketRequest request, AppUser user) =>
         (await Read<TicketDto>(() => http.PostAsJsonAsync("api/tickets", request, Json))).Number;
 
-    public Task SaveTicketAsync(int ticketId, string fault, string mechanic, string workDone) =>
-        Write(() => http.PutAsJsonAsync($"api/tickets/{ticketId}", new UpdateTicketRequest(fault, workDone, mechanic), Json));
+    public Task SaveTicketAsync(int ticketId, string fault, string mechanic, string workDone, TicketStatus status, DateOnly? doneDate) =>
+        Write(() => http.PutAsJsonAsync($"api/tickets/{ticketId}",
+            new UpdateTicketRequest(fault, workDone, mechanic, Status: status.ToString(), DoneDate: doneDate), Json));
 
     public Task MarkPprAsync(int houseId, int year, int month, PprStatus status) =>
         Write(() => http.PutAsJsonAsync($"api/ppr/{houseId}/{year}/{month}", new PprMarkRequest(status.ToString()), Json));

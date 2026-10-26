@@ -193,6 +193,8 @@ public static class TicketEndpoints
         if (request.Fault is not null && string.IsNullOrWhiteSpace(request.Fault))
             errors["fault"] = ["Описание неисправности не может быть пустым."];
         CheckLengths(errors, request.Fault, request.WorkDone, request.Mechanic);
+        if (request.DoneDate is { } doneDate && (doneDate > time.Today() || doneDate < ticket.Date))
+            errors["doneDate"] = ["Дата выполнения — не раньше приёма заявки и не позже сегодняшнего дня."];
         if (errors.Count > 0)
             return TypedResults.ValidationProblem(errors);
 
@@ -202,11 +204,8 @@ public static class TicketEndpoints
         if (request.RisersNote is not null) ticket.RisersNote = request.RisersNote.Trim();
         if (kind is not null) ticket.Kind = kind.Value;
         if (status is not null)
-        {
-            ticket.Status = status.Value;
-            ticket.DoneDate = status == TicketStatus.Done ? ticket.DoneDate ?? time.Today() : null;
-        }
-        if (request.WorkDone is not null)
+            TicketJournal.SetResult(ticket, request.WorkDone ?? ticket.WorkDone, status.Value, request.DoneDate, time.Today());
+        else if (request.WorkDone is not null)
             TicketJournal.ApplyWork(ticket, request.WorkDone, time.Today());
         ChangeLog.TicketEdit(db, time.GetUtcNow(), ChangeLog.Who(db, user.AppUserId()), ticket, before);
 
