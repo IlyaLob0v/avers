@@ -132,4 +132,23 @@ public class DesktopTests
         var amplifiers = await app.WithDbAsync(db => db.Houses.Where(h => h.Id == 1).Select(h => h.Amplifiers).SingleAsync());
         Assert.Equal("Terra HA-126", amplifiers);
     }
+
+    [Fact]
+    public async Task Passport_SavesOpenFaultAndOrganization()
+    {
+        await using var app = new AversApp();
+        var engineer = await app.LoginAsync("engineer");
+        var request = new HousePassportRequest("Антенна ДМВ", "", "", "", "", "",
+            "Нет сигнала на стояке 3", "нет ключа от техэтажа", new DateOnly(2026, 9, 5),
+            new HouseOrganizationRequest("ООО «Жилсервис-Центр»", "Филиал Советский", "ул. Дианова, 7", "40-55-52", "Кузнецов А.В.", "Сидорова Е.Н."));
+
+        var saved = await engineer.PutAsJsonAsync("/api/houses/1/passport", request);
+        var noName = await engineer.PutAsJsonAsync("/api/houses/1/passport", request with { Organization = request.Organization! with { Name = " " } });
+
+        Assert.Equal(HttpStatusCode.NoContent, saved.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, noName.StatusCode);
+        var house = await app.WithDbAsync(db => db.Houses.Include(h => h.Organization).SingleAsync(h => h.Id == 1));
+        Assert.Equal(("Нет сигнала на стояке 3", "нет ключа от техэтажа", new DateOnly(2026, 9, 5)), (house.OpenFault, house.OpenFaultReason, house.OpenFaultPlannedFix));
+        Assert.Equal("40-55-52", house.Organization!.Phones);
+    }
 }
