@@ -151,7 +151,13 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
             Amplifiers = request.Amplifiers ?? "",
             PowerSupplies = request.PowerSupplies ?? "",
             TechFloorKey = request.TechFloorKey ?? "",
-            OtherNotes = request.OtherNotes ?? ""
+            OtherNotes = request.OtherNotes ?? "",
+            OpenFault = request.OpenFault,
+            OpenFaultReason = request.OpenFaultReason,
+            OpenFaultPlannedFix = request.OpenFaultPlannedFix,
+            Organization = request.Organization is { } o
+                ? new Organization { Name = o.Name ?? "", Branch = o.Branch ?? "", Address = o.Address ?? "", Phones = o.Phones ?? "", HeadName = o.HeadName ?? "", EngineerName = o.EngineerName ?? "" }
+                : null
         }, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
         return Task.CompletedTask;
     }

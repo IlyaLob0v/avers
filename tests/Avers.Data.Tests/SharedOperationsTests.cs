@@ -59,6 +59,39 @@ public class SharedOperationsTests
     }
 
     [Fact]
+    public void SaveHousePassport_OpenFault_SetAndCleared()
+    {
+        using var database = new SqliteDatabase();
+        using var db = database.CreateContext();
+        var houseId = AddSubscriber(db).HouseId;
+
+        HousePassport.Save(db, houseId, new House { OpenFault = " Нет сигнала на стояке 3 ", OpenFaultReason = "нет ключа", OpenFaultPlannedFix = new(2026, 9, 5) }, "Иванов", At);
+        var house = db.Houses.Single(h => h.Id == houseId);
+        Assert.Equal(("Нет сигнала на стояке 3", "нет ключа", new DateOnly(2026, 9, 5)), (house.OpenFault, house.OpenFaultReason, house.OpenFaultPlannedFix));
+
+        HousePassport.Save(db, houseId, new House { OpenFault = " ", OpenFaultReason = "нет ключа", OpenFaultPlannedFix = new(2026, 9, 5) }, "Иванов", At);
+        house = db.Houses.Single(h => h.Id == houseId);
+        Assert.Equal((null, null, null), (house.OpenFault, house.OpenFaultReason, house.OpenFaultPlannedFix));
+        Assert.Contains(db.ChangeLog, e => e.Changes.Contains("Неисправность: Нет сигнала на стояке 3 → "));
+    }
+
+    [Fact]
+    public void SaveHousePassport_UpdatesOrganizationOfHouse()
+    {
+        using var database = new SqliteDatabase();
+        using var db = database.CreateContext();
+        var houseId = AddSubscriber(db).HouseId;
+        var house = db.Houses.Single(h => h.Id == houseId);
+        house.Organization = new Organization { Name = "ООО «Старое»" };
+        db.SaveChanges();
+
+        HousePassport.Save(db, houseId, new House { Organization = new Organization { Name = " ООО «Новое» ", Phones = "40-55-52" } }, "Иванов", At);
+
+        var org = db.Organizations.Single();
+        Assert.Equal(("ООО «Новое»", "40-55-52"), (org.Name, org.Phones));
+    }
+
+    [Fact]
     public void AcceptTicket_NumbersInOrder_AndFillsBlanksFromSubscriber()
     {
         using var database = new SqliteDatabase();

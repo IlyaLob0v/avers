@@ -54,14 +54,30 @@ public sealed record TariffChangeResult(int Months);
 /// <summary>Сколько абонентов получили начисления на открытый год.</summary>
 public sealed record OpenYearResult(int Subscribers);
 
-/// <summary>Паспорт дома: техника СКПТ и примечания. Запрос заменяет все поля целиком.</summary>
+/// <summary>
+/// Паспорт дома: техника СКПТ, примечания и неустранённая неисправность. Запрос заменяет все поля целиком;
+/// <see cref="Organization"/> = null — сведения об обслуживающей организации не меняются.
+/// </summary>
 public sealed record HousePassportRequest(
     string? Antennas,
     string? AerialCables,
     string? Amplifiers,
     string? PowerSupplies,
     string? TechFloorKey,
-    string? OtherNotes);
+    string? OtherNotes,
+    string? OpenFault = null,
+    string? OpenFaultReason = null,
+    DateOnly? OpenFaultPlannedFix = null,
+    HouseOrganizationRequest? Organization = null);
+
+/// <summary>Обслуживающая организация дома и филиал; общие для всех домов этой организации.</summary>
+public sealed record HouseOrganizationRequest(
+    string? Name,
+    string? Branch,
+    string? Address,
+    string? Phones,
+    string? HeadName,
+    string? EngineerName);
 
 /// <summary>Новая схема СКПТ дома: название и картинка JPG или PNG.</summary>
 public sealed record AddSchemeRequest(string Name, byte[] Content);
