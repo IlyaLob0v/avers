@@ -120,6 +120,17 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public void Claim_CourtCaseForm_EnabledRightAfterLogin()
+    {
+        using var app = new DesktopApp("lawyer");
+        app.Go(AppModule.Claim);
+
+        var save = app.Window.GetVisualDescendants().OfType<Button>()
+            .SingleOrDefault(b => b.IsEffectivelyVisible && Equals(b.Content, "Сохранить дело"));
+        Assert.NotNull(save);
+    }
+
+    [AvaloniaFact]
     public void RecordPayment_StaysOnTheSameApartment()
     {
         using var app = new DesktopApp("orlov");

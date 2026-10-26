@@ -277,6 +277,7 @@ public sealed partial class MainViewModel : ObservableObject
         SchemeScreen.RefreshRights();
         IntercomScreen.RefreshRights();
         PhonebookScreen.RefreshRights();
+        LegalScreen.RefreshRights();
         TicketsScreen.NotifyTicketPanel();
         TicketsScreen.BindTicket();
         RebuildNavigation();
