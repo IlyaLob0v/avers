@@ -78,6 +78,35 @@
           </StackPanel>
         </HeaderedContentControl>
       </Grid>
+      <HeaderedContentControl Classes="group" Margin="0,0,0,10" Header="Обслуживающие организации">
+        <Grid ColumnDefinitions="*,420">
+          <DataGrid Height="180" Margin="0,0,10,0" ItemsSource="{Binding Organizations}" SelectedItem="{Binding SelectedOrganization}" AutoGenerateColumns="False" IsReadOnly="True">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*" />
+              <DataGridTextColumn Header="Филиал" Binding="{Binding Branch}" Width="140" />
+              <DataGridTextColumn Header="Телефоны" Binding="{Binding Phones}" Width="130" />
+              <DataGridTextColumn Header="Начальник" Binding="{Binding HeadName}" Width="140" />
+            </DataGrid.Columns>
+          </DataGrid>
+          <StackPanel Grid.Column="1" IsVisible="{Binding CanEditPhonebook}">
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto">
+              <TextBox Classes="cell" Margin="0,0,8,6" PlaceholderText="Название" Text="{Binding EditOrganization.Name}" />
+              <TextBox Grid.Column="1" Classes="cell" Margin="0,0,0,6" PlaceholderText="Филиал" Text="{Binding EditOrganization.Branch}" />
+              <TextBox Grid.Row="1" Classes="cell" Margin="0,0,8,6" PlaceholderText="Адрес" Text="{Binding EditOrganization.Address}" />
+              <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Margin="0,0,0,6" PlaceholderText="Телефоны" Text="{Binding EditOrganization.Phones}" />
+              <TextBox Grid.Row="2" Classes="cell" Margin="0,0,8,6" PlaceholderText="Начальник" Text="{Binding EditOrganization.HeadName}" />
+              <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Margin="0,0,0,6" PlaceholderText="Тел. начальника" Text="{Binding EditOrganization.HeadPhone}" />
+              <TextBox Grid.Row="3" Classes="cell" Margin="0,0,8,0" PlaceholderText="Инженер" Text="{Binding EditOrganization.EngineerName}" />
+              <TextBox Grid.Row="3" Grid.Column="1" Classes="cell" PlaceholderText="Тел. инженера" Text="{Binding EditOrganization.EngineerPhone}" />
+            </Grid>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+              <Button Content="Новая организация" Command="{Binding NewOrganizationCommand}" />
+              <Button Content="Удалить" Command="{Binding DeleteOrganizationCommand}" />
+              <Button Classes="primary" Content="Сохранить" Margin="0" Command="{Binding SaveOrganizationCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </Grid>
+      </HeaderedContentControl>
       <Grid ColumnDefinitions="*,*">
         <HeaderedContentControl Classes="group" Margin="0,0,5,10" Header="Материалы">
           <StackPanel>
@@ -122,7 +151,7 @@
         </HeaderedContentControl>
       </Grid>
       <TextBlock Classes="hint" TextWrapping="Wrap" IsVisible="{Binding CanEditPhonebook}"
-                 Text="Кнопку «Удалить» нажимают дважды. Улицу с домами и дом с абонентами, заявками или схемами удалить нельзя: такой дом снимают с обслуживания." />
+                 Text="Кнопку «Удалить» нажимают дважды. Улицу с домами, организацию с домами и дом с абонентами, заявками или схемами удалить нельзя: такой дом снимают с обслуживания." />
     </StackPanel>
   </ScrollViewer>
 </UserControl>

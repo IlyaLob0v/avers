@@ -96,6 +96,28 @@ public class PhonebookTests
     }
 
     [Fact]
+    public async Task Organization_AddEditDelete_NotWhileServesHouses()
+    {
+        await using var app = new AversApp();
+        var engineer = await app.LoginAsync("engineer");
+        var request = new OrganizationRequest(" ТСЖ «Рассвет» ", "", "ул. Ленина, 10", "21-00-00", "Белова И.П.", "8-900-111-2233", "", "");
+
+        (await engineer.PostAsJsonAsync("/api/organizations", request)).EnsureSuccessStatusCode();
+        var id = await app.WithDbAsync(db => db.Organizations.Where(o => o.Name == "ТСЖ «Рассвет»").Select(o => o.Id).SingleAsync());
+        (await engineer.PutAsJsonAsync($"/api/organizations/{id}", request with { Phones = "21-00-01" })).EnsureSuccessStatusCode();
+        var busy = await app.WithDbAsync(db => db.Organizations.Where(o => o.Houses.Any()).Select(o => o.Id).FirstAsync());
+
+        Assert.Equal("21-00-01", await app.WithDbAsync(db => db.Organizations.Where(o => o.Id == id).Select(o => o.Phones).SingleAsync()));
+        Assert.Equal("Название организации — от 1 до 200 символов.",
+            await ErrorAsync(await engineer.PostAsJsonAsync("/api/organizations", request with { Name = " " })));
+        Assert.StartsWith("Организация обслуживает дома", await ErrorAsync(await engineer.DeleteAsync($"/api/organizations/{busy}")));
+        (await engineer.DeleteAsync($"/api/organizations/{id}")).EnsureSuccessStatusCode();
+        Assert.False(await app.WithDbAsync(db => db.Organizations.AnyAsync(o => o.Id == id)));
+        var log = await (await app.LoginAsync("admin")).GetFromJsonAsync<List<ChangeLogEntry>>("/api/change-log");
+        Assert.Equal(["Словарь: организация", "Словарь: организация", "Словарь: новая организация"], log!.Take(3).Select(e => e.Action));
+    }
+
+    [Fact]
     public async Task Dispatcher_CannotChangePhonebook()
     {
         await using var app = new AversApp();
@@ -103,9 +125,11 @@ public class PhonebookTests
 
         var street = await dispatcher.PostAsJsonAsync("/api/streets", new StreetRequest("Новая"));
         var mechanic = await dispatcher.DeleteAsync("/api/mechanics/1");
+        var organization = await dispatcher.PostAsJsonAsync("/api/organizations", new OrganizationRequest("ООО «Новая»", "", "", "", "", "", "", ""));
 
         Assert.Equal(HttpStatusCode.Forbidden, street.StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, mechanic.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, organization.StatusCode);
     }
 
     private sealed record Problem(Dictionary<string, string[]> Errors);

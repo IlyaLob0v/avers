@@ -17,6 +17,17 @@ public sealed record HouseRequest(
     int? OrganizationId,
     bool Serviced);
 
+/// <summary>Обслуживающая организация в словаре.</summary>
+public sealed record OrganizationRequest(
+    string? Name,
+    string? Branch,
+    string? Address,
+    string? Phones,
+    string? HeadName,
+    string? HeadPhone,
+    string? EngineerName,
+    string? EngineerPhone);
+
 /// <summary>Материал в словаре.</summary>
 public sealed record MaterialRequest(string? Name, string? Unit);
 

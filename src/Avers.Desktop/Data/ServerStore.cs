@@ -183,6 +183,12 @@ public sealed class ServerStore(HttpClient http) : IAversStore
 
     public Task DeleteHouseAsync(int id) => Write(() => http.DeleteAsync($"api/houses/{id}"));
 
+    public Task SaveOrganizationAsync(Organization draft) =>
+        Upsert("organizations", draft.Id, new OrganizationRequest(draft.Name, draft.Branch, draft.Address, draft.Phones,
+            draft.HeadName, draft.HeadPhone, draft.EngineerName, draft.EngineerPhone));
+
+    public Task DeleteOrganizationAsync(int id) => Write(() => http.DeleteAsync($"api/organizations/{id}"));
+
     public Task SaveMaterialAsync(Material draft) =>
         Upsert("materials", draft.Id, new MaterialRequest(draft.Name, draft.Unit));
 

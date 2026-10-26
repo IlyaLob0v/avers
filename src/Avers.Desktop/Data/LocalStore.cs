@@ -255,6 +255,10 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
 
     public Task DeleteHouseAsync(int id) => EditPhonebook((ctx, who) => Phonebook.DeleteHouse(ctx, id, who, DateTimeOffset.UtcNow));
 
+    public Task SaveOrganizationAsync(Organization draft) => EditPhonebook((ctx, who) => Phonebook.SaveOrganization(ctx, draft, who, DateTimeOffset.UtcNow));
+
+    public Task DeleteOrganizationAsync(int id) => EditPhonebook((ctx, who) => Phonebook.DeleteOrganization(ctx, id, who, DateTimeOffset.UtcNow));
+
     public Task SaveMaterialAsync(Material draft) => EditPhonebook((ctx, who) => Phonebook.SaveMaterial(ctx, draft, who, DateTimeOffset.UtcNow));
 
     public Task DeleteMaterialAsync(int id) => EditPhonebook((ctx, who) => Phonebook.DeleteMaterial(ctx, id, who, DateTimeOffset.UtcNow));
