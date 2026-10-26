@@ -172,6 +172,23 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
             path => WordForms.Claim($"г. Омск, {d.Address}", ClaimText, path));
     }
 
+    /// <summary>
+    /// Уведомления всем, у кого не оплачено от <see cref="Billing.ClaimUnpaidMonths"/> месяцев, одним файлом Word.
+    /// Без тех, по кому уже есть судебный приказ, и без расторгнутых договоров: им текст выбирают по одному.
+    /// </summary>
+    [RelayCommand]
+    private void PrintAllClaims()
+    {
+        var rows = Debtors.Where(d => d.Unpaid >= Billing.ClaimUnpaidMonths && d.Debt > 0 && d.CourtCase is null && d.ContractTerminated is null).ToList();
+        if (rows.Count == 0) { shell.Status = $"Нет должников без судебного приказа с долгом от {Billing.ClaimUnpaidMonths} мес."; return; }
+        shell.OpenWord(MainViewModel.PrintPath("уведомления", shell.Today.ToString("yyyy-MM-dd"), ".docx"), $"уведомлений: {rows.Count}",
+            path => WordForms.Claims(rows.Select(d =>
+            {
+                var address = $"г. Омск, {d.Address}";
+                return (address, ClaimNotice.Text(ClaimKind.Connected, address, d.Debt, null));
+            }), path));
+    }
+
     /// <summary>Пакет для суда по выбранному должнику: его оплаты грузятся вместе с домом.</summary>
     [RelayCommand]
     private async Task ExportCourtPackage()

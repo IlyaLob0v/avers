@@ -150,6 +150,17 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public void Claim_CourtCaseForm_EnabledRightAfterLogin()
+    {
+        using var app = new DesktopApp("lawyer");
+        app.Go(AppModule.Claim);
+
+        var save = app.Window.GetVisualDescendants().OfType<Button>()
+            .SingleOrDefault(b => b.IsEffectivelyVisible && Equals(b.Content, "Сохранить дело"));
+        Assert.NotNull(save);
+    }
+
+    [AvaloniaFact]
     public void RecordPayment_StaysOnTheSameApartment()
     {
         using var app = new DesktopApp("orlov");
@@ -417,6 +428,27 @@ public class ShellTests
         var pages = System.Text.RegularExpressions.Regex.Count(File.ReadAllText(opened[1]), @"/Type /Page\b");
         Assert.True(pages >= 2, $"В пакете {pages} стр.: справка и хотя бы один год оплат.");
         Assert.Contains("пакет для суда", app.Vm.Status);
+    }
+
+    [AvaloniaFact]
+    public void Legal_PrintAllClaims_OneWordFileForDebtorsNotInCourt()
+    {
+        using var app = new DesktopApp("lawyer");
+        app.Go(AppModule.Legal);
+        var opened = new List<string>();
+        app.Vm.OpenFile = opened.Add;
+
+        app.Vm.LegalScreen.PrintAllClaimsCommand.Execute(null);
+
+        var file = Assert.Single(opened);
+        string text;
+        using (var word = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(file, false))
+            text = word.MainDocumentPart!.Document!.Body!.InnerText;
+        var expected = app.Vm.LegalScreen.Debtors.Where(d => d.Unpaid >= Billing.ClaimUnpaidMonths && d.CourtCase is null && d.ContractTerminated is null).ToList();
+        Assert.NotEmpty(expected);
+        Assert.All(expected, d => Assert.Contains(d.Address, text));
+        Assert.All(app.Vm.LegalScreen.Debtors.Where(d => d.CourtCase is not null), d => Assert.DoesNotContain(d.Address + ".", text));
+        Assert.Contains($"уведомлений: {expected.Count}", app.Vm.Status);
     }
 
     [AvaloniaFact]
