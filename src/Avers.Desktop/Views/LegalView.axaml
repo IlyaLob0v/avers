@@ -18,6 +18,8 @@
     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,0,0,10">
       <Button Classes="primary" Content="Сформировать претензии (долг ≥ 3 мес.)" Command="{Binding PrintAllClaimsCommand}"
               ToolTip.Tip="Уведомления всем должникам без судебного приказа одним файлом Word, каждое с новой страницы" />
+      <Button Content="Уведомление выбранному" Command="{Binding Shell.GoCommand}" CommandParameter="{x:Static d:AppModule.Claim}"
+              ToolTip.Tip="Уведомление должнику, выбранному в списке: вариант текста, правка и печать через Word" />
       <Button Content="Отчёт по должникам" Command="{Binding ExportDebtorsCommand}" />
       <Button Content="Пакет документов для суда" Command="{Binding Shell.GoCommand}" CommandParameter="{x:Static d:AppModule.Claim}" />
     </StackPanel>

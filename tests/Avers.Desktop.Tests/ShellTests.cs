@@ -452,6 +452,23 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public void Legal_ClaimForSelectedDebtor_OpensItsNotice()
+    {
+        using var app = new DesktopApp("lawyer");
+        app.Go(AppModule.Legal);
+        var debtor = app.Vm.LegalScreen.Debtors.Last();
+        app.Vm.LegalScreen.SelectedDebtor = debtor;
+
+        var button = app.Window.GetVisualDescendants().OfType<Button>()
+            .Single(b => b.IsEffectivelyVisible && Equals(b.Content, "Уведомление выбранному"));
+        button.Command!.Execute(button.CommandParameter);
+        app.Pump();
+
+        Assert.Equal(AppModule.Claim, app.Vm.Module);
+        Assert.Contains(debtor.Address, app.Vm.LegalScreen.ClaimText);
+    }
+
+    [AvaloniaFact]
     public void Back_ReturnsToPreviousScreens()
     {
         using var app = new DesktopApp("admin");
