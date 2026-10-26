@@ -19,6 +19,14 @@ public sealed class ServerStore(HttpClient http) : IAversStore
 
     public bool IsShared => true;
 
+    private readonly HttpClient http = WithVersion(http);
+
+    private static HttpClient WithVersion(HttpClient http)
+    {
+        http.DefaultRequestHeaders.Add(DesktopClient.Header, DesktopClient.Version.ToString());
+        return http;
+    }
+
     public string Title => $"сервер {http.BaseAddress?.Authority}";
 
     public DateOnly Today => DateOnly.FromDateTime(DateTime.Now);
