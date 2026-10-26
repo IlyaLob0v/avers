@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using Avers.Data;
 using ClosedXML.Excel;
 
@@ -40,5 +41,14 @@ public static class OekFile
             rows.Add(new OekRow(account, Text("LS"), Text("ADDRESS"), Text("NKWART"), Money("NACH_AN"), Money("SUMMA_AN"), paidAt));
         }
         return rows;
+    }
+
+    /// <summary>Месяц из имени файла: nach082026_an — 08.2026; имя не в таком виде — null.</summary>
+    public static DateOnly? MonthFromName(string path)
+    {
+        var m = Regex.Match(Path.GetFileName(path), @"^nach(\d{2})(\d{4})", RegexOptions.IgnoreCase);
+        return m.Success && int.Parse(m.Groups[1].Value) is >= 1 and <= 12 and var month
+            ? new DateOnly(int.Parse(m.Groups[2].Value), month, 1)
+            : null;
     }
 }
