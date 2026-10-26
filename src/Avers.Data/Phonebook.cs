@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Avers.Data;
 
 /// <summary>
-/// Словарь: улицы, дома, материалы, радиомеханики. Черновик с Id = 0 — новая запись. Улицу и дом,
+/// Словарь: улицы, дома, обслуживающие организации, материалы, радиомеханики. Черновик с Id = 0 — новая запись. Улицу и дом,
 /// на которые что-то ссылается, не удаляем. Правка попадает в журнал изменений. Методы возвращают текст ошибки или null.
 /// </summary>
 public static class Phonebook
@@ -120,6 +120,58 @@ public static class Phonebook
 
         db.Houses.Remove(house);
         ChangeLog.Add(db, at, who, "Словарь: дом", house.AddressLine, ["Удалён"]);
+        db.SaveChanges();
+        return null;
+    }
+
+    public static string? SaveOrganization(AversDbContext db, Organization draft, string who, DateTimeOffset at)
+    {
+        var name = draft.Name.Trim();
+        if (name.Length is 0 or > 200)
+            return "Название организации — от 1 до 200 символов.";
+        if (draft.Address.Trim().Length > 300
+            || new[] { draft.Branch, draft.Phones, draft.HeadName, draft.HeadPhone, draft.EngineerName, draft.EngineerPhone }.Any(f => f.Trim().Length > 200))
+            return "Адрес — до 300 символов, остальные поля — до 200.";
+
+        var org = draft.Id == 0 ? new Organization() : db.Organizations.FirstOrDefault(o => o.Id == draft.Id);
+        if (org is null)
+            return "Организация не найдена.";
+        var isNew = draft.Id == 0;
+        var changes = ChangeLog.Diff(
+            ("Название", isNew ? null : org.Name, name),
+            ("Филиал", org.Branch, draft.Branch),
+            ("Адрес", org.Address, draft.Address),
+            ("Телефоны", org.Phones, draft.Phones),
+            ("Начальник", org.HeadName, draft.HeadName),
+            ("Тел. начальника", org.HeadPhone, draft.HeadPhone),
+            ("Инженер", org.EngineerName, draft.EngineerName),
+            ("Тел. инженера", org.EngineerPhone, draft.EngineerPhone));
+        if (isNew)
+            db.Organizations.Add(org);
+        org.Name = name;
+        org.Branch = draft.Branch.Trim();
+        org.Address = draft.Address.Trim();
+        org.Phones = draft.Phones.Trim();
+        org.HeadName = draft.HeadName.Trim();
+        org.HeadPhone = draft.HeadPhone.Trim();
+        org.EngineerName = draft.EngineerName.Trim();
+        org.EngineerPhone = draft.EngineerPhone.Trim();
+        ChangeLog.Add(db, at, who, isNew ? "Словарь: новая организация" : "Словарь: организация", name, changes);
+        db.SaveChanges();
+        return null;
+    }
+
+    public static string? DeleteOrganization(AversDbContext db, int id, string who, DateTimeOffset at)
+    {
+        var org = db.Organizations.FirstOrDefault(o => o.Id == id);
+        if (org is null)
+            return "Организация не найдена.";
+        var houses = db.Houses.Count(h => h.OrganizationId == id);
+        if (houses > 0)
+            return $"Организация обслуживает дома ({houses}). Сначала выберите домам другую.";
+
+        db.Organizations.Remove(org);
+        ChangeLog.Add(db, at, who, "Словарь: организация", org.Name, ["Удалена"]);
         db.SaveChanges();
         return null;
     }

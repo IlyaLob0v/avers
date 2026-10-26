@@ -43,6 +43,27 @@ public class PhonebookTests
     }
 
     [AvaloniaFact]
+    public async Task Engineer_AddsOrganization_AndPicksItForHouse()
+    {
+        using var app = new DesktopApp("engineer");
+        app.Go(AppModule.Phonebook);
+        var screen = app.Vm.PhonebookScreen;
+
+        screen.NewOrganizationCommand.Execute(null);
+        screen.EditOrganization!.Name = "ТСЖ «Рассвет»";
+        screen.EditOrganization.Phones = "21-00-00";
+        await screen.SaveOrganizationCommand.ExecuteAsync(null);
+
+        Assert.Equal("Организация «ТСЖ «Рассвет»» сохранена.", app.Vm.Status);
+        var org = Assert.Single(screen.Organizations, o => o.Name == "ТСЖ «Рассвет»");
+        Assert.Same(org, screen.SelectedOrganization);
+        screen.EditHouse = app.Vm.SelectedHouse;
+        screen.EditHouse!.OrganizationId = org.Id;
+        await screen.SaveHouseDataCommand.ExecuteAsync(null);
+        Assert.Equal("ТСЖ «Рассвет»", app.Vm.SelectedHouse!.Organization?.Name);
+    }
+
+    [AvaloniaFact]
     public async Task HouseWithSubscribers_StaysWithMessage()
     {
         using var app = new DesktopApp("engineer");
