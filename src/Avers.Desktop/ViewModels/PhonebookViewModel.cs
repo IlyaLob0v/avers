@@ -5,7 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace Avers.Desktop.ViewModels;
 
-/// <summary>Словарь: добавление, правка и удаление улиц, домов, материалов и радиомехаников (администратор, главный инженер).</summary>
+/// <summary>Словарь: добавление, правка и удаление улиц, домов, организаций, материалов и радиомехаников (администратор, главный инженер).</summary>
 public sealed partial class PhonebookViewModel(MainViewModel shell) : ObservableObject
 {
     /// <summary>Улицы, дома, материалы и радиомеханики — общие для всей программы.</summary>
@@ -15,6 +15,8 @@ public sealed partial class PhonebookViewModel(MainViewModel shell) : Observable
 
     [ObservableProperty] private string _streetName = "";
     [ObservableProperty] private House? _editHouse;
+    [ObservableProperty] private Organization? _selectedOrganization;
+    [ObservableProperty] private Organization? _editOrganization;
     [ObservableProperty] private Material? _selectedMaterial;
     [ObservableProperty] private Material? _editMaterial;
     [ObservableProperty] private Mechanic? _selectedMechanic;
@@ -31,6 +33,7 @@ public sealed partial class PhonebookViewModel(MainViewModel shell) : Observable
     internal void RefreshRights() => OnPropertyChanged(nameof(CanEditPhonebook));
 
     partial void OnEditHouseChanged(House? value) => OnPropertyChanged(nameof(EditHouseCaption));
+    partial void OnSelectedOrganizationChanged(Organization? value) => EditOrganization = value;
     partial void OnSelectedMaterialChanged(Material? value) => EditMaterial = value;
     partial void OnSelectedMechanicChanged(Mechanic? value) => EditMechanic = value;
 
@@ -105,6 +108,39 @@ public sealed partial class PhonebookViewModel(MainViewModel shell) : Observable
             await shell.ReloadAsync();
             shell.SelectedStreet = shell.Streets.FirstOrDefault(s => s.Id == house.StreetId);
             shell.Status = $"Дом {house.AddressLine} удалён.";
+        });
+    }
+
+    [RelayCommand]
+    private void NewOrganization()
+    {
+        SelectedOrganization = null;
+        EditOrganization = new Organization();
+    }
+
+    [RelayCommand]
+    private async Task SaveOrganization()
+    {
+        if (EditOrganization is not { } org) return;
+        var name = org.Name.Trim();
+        await shell.Save(async () =>
+        {
+            await shell.Store.SaveOrganizationAsync(org);
+            await shell.ReloadAsync();
+            SelectedOrganization = Organizations.FirstOrDefault(o => o.Name == name && o.Branch == org.Branch.Trim());
+            shell.Status = $"Организация «{name}» сохранена.";
+        });
+    }
+
+    [RelayCommand]
+    private async Task DeleteOrganization()
+    {
+        if (EditOrganization is not { Id: > 0 } org || !ConfirmDelete(org, $"организацию «{org.Name}»")) return;
+        await shell.Save(async () =>
+        {
+            await shell.Store.DeleteOrganizationAsync(org.Id);
+            await shell.ReloadAsync();
+            shell.Status = $"Организация «{org.Name}» удалена.";
         });
     }
 

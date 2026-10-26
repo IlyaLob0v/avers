@@ -99,6 +99,10 @@ public interface IAversStore
 
     Task DeleteHouseAsync(int id);
 
+    Task SaveOrganizationAsync(Organization draft);
+
+    Task DeleteOrganizationAsync(int id);
+
     Task SaveMaterialAsync(Material draft);
 
     Task DeleteMaterialAsync(int id);

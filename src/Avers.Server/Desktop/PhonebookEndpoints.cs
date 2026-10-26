@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Avers.Server.Desktop;
 
-/// <summary>Словарь: улицы, дома, материалы и радиомеханики правят администратор и главный инженер.</summary>
+/// <summary>Словарь: улицы, дома, организации, материалы и радиомеханики правят администратор и главный инженер.</summary>
 public static class PhonebookEndpoints
 {
     public static void MapPhonebook(this IEndpointRouteBuilder app)
@@ -23,6 +23,11 @@ public static class PhonebookEndpoints
         api.MapPut("/houses/{id:int}", SaveHouse);
         api.MapDelete("/houses/{id:int}", (int id, ClaimsPrincipal u, AversDbContext db, TimeProvider t) =>
             Result(Phonebook.DeleteHouse(db, id, Who(db, u), t.GetUtcNow())));
+
+        api.MapPost("/organizations", (OrganizationRequest r, ClaimsPrincipal u, AversDbContext db, TimeProvider t) => SaveOrganization(0, r, u, db, t));
+        api.MapPut("/organizations/{id:int}", SaveOrganization);
+        api.MapDelete("/organizations/{id:int}", (int id, ClaimsPrincipal u, AversDbContext db, TimeProvider t) =>
+            Result(Phonebook.DeleteOrganization(db, id, Who(db, u), t.GetUtcNow())));
 
         api.MapPost("/materials", (MaterialRequest r, ClaimsPrincipal u, AversDbContext db, TimeProvider t) => SaveMaterial(0, r, u, db, t));
         api.MapPut("/materials/{id:int}", SaveMaterial);
@@ -53,6 +58,20 @@ public static class PhonebookEndpoints
             Zone = r.Zone ?? "",
             OrganizationId = r.OrganizationId,
             Serviced = r.Serviced
+        }, Who(db, u), t.GetUtcNow()));
+
+    private static Results<NoContent, ValidationProblem> SaveOrganization(int id, OrganizationRequest r, ClaimsPrincipal u, AversDbContext db, TimeProvider t) =>
+        Result(Phonebook.SaveOrganization(db, new Organization
+        {
+            Id = id,
+            Name = r.Name ?? "",
+            Branch = r.Branch ?? "",
+            Address = r.Address ?? "",
+            Phones = r.Phones ?? "",
+            HeadName = r.HeadName ?? "",
+            HeadPhone = r.HeadPhone ?? "",
+            EngineerName = r.EngineerName ?? "",
+            EngineerPhone = r.EngineerPhone ?? ""
         }, Who(db, u), t.GetUtcNow()));
 
     private static Results<NoContent, ValidationProblem> SaveMaterial(int id, MaterialRequest r, ClaimsPrincipal u, AversDbContext db, TimeProvider t) =>
