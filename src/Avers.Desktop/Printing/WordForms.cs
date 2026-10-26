@@ -11,12 +11,17 @@ namespace Avers.Desktop.Printing;
 public static class WordForms
 {
     /// <summary>Досудебное уведомление: адрес справа, заголовок по центру, абзацы, подпись и исполнитель.</summary>
-    public static void Claim(string address, string text, string path)
-    {
-        var lines = text.Replace("\r", "").Split('\n').Where(l => l.Trim() != "").ToList();
-        Write(path, [$"Россия, {address}."], lines[0], lines.Skip(1),
-            ["Зам. генерального директора\tН.С. Видяскина", "ООО «ПО «Аверс-Сервис»", "Исп. юридический отдел:", "т. (3812) 40-55-52, 38-40-11"]);
-    }
+    public static void Claim(string address, string text, string path) => Claims([(address, text)], path);
+
+    /// <summary>Несколько уведомлений одним файлом, каждое с новой страницы.</summary>
+    public static void Claims(IEnumerable<(string Address, string Text)> notices, string path) =>
+        Write(path, notices.SelectMany((n, i) =>
+        {
+            var lines = n.Text.Replace("\r", "").Split('\n').Where(l => l.Trim() != "").ToList();
+            var letter = Letter([$"Россия, {n.Address}."], lines[0], lines.Skip(1),
+                ["Зам. генерального директора\tН.С. Видяскина", "ООО «ПО «Аверс-Сервис»", "Исп. юридический отдел:", "т. (3812) 40-55-52, 38-40-11"]);
+            return i == 0 ? letter : letter.Prepend(new Paragraph(new Run(new Break { Type = BreakValues.Page })));
+        }).ToList());
 
     /// <summary>Заявление в суд или ОСП: шапка справа, текст, подпись директора и исполнитель.</summary>
     public static void Application(string[] header, string title, IEnumerable<string> body, string path) =>
@@ -50,7 +55,9 @@ public static class WordForms
     }
 
     private static void Write(string path, IEnumerable<string> header, string title, IEnumerable<string> body, IEnumerable<string> signature) =>
-        Write(path,
+        Write(path, Letter(header, title, body, signature));
+
+    private static IEnumerable<OpenXmlElement> Letter(IEnumerable<string> header, string title, IEnumerable<string> body, IEnumerable<string> signature) =>
         [
             .. header.Select(l => Para(l, JustificationValues.Right)),
             Para(""),
@@ -58,7 +65,7 @@ public static class WordForms
             .. body.Select(l => Para(l, JustificationValues.Both, indent: true)),
             Para(""),
             .. signature.Select(l => Para(l))
-        ]);
+        ];
 
     private static void Write(string path, IEnumerable<OpenXmlElement> blocks)
     {
