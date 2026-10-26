@@ -8,27 +8,32 @@
     <HeaderedContentControl Classes="group" Margin="16,0,16,12" Width="920" HorizontalAlignment="Left" VerticalAlignment="Top" Header="{Binding TicketHeader}">
       <StackPanel>
         <Grid ColumnDefinitions="*,*">
-          <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto" Margin="0,0,12,0">
+          <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,0,12,0">
             <TextBlock Classes="label" Text="Адрес" />
             <TextBox Grid.Column="1" Classes="cell" Text="{Binding TicketAddress, Mode=OneWay}" IsReadOnly="True" />
             <TextBlock Grid.Row="1" Classes="label" Text="Заявитель" />
             <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding TicketSubscriberName, Mode=OneWay}" IsReadOnly="True" />
             <TextBlock Grid.Row="2" Classes="label" Text="Телефон" />
             <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding SelectedTicket.Phone, Mode=OneWay}" IsReadOnly="True" />
+            <TextBlock Grid.Row="3" Classes="label" Text="Состояние" />
+            <ComboBox Grid.Row="3" Grid.Column="1" Classes="cell" HorizontalAlignment="Stretch" ItemsSource="{Binding TicketStates}" SelectedItem="{Binding TicketState}" />
           </Grid>
-          <Grid Grid.Column="1" ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto">
+          <Grid Grid.Column="1" ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto">
             <TextBlock Classes="label" Text="Исполнитель" />
-            <TextBox Grid.Column="1" Classes="cell" Text="{Binding TicketMechanic}" />
+            <AutoCompleteBox Grid.Column="1" Classes="cell" ItemsSource="{Binding MechanicNames}" Text="{Binding TicketMechanic}"
+                             FilterMode="ContainsOrdinal" MinimumPrefixLength="0" PlaceholderText="радиомеханик из «Словаря»" />
             <TextBlock Grid.Row="1" Classes="label" Text="Лиц. счёт" />
             <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding TicketAccount, Mode=OneWay}" IsReadOnly="True" />
             <TextBlock Grid.Row="2" Classes="label" Text="Индекс" />
             <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding TicketSubscriber.PzhreuIndex, Mode=OneWay}" IsReadOnly="True" />
+            <TextBlock Grid.Row="3" Classes="label" Text="Выполнена" />
+            <TextBox Grid.Row="3" Grid.Column="1" Classes="cell" Text="{Binding TicketDoneDate}" IsEnabled="{Binding IsTicketDone}" PlaceholderText="дд.мм.гггг — день работы" />
           </Grid>
         </Grid>
         <TextBlock Classes="hint" Margin="0,8,0,2" Text="Описание неисправности" />
         <TextBox Classes="cell" Height="64" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" Text="{Binding TicketFault}" />
         <TextBlock Classes="hint" Margin="0,8,0,2" Text="Что произведено (как в наряд-заказе)" />
-        <TextBox Classes="cell" Height="56" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" PlaceholderText="Заполняет диспетчерская служба после отчёта радиомеханика." Text="{Binding TicketWork}" />
+        <TextBox Classes="cell" Height="56" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" PlaceholderText="Заполняет диспетчерская служба после отчёта радиомеханика. У отложенной — почему отложена." Text="{Binding TicketWork}" />
         <Border Classes="warn" Margin="0,8,0,0" IsVisible="{Binding HasTicketRightsHint}">
           <TextBlock Text="{Binding TicketRightsHint}" TextWrapping="Wrap" />
         </Border>

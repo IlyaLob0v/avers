@@ -110,7 +110,7 @@ public interface IAversStore
     /// <summary>Принимает заявку и возвращает её номер.</summary>
     Task<int> AcceptTicketAsync(CreateTicketRequest request, AppUser user);
 
-    Task SaveTicketAsync(int ticketId, string fault, string mechanic, string workDone);
+    Task SaveTicketAsync(int ticketId, string fault, string mechanic, string workDone, TicketStatus status, DateOnly? doneDate);
 
     Task MarkPprAsync(int houseId, int year, int month, PprStatus status);
 

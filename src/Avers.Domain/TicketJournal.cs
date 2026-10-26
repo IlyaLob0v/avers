@@ -111,4 +111,15 @@ public static class TicketJournal
             ticket.DoneDate = null;
         }
     }
+
+    /// <summary>
+    /// Записать результат с явным состоянием (например, «отложена» с пометкой, почему). Выполненная получает дату работы:
+    /// указанную, иначе прежнюю, иначе сегодняшнюю; у невыполненной даты нет.
+    /// </summary>
+    public static void SetResult(WorkTicket ticket, string workDone, TicketStatus status, DateOnly? doneDate, DateOnly today)
+    {
+        ticket.WorkDone = workDone.Trim();
+        ticket.Status = status;
+        ticket.DoneDate = status == TicketStatus.Done ? doneDate ?? ticket.DoneDate ?? today : null;
+    }
 }

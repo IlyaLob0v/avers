@@ -39,14 +39,18 @@ public sealed record CreateTicketRequest(
     string? Mechanic = null,
     string? RisersNote = null);
 
-/// <summary>Изменить заявку. Незаполненное поле не меняется; заполненное «что произведено» закрывает заявку.</summary>
+/// <summary>
+/// Изменить заявку. Незаполненное поле не меняется. Без <see cref="Status"/> заполненное «что произведено» закрывает заявку;
+/// с ним состояние ставится как указано. <see cref="DoneDate"/> — когда работа сделана (для выполненной; по умолчанию сегодня).
+/// </summary>
 public sealed record UpdateTicketRequest(
     string? Fault = null,
     string? WorkDone = null,
     string? Mechanic = null,
     string? Kind = null,
     string? Status = null,
-    string? RisersNote = null);
+    string? RisersNote = null,
+    DateOnly? DoneDate = null);
 
 /// <summary>Заявки за месяц года: принято, выполнено, осталось открытыми.</summary>
 public sealed record TicketMonthDto(int Year, int Month, int Accepted, int Done, int Open);
