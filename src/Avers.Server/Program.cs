@@ -50,6 +50,7 @@ app.UseStaticFiles();
 app.UseAuthentication();
 app.UseFreshUser();
 app.UseAuthorization();
+app.UseDesktopVersionCheck();
 app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())

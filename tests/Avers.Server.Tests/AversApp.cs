@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Avers.Contracts;
 using Avers.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -43,7 +44,7 @@ public sealed class AversApp : WebApplicationFactory<Program>
             services.Replace(ServiceDescriptor.Singleton<TimeProvider>(new FixedTime(Today))));
     }
 
-    /// <summary>Клиент, уже вошедший под учебным пользователем (пароль у всех — avers).</summary>
+    /// <summary>Клиент рабочего места, уже вошедший под учебным пользователем (пароль у всех — avers).</summary>
     public async Task<HttpClient> LoginAsync(string login)
     {
         var client = CreateClient();
@@ -51,6 +52,7 @@ public sealed class AversApp : WebApplicationFactory<Program>
         response.EnsureSuccessStatusCode();
         var token = await response.Content.ReadFromJsonAsync<TokenResponse>();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token!.AccessToken);
+        client.DefaultRequestHeaders.Add(DesktopClient.Header, DesktopClient.Version.ToString());
         return client;
     }
 
