@@ -108,6 +108,11 @@ public sealed partial class ReceiptsViewModel(MainViewModel shell) : ObservableO
             shell.Status = "Месяц файла ОЭК — в виде мм.гггг.";
             return;
         }
+        if (OekFile.MonthFromName(path) is { } named && named != month)
+        {
+            shell.Status = $"Файл {Path.GetFileName(path)} — за {named:MM.yyyy}, а выбран месяц {month:MM.yyyy}. Поправьте месяц или выберите другой файл.";
+            return;
+        }
         List<OekRow> rows;
         try
         {
