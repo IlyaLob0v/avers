@@ -309,9 +309,13 @@ public sealed partial class MainViewModel : ObservableObject
         SelectedHouse = HousesOnStreet.FirstOrDefault();
     }
 
+    /// <summary>План устранения неисправности на паспорте дома, дд.мм.гггг.</summary>
+    [ObservableProperty] private string _editFaultFix = "";
+
     partial void OnSelectedHouseChanged(House? value)
     {
         PhonebookScreen.EditHouse = value;
+        EditFaultFix = value?.OpenFaultPlannedFix?.ToString("dd.MM.yyyy") ?? "";
         if (!_holdRefresh)
             _ = ShowHouseAsync(null);
     }
@@ -522,10 +526,24 @@ public sealed partial class MainViewModel : ObservableObject
     private async Task SaveHouse()
     {
         if (SelectedHouse is not { } h) return;
+        if (!TryParseDate(EditFaultFix, out var fix))
+        {
+            Status = "План устранения — дата в виде дд.мм.гггг.";
+            return;
+        }
+        var org = h.Organization is { } o ? new HouseOrganizationRequest(o.Name, o.Branch, o.Address, o.Phones, o.HeadName, o.EngineerName) : null;
         await Save(async () =>
         {
             await _store.SaveHousePassportAsync(h.Id, new HousePassportRequest(
-                h.Antennas, h.AerialCables, h.Amplifiers, h.PowerSupplies, h.TechFloorKey, h.OtherNotes));
+                h.Antennas, h.AerialCables, h.Amplifiers, h.PowerSupplies, h.TechFloorKey, h.OtherNotes,
+                h.OpenFault, h.OpenFaultReason, fix, org));
+            // Как сохранил сервер: пустая неисправность снимает причину и план.
+            h.OpenFault = string.IsNullOrWhiteSpace(h.OpenFault) ? null : h.OpenFault.Trim();
+            h.OpenFaultReason = h.OpenFault is null || string.IsNullOrWhiteSpace(h.OpenFaultReason) ? null : h.OpenFaultReason.Trim();
+            h.OpenFaultPlannedFix = h.OpenFault is null ? null : fix;
+            EditFaultFix = h.OpenFaultPlannedFix?.ToString("dd.MM.yyyy") ?? "";
+            OnPropertyChanged(nameof(FaultBanner));
+            OnPropertyChanged(nameof(HasFault));
             Status = "Паспорт дома сохранён.";
         });
     }

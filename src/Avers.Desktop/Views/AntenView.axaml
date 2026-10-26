@@ -25,7 +25,7 @@
       <Grid ColumnDefinitions="*,*">
         <HeaderedContentControl Classes="group" Margin="0,0,5,10" Header="Обслуживающая организация и филиал">
           <StackPanel>
-            <TextBlock Classes="hint" Margin="0,0,0,4" Text="Не «УК» и не «домовладелец»." />
+            <TextBlock Classes="hint" Margin="0,0,0,4" Text="Не «УК» и не «домовладелец». Сведения общие для всех домов организации." />
             <Grid ColumnDefinitions="130,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
               <TextBlock Classes="label" Text="Организация" />
               <TextBox Grid.Column="1" Classes="cell" Text="{Binding SelectedHouse.Organization.Name}" />
@@ -62,6 +62,19 @@
           </StackPanel>
         </HeaderedContentControl>
       </Grid>
+      <HeaderedContentControl Classes="group" Header="Неустранённая неисправность СКПТ">
+        <StackPanel>
+          <TextBlock Classes="hint" Margin="0,0,0,4" Text="Видна диспетчеру при приёме заявки по дому. Устранили — очистите поле «Неисправность»." />
+          <Grid ColumnDefinitions="130,*,Auto,130" RowDefinitions="Auto,Auto">
+            <TextBlock Classes="label" Text="Неисправность" />
+            <TextBox Grid.Column="1" Grid.ColumnSpan="3" Classes="cell" Text="{Binding SelectedHouse.OpenFault}" TextWrapping="Wrap" />
+            <TextBlock Grid.Row="1" Classes="label" Text="Причина" />
+            <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding SelectedHouse.OpenFaultReason}" TextWrapping="Wrap" />
+            <TextBlock Grid.Row="1" Grid.Column="2" Classes="label" Margin="10,0,8,0" Text="План устранения" />
+            <TextBox Grid.Row="1" Grid.Column="3" Classes="cell" Text="{Binding EditFaultFix}" PlaceholderText="дд.мм.гггг" />
+          </Grid>
+        </StackPanel>
+      </HeaderedContentControl>
       <HeaderedContentControl Classes="group" Header="Прочее">
         <TextBox Classes="cell" Height="48" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" Text="{Binding SelectedHouse.OtherNotes}" />
       </HeaderedContentControl>

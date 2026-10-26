@@ -120,6 +120,36 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public async Task Passport_EngineerSetsAndClearsOpenFault()
+    {
+        using var app = new DesktopApp("engineer");
+        app.Go(AppModule.Anten);
+        var house = app.Vm.SelectedHouse!;
+        var id = house.Id;
+
+        house.OpenFault = "Нет сигнала на стояке 3";
+        house.OpenFaultReason = "нет ключа";
+        app.Vm.EditFaultFix = "05.09.2026";
+        house.Organization!.Phones = "40-55-52";
+        await app.Vm.SaveHouseCommand.ExecuteAsync(null);
+        app.Vm.LogoutCommand.Execute(null);
+        app.Vm.LoginUser = app.Vm.Users.Single(u => u.Login == "engineer");
+        app.Vm.Password = "avers";
+        app.Vm.LoginCommand.Execute(null);
+        app.Pump();
+        app.Vm.SelectedStreet = app.Vm.Streets.Single(s => s.Id == house.StreetId);
+        house = app.Vm.HousesOnStreet.Single(h => h.Id == id);
+        Assert.Equal(("Нет сигнала на стояке 3", "нет ключа", new DateOnly(2026, 9, 5), "40-55-52"),
+            (house.OpenFault, house.OpenFaultReason, house.OpenFaultPlannedFix, house.Organization!.Phones));
+
+        app.Vm.SelectedHouse = house;
+        app.Vm.SelectedHouse.OpenFault = "";
+        await app.Vm.SaveHouseCommand.ExecuteAsync(null);
+        Assert.False(app.Vm.HasFault);
+        Assert.Equal("", app.Vm.EditFaultFix);
+    }
+
+    [AvaloniaFact]
     public void RecordPayment_StaysOnTheSameApartment()
     {
         using var app = new DesktopApp("orlov");
