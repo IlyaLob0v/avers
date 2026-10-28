@@ -25,6 +25,7 @@ builder.Services.AddAuthentication(BearerTokenDefaults.AuthenticationScheme)
     .AddBearerToken(o => o.BearerTokenExpiration = TimeSpan.FromHours(12));
 builder.Services.AddAuthorization(Policies.Add);
 builder.Services.AddSingleton<IAuthorizationHandler, AversAuthorizationHandler>();
+builder.Services.AddSingleton<LoginFailures>();
 
 builder.Services.AddRateLimiter(o =>
 {

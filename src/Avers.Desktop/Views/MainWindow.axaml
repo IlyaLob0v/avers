@@ -149,7 +149,6 @@
         <DockPanel>
           <TextBlock DockPanel.Dock="Right" Margin="24,0,0,0" Text="{Binding WorkDateText}" />
           <TextBlock DockPanel.Dock="Right" Margin="24,0,0,0" Text="{Binding UserLine}" />
-          <TextBlock DockPanel.Dock="Right" Margin="24,0,0,0" Text="{Binding ModuleLegacyName}" />
           <TextBlock Text="{Binding Status}" TextTrimming="CharacterEllipsis" />
         </DockPanel>
       </Border>

@@ -31,6 +31,8 @@ public static class PaymentEndpoints
             errors["source"] = ["Источник — не длиннее 40 символов."];
         if (request.PayerName is { Length: > 250 })
             errors["payerName"] = ["Плательщик — не длиннее 250 символов."];
+        if (request.PaidAt is { } paidAt && (paidAt > time.Today() || paidAt.Year < 2000))
+            errors["paidAt"] = ["Дата оплаты — не позже сегодняшней и не раньше 2000 года."];
         if (errors.Count > 0)
             return TypedResults.ValidationProblem(errors);
 

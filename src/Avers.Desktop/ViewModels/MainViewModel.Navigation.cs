@@ -15,9 +15,6 @@ public sealed partial class MainViewModel
 
     public string ModuleTitle => Module == AppModule.Desktop ? "Рабочий стол" : NavCatalog.Owner(Module)?.Title ?? "";
 
-    /// <summary>Как модуль назывался в прежнем Аверсе — для строки состояния.</summary>
-    public string ModuleLegacyName => NavCatalog.Owner(Module)?.LegacyName ?? "Аверс";
-
     public bool IsOnDesktop => Module == AppModule.Desktop;
 
     public string UserLine => User is null ? "" : $"{User.DisplayName} · {UserRoleTitle}";

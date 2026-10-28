@@ -45,7 +45,7 @@
                 <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding SelectedSubscriber.InnerCode}" />
                 <TextBlock Grid.Row="5" Classes="label" Text="Лиц. счёт" />
                 <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding SelectedSubscriber.Account}" />
-                <TextBlock Grid.Row="6" Classes="label" Text="Индекс ПЖРУ" />
+                <TextBlock Grid.Row="6" Classes="label" Text="Индекс ПЖРЭУ" />
                 <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding SelectedSubscriber.PzhreuIndex}" />
                 <TextBlock Grid.Row="7" Classes="label" Text="Счёт ПЖРЭУ" />
                 <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding SelectedSubscriber.PzhreuAccount}" />
@@ -135,7 +135,7 @@
             </HeaderedContentControl>
           </StackPanel>
         </Grid>
-        <HeaderedContentControl Classes="group" Header="Улицы и дома · индекс ПЖРУ и счета">
+        <HeaderedContentControl Classes="group" Header="Улицы и дома · индекс ПЖРЭУ и счета">
           <StackPanel>
             <Grid x:Name="StreetsAndHouses" ColumnDefinitions="220,*" Height="190">
               <ListBox Classes="streets" ItemsSource="{Binding Streets}" SelectedItem="{Binding SelectedStreet}">
@@ -157,7 +157,7 @@
                 </DataGrid.Columns>
               </DataGrid>
             </Grid>
-            <TextBlock Classes="hint" Margin="0,6,0,0" Text="Выберите улицу слева — справа дома этой улицы, индекс ПЖРУ и счёт." />
+            <TextBlock Classes="hint" Margin="0,6,0,0" Text="Выберите улицу слева — справа дома этой улицы, индекс ПЖРЭУ и счёт." />
           </StackPanel>
         </HeaderedContentControl>
       </StackPanel>

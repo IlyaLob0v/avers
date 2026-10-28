@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Avers.Contracts;
+using Avers.Server.Auth;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 
@@ -51,6 +52,29 @@ public class AuthTests
 
         Assert.Equal(HttpStatusCode.TooManyRequests, await Login("203.0.113.1"));
         Assert.Equal(HttpStatusCode.Unauthorized, await Login("203.0.113.2"));
+    }
+
+    [Fact]
+    public async Task LoginLimit_LocksLoginAfterWrongPasswordsFromAnyAddress()
+    {
+        await using var app = new AversApp();
+        var client = app.CreateClient();
+
+        async Task<HttpStatusCode> Login(string login, string password, string address)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login")
+            {
+                Content = JsonContent.Create(new LoginRequest(login, password))
+            };
+            request.Headers.Add("X-Forwarded-For", address);
+            return (await client.SendAsync(request)).StatusCode;
+        }
+
+        for (var i = 0; i < LoginFailures.Limit; i++)
+            await Login("admin", "wrong", $"203.0.113.{i}");
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, await Login("admin", "avers", "198.51.100.1"));
+        Assert.Equal(HttpStatusCode.OK, await Login("orlov", "avers", "198.51.100.1"));
     }
 
     [Fact]

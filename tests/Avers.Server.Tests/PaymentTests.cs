@@ -73,6 +73,20 @@ public class PaymentTests
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData("2026-09-01")]
+    [InlineData("1999-12-31")]
+    public async Task Record_PaidAtOutOfRange_Returns400(string paidAt)
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("admin");
+
+        var response = await client.PostAsJsonAsync("/api/subscribers/1/payments",
+            new RecordPaymentRequest(2026, PaidAt: DateOnly.Parse(paidAt, System.Globalization.CultureInfo.InvariantCulture)));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     [Fact]
     public async Task Record_YearWithoutCharges_Returns409()
     {
