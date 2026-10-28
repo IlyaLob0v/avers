@@ -30,7 +30,7 @@ public static class AversClaims
 }
 
 /// <summary>
-/// Права проверяет сервер (CLAUDE.md, правило 6). Матрица модулей — <see cref="RoleCatalog"/>,
+/// Права проверяет сервер, клиент только прячет недоступные кнопки. Матрица модулей — <see cref="RoleCatalog"/>,
 /// та же, что у оболочки.
 /// </summary>
 public static class Policies

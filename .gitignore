@@ -27,7 +27,7 @@ db/legacy/data/
 *.dbf
 *.DBF
 
-# Claude Code: локальные настройки пользователя
+# Локальные настройки агентов
 .claude/settings.local.json
 
 # ОС и редакторы

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# SessionStart-хук Claude Code: в облачной сессии ставит .NET 10 SDK и восстанавливает пакеты,
-# чтобы Claude сразу мог выполнить dotnet build / test / format.
+# SessionStart-хук: в облачной сессии ставит .NET 10 SDK и восстанавливает пакеты,
+# чтобы сразу можно было выполнить dotnet build / test / format.
 # На ПК разработчика (не облако) ничего не делает.
 set -euo pipefail
 

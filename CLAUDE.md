@@ -19,6 +19,9 @@
 Репозиторий: https://github.com/IlyaLob0v/avers. CI — `.github/workflows/ci.yml` (сборка, тесты, `dotnet format`).
 Claude отвечает на `@claude` в issue и PR — `.github/workflows/claude.yml`, работает по правилам этого файла.
 
+В сообщениях коммитов и описаниях PR не упоминай Claude и ИИ: без строк `Co-Authored-By`, `Claude-Session`,
+«Generated with Claude Code» и ссылок на сессии.
+
 Обзор: `docs/00-index.md`. Архитектура: `docs/03-architecture.md`. Решения: `docs/adr/`.
 
 ## Язык
