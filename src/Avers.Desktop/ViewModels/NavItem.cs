@@ -10,7 +10,6 @@ public sealed record NavEntry(
     string Title,
     string ShortTitle,
     string Glyph,
-    string LegacyName,
     string Hint,
     string Summary,
     AppModule AccessModule,
@@ -26,35 +25,35 @@ public static class NavCatalog
 {
     public static IReadOnlyList<NavEntry> All { get; } =
     [
-        new(AppModule.Abon, "Абоненты и оплаты", "Абоненты", "Аб", "AversAbon",
+        new(AppModule.Abon, "Абоненты и оплаты", "Абоненты", "Аб",
             "Поиск квартиры, лицевой счёт, ввод платежей", "Ввод платежей, карточка квартиры", AppModule.Abon,
             [AppModule.Subscriber, AppModule.Print]),
-        new(AppModule.Disp, "Заявки АДС", "Заявки", "Зв", "AversDisp",
+        new(AppModule.Disp, "Заявки АДС", "Заявки", "Зв",
             "Приём и журнал заявок от населения", "Приём заявок от населения", AppModule.Disp,
             [AppModule.Ticket]),
-        new(AppModule.Anten, "Дома и антенны", "Дома", "Дм", "AversAnten",
+        new(AppModule.Anten, "Дома и антенны", "Дома", "Дм",
             "Паспорт дома, схема СКПТ, сведения антенной службы", "Паспорт дома, усилители, ключи", AppModule.Anten,
             [AppModule.Scheme, AppModule.AntenInfo]),
-        new(AppModule.Contract, "Договоры", "Договоры", "Дг", "aversContract",
+        new(AppModule.Contract, "Договоры", "Договоры", "Дг",
             "Договоры по дому: с кем заключён, когда, статус", "Реестр договоров на обслуживание", AppModule.Abon, []),
-        new(AppModule.PrDubl, "Единые квитанции", "Квитанции", "Кв", "PrDublPay",
+        new(AppModule.PrDubl, "Единые квитанции", "Квитанции", "Кв",
             "Платежи по единым квитанциям ПЖРЭУ", "Дубли оплат, реестры", AppModule.Abon, []),
-        new(AppModule.Domofo, "Домофоны", "Домофоны", "Дф", "domofo",
+        new(AppModule.Domofo, "Домофоны", "Домофоны", "Дф",
             "Панели подъездов, ключи, заявки по домофону", "Абоненты домофонов", AppModule.Anten, []),
-        new(AppModule.Legal, "Должники", "Должники", "Юр", "Дело-Аверс",
+        new(AppModule.Legal, "Должники", "Должники", "Юр",
             "Должники, досудебные уведомления, суд", "Претензии, судебные дела", AppModule.Legal,
             [AppModule.Claim]),
-        new(AppModule.Ppr, "Графики ППР", "ППР", "ПР", "AversAnten · Сервис",
+        new(AppModule.Ppr, "Графики ППР", "ППР", "ПР",
             "Планово-предупредительные работы по домам", "План и выполнение по домам", AppModule.Anten, []),
-        new(AppModule.Reports, "Отчёты", "Отчёты", "От", "Отчёты",
+        new(AppModule.Reports, "Отчёты", "Отчёты", "От",
             "Отчёты в Excel", "Итоги по заявкам, должники", AppModule.Legal, []),
-        new(AppModule.Phonebook, "Словарь", "Словарь", "Сл", "phonebook",
+        new(AppModule.Phonebook, "Словарь", "Словарь", "Сл",
             "Улицы, дома, материалы, радиомеханики", "Телефоны и справочники", AppModule.Phonebook, []),
-        new(AppModule.Reader, "Просмотр дома", "Просмотр", "Чт", "Читатель",
+        new(AppModule.Reader, "Просмотр дома", "Просмотр", "Чт",
             "Сведения по дому без правки — для радиомехаников", "Только чтение", AppModule.Reader, []),
-        new(AppModule.Access, "Права доступа", "Права", "Пр", "Admin",
+        new(AppModule.Access, "Права доступа", "Права", "Пр",
             "Роли и права пользователей", "Пользователи и роли", AppModule.Access, []),
-        new(AppModule.ChangeLog, "Журнал изменений", "Журнал", "Жр", "Журнал",
+        new(AppModule.ChangeLog, "Журнал изменений", "Журнал", "Жр",
             "Кто, когда и что поменял: оплаты, договоры, дома, заявки, ППР, сотрудники", "Кто и что поменял", AppModule.Access, []),
     ];
 
@@ -74,7 +73,6 @@ public sealed partial class NavItem(NavEntry entry, ICommand go) : ObservableObj
     public string Title => Entry.Title;
     public string ShortTitle => Entry.ShortTitle;
     public string Glyph => Entry.Glyph;
-    public string LegacyName => Entry.LegacyName;
     public string Hint => Entry.Hint;
     public string Summary => Entry.Summary;
     public ICommand Go { get; } = go;

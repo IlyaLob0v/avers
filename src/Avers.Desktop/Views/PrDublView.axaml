@@ -24,7 +24,7 @@
             </ComboBox>
           </StackPanel>
           <StackPanel Grid.Column="2" Margin="0,0,8,0"><TextBlock Classes="hint" Text="Вн. код"/><TextBox Classes="cell" Text="{Binding Shell.SelectedSubscriber.InnerCode, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
-          <StackPanel Grid.Column="3" Margin="0,0,8,0"><TextBlock Classes="hint" Text="Индекс ПЖРУ"/><TextBox Classes="cell" Text="{Binding Shell.SelectedSubscriber.PzhreuIndex, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
+          <StackPanel Grid.Column="3" Margin="0,0,8,0"><TextBlock Classes="hint" Text="Индекс ПЖРЭУ"/><TextBox Classes="cell" Text="{Binding Shell.SelectedSubscriber.PzhreuIndex, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
           <Button Grid.Column="4" Classes="primary" VerticalAlignment="Bottom" Content="Найти" Command="{Binding FindReceiptsCommand}" />
         </Grid>
         <TextBlock Classes="hint" Margin="0,6,0,0" Text="{Binding ReceiptOwner}" />

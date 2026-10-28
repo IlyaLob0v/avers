@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Аверс · дома</title>
 <style>
-  :root { --navy: #0a246a; --blue: #316ac5; --face: #ece9d8; --line: #aca899; --warn: #fff4c2; }
+  :root { --navy: #0a2f5c; --blue: #2b5cb0; --face: #eef0f3; --line: #cdd3dc; --warn: #fff4c2; }
   * { box-sizing: border-box; }
   body { margin: 0; font: 16px/1.4 "Segoe UI", Tahoma, sans-serif; background: var(--face); color: #000; }
   header { background: var(--navy); color: #fff; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
@@ -175,7 +175,7 @@ async function openHouse(id) {
         ["Что", h.openFault], ["Почему не устранена", h.openFaultReason],
         ["Плановая дата", h.openFaultPlannedFix && new Date(h.openFaultPlannedFix).toLocaleDateString("ru-RU")]
       ], "fault"));
-    body.append(section("Управляющая компания", [
+    body.append(section("Обслуживающая организация", [
       ["Название", h.homeowner], ["Филиал", h.homeownerBranch], ["Адрес", h.homeownerAddress],
       ["Телефоны", h.homeownerPhones, true], ["Руководитель", h.headName], ["Телефон руководителя", h.headPhone, true],
       ["Инженер", h.engineerName], ["Телефон инженера", h.engineerPhone, true]

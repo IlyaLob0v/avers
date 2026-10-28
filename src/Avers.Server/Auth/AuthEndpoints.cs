@@ -21,15 +21,23 @@ public static class AuthEndpoints
     }
 
     /// <summary>Проверяет пароль и выдаёт токен. Ответ — <c>{ accessToken, expiresIn, refreshToken }</c>.</summary>
-    private static async Task<Results<SignInHttpResult, UnauthorizedHttpResult>> Login(
-        LoginRequest request, AversDbContext db, CancellationToken ct)
+    private static async Task<Results<SignInHttpResult, UnauthorizedHttpResult, ProblemHttpResult>> Login(
+        LoginRequest request, AversDbContext db, LoginFailures failures, CancellationToken ct)
     {
         var login = request.Login?.Trim() ?? "";
         if (login.Length == 0 || string.IsNullOrEmpty(request.Password))
             return TypedResults.Unauthorized();
+        if (failures.IsLocked(login))
+            return TypedResults.Problem("Слишком много неверных паролей. Подождите 15 минут.", statusCode: StatusCodes.Status429TooManyRequests);
         var user = await db.Users.FirstOrDefaultAsync(u => u.Login == login, ct);
-        if (user is null || user.IsDisabled || !Password.Verify(user, request.Password))
+        if (user is null)
             return TypedResults.Unauthorized();
+        if (user.IsDisabled || !Password.Verify(user, request.Password))
+        {
+            failures.Add(login);
+            return TypedResults.Unauthorized();
+        }
+        failures.Reset(login);
         if (Password.NeedsRehash(user.PasswordHash))
         {
             user.PasswordHash = Password.Hash(request.Password);

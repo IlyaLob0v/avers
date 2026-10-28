@@ -291,7 +291,6 @@ public sealed partial class MainViewModel : ObservableObject
         MarkCurrent();
         OnPropertyChanged(nameof(WindowTitle));
         OnPropertyChanged(nameof(ModuleTitle));
-        OnPropertyChanged(nameof(ModuleLegacyName));
         OnPropertyChanged(nameof(IsOnDesktop));
         if (value == AppModule.Access)
             _ = AccessScreen.LoadAsync();
