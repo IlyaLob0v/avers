@@ -77,6 +77,41 @@ public class AuthTests
         Assert.Equal(HttpStatusCode.OK, await Login("orlov", "avers", "198.51.100.1"));
     }
 
+    private static async Task<HttpStatusCode> LoginFromInternet(HttpClient client, string login, string password, string address = "203.0.113.1")
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login")
+        {
+            Content = JsonContent.Create(new LoginRequest(login, password))
+        };
+        request.Headers.Add(AuthEndpoints.InternetHeader, "1");
+        request.Headers.Add("X-Forwarded-For", address);
+        return (await client.SendAsync(request)).StatusCode;
+    }
+
+    [Fact]
+    public async Task InternetLogin_OnlyReader()
+    {
+        await using var app = new AversApp();
+        var client = app.CreateClient();
+
+        Assert.Equal(HttpStatusCode.Unauthorized, await LoginFromInternet(client, "admin", "avers"));
+        Assert.Equal(HttpStatusCode.OK, await LoginFromInternet(client, "novikov", "avers"));
+    }
+
+    [Fact]
+    public async Task InternetWrongPasswords_DoNotLockOfficeLogin()
+    {
+        await using var app = new AversApp();
+        var client = app.CreateClient();
+
+        for (var i = 0; i < LoginFailures.Limit; i++)
+            await LoginFromInternet(client, "orlov", "wrong", $"203.0.113.{i}");
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, await LoginFromInternet(client, "orlov", "avers"));
+        var office = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest("orlov", "avers"));
+        Assert.Equal(HttpStatusCode.OK, office.StatusCode);
+    }
+
     [Fact]
     public async Task Login_SurvivesServerRestart_WhenKeysDirectoryIsSet()
     {

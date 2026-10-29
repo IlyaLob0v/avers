@@ -12,6 +12,12 @@ public static class AuthEndpoints
 {
     public const string LoginRateLimit = "login";
 
+    /// <summary>Ставит Caddy (deploy/server/avers-internet) на запросы из интернета: оттуда входит только механик.</summary>
+    public const string InternetHeader = "X-Avers-Internet";
+
+    // Хеш для несуществующего логина: ответ занимает столько же времени, и по нему не узнать, есть ли такой сотрудник.
+    private static readonly AppUser Nobody = new() { Login = "", PasswordHash = Password.Hash(Guid.NewGuid().ToString()) };
+
     public static void MapAuth(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/auth").WithTags("Вход");
@@ -22,22 +28,28 @@ public static class AuthEndpoints
 
     /// <summary>Проверяет пароль и выдаёт токен. Ответ — <c>{ accessToken, expiresIn, refreshToken }</c>.</summary>
     private static async Task<Results<SignInHttpResult, UnauthorizedHttpResult, ProblemHttpResult>> Login(
-        LoginRequest request, AversDbContext db, LoginFailures failures, CancellationToken ct)
+        LoginRequest request, HttpRequest http, AversDbContext db, LoginFailures failures, CancellationToken ct)
     {
         var login = request.Login?.Trim() ?? "";
         if (login.Length == 0 || string.IsNullOrEmpty(request.Password))
             return TypedResults.Unauthorized();
-        if (failures.IsLocked(login))
+        // Неверные пароли из интернета считаются отдельно, чтобы оттуда нельзя было закрыть вход сотруднику в офисе.
+        var fromInternet = http.Headers.ContainsKey(InternetHeader);
+        var failureKey = fromInternet ? "internet:" + login : login;
+        if (failures.IsLocked(failureKey))
             return TypedResults.Problem("Слишком много неверных паролей. Подождите 15 минут.", statusCode: StatusCodes.Status429TooManyRequests);
         var user = await db.Users.FirstOrDefaultAsync(u => u.Login == login, ct);
         if (user is null)
-            return TypedResults.Unauthorized();
-        if (user.IsDisabled || !Password.Verify(user, request.Password))
         {
-            failures.Add(login);
+            Password.Verify(Nobody, request.Password);
             return TypedResults.Unauthorized();
         }
-        failures.Reset(login);
+        if (user.IsDisabled || !Password.Verify(user, request.Password) || (fromInternet && user.Role != UserRole.Reader))
+        {
+            failures.Add(failureKey);
+            return TypedResults.Unauthorized();
+        }
+        failures.Reset(failureKey);
         if (Password.NeedsRehash(user.PasswordHash))
         {
             user.PasswordHash = Password.Hash(request.Password);

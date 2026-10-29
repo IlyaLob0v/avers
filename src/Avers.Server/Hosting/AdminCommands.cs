@@ -1,4 +1,5 @@
 using Avers.Data;
+using Avers.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace Avers.Server.Hosting;
@@ -6,6 +7,7 @@ namespace Avers.Server.Hosting;
 /// <summary>
 /// Команды администратора без запуска веб-сервера: <c>Avers.Server set-password &lt;логин&gt;</c>.
 /// Новый пароль читается из стандартного ввода, чтобы не оставаться в истории команд.
+/// В пустой базе (первая установка) команда заводит этого сотрудника администратором.
 /// </summary>
 public static class AdminCommands
 {
@@ -33,6 +35,11 @@ public static class AdminCommands
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AversDbContext>();
         var user = await db.Users.FirstOrDefaultAsync(u => u.Login == login);
+        if (user is null && !await db.Users.AnyAsync())
+        {
+            user = new AppUser { Login = login, DisplayName = "Администратор", Role = UserRole.Administrator, CanEditAccount = true };
+            db.Users.Add(user);
+        }
         if (user is null)
         {
             await Console.Error.WriteLineAsync($"Пользователя {login} нет. Есть: " +
