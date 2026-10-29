@@ -20,6 +20,22 @@ public class ContractTests
     }
 
     [AvaloniaFact]
+    public async Task PrintedFile_GoesToUserFolder_NotSharedTemp()
+    {
+        // На сервере xrdp /tmp общая для всех сотрудников.
+        using var app = new DesktopApp();
+        app.Go(AppModule.Contract);
+        var opened = new List<string>();
+        app.Vm.OpenFile = opened.Add;
+        app.Vm.ContractsScreen.ContractQuery = "ТО-2011/180090";
+        await app.Vm.ContractsScreen.FindContractCommand.ExecuteAsync(null);
+
+        app.Vm.PrintContractCommand.Execute(null);
+
+        Assert.StartsWith(AversPaths.FilesDirectory, opened.Single());
+    }
+
+    [AvaloniaFact]
     public async Task PrintContract_FillsWhatAversKnows_LeavesPassportBlank()
     {
         using var app = new DesktopApp();

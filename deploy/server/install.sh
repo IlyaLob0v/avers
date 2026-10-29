@@ -17,7 +17,9 @@ id avers >/dev/null 2>&1 || useradd --system --home-dir /opt/avers-server --shel
 
 # Пароль к базе придумывается один раз и хранится только в /etc/avers-server.env.
 env_file=/etc/avers-server.env
+first_install=false
 if [ ! -f "$env_file" ]; then
+    first_install=true
     db_password=$(openssl rand -hex 24)
     su postgres -c "psql -v ON_ERROR_STOP=1 -q" <<SQL
 CREATE ROLE avers LOGIN PASSWORD '$db_password';
@@ -27,9 +29,10 @@ SQL
     cat > "$env_file" <<ENV
 ConnectionStrings__Avers=Host=localhost;Database=avers;Username=avers;Password=$db_password
 ASPNETCORE_URLS=http://0.0.0.0:5115
-Avers__Database__SeedDemo=true
 ENV
 fi
+# Учебные сотрудники с паролем avers рабочему серверу не нужны (раньше включались здесь).
+sed -i '/^Avers__Database__SeedDemo=/d' "$env_file"
 
 systemctl stop avers-server 2>/dev/null || true
 rm -rf /opt/avers-server
@@ -54,7 +57,10 @@ fi
 for _ in $(seq 30); do
     if curl -fsS http://localhost:5115/health >/dev/null 2>&1; then
         echo "Сервер Аверса работает: http://$(hostname -I | awk '{print $1}'):5115"
-        echo "Смените пароли сотрудников: sudo avers-password <логин>"
+        if [ "$first_install" = true ]; then
+            echo "База пустая. Придумайте пароль администратора (логин admin):"
+            avers-password admin || echo "Пароль не задан. Задайте его позже: sudo avers-password admin"
+        fi
         exit 0
     fi
     sleep 1

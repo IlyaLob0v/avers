@@ -325,7 +325,7 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
                 shell.Status = "Скан уже удалён.";
                 return;
             }
-            var dir = Path.Combine(Path.GetTempPath(), "Avers");
+            var dir = AversPaths.FilesDirectory;
             Directory.CreateDirectory(dir);
             var path = Path.Combine(dir, $"скан-{doc.Id}{SubscriberDocuments.Extension(doc.Format)}");
             await File.WriteAllBytesAsync(path, content);

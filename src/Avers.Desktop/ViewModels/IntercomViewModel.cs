@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avers.Data;
 using Avers.Desktop.Printing;
 using Avers.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -119,7 +120,7 @@ public sealed partial class IntercomViewModel(MainViewModel shell) : ObservableO
     private void PrintIntercom()
     {
         if (shell.SelectedHouse is not { } house) return;
-        var dir = Path.Combine(Path.GetTempPath(), "Avers");
+        var dir = AversPaths.FilesDirectory;
         Directory.CreateDirectory(dir);
         var path = Path.Combine(dir, $"домофон-{house.Id}.pdf");
         try

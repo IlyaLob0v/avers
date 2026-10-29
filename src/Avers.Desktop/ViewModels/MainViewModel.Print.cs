@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Avers.Data;
 using Avers.Desktop.Printing;
 using Avers.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -62,7 +63,7 @@ public sealed partial class MainViewModel
 
     internal static string PrintPath(string kind, string key, string extension = ".pdf")
     {
-        var dir = Path.Combine(Path.GetTempPath(), "Avers");
+        var dir = AversPaths.FilesDirectory;
         Directory.CreateDirectory(dir);
         return Path.Combine(dir, $"{kind}-{key}{extension}");
     }
@@ -70,7 +71,7 @@ public sealed partial class MainViewModel
     /// <summary>Записывает файл Excel во временную папку и открывает его.</summary>
     internal void Export(string file, string title, Action<string> write)
     {
-        var dir = Path.Combine(Path.GetTempPath(), "Avers");
+        var dir = AversPaths.FilesDirectory;
         Directory.CreateDirectory(dir);
         var path = Path.Combine(dir, $"{file}-{_today:yyyy-MM-dd}.xlsx");
         try
