@@ -18,6 +18,9 @@ public static class AversPaths
     }
 
     public static string DatabaseFile => Path.Combine(DataDirectory, "avers.db");
+
+    /// <summary>Печать, выгрузки Excel и открытые сканы. Папка своя у каждого пользователя: на сервере xrdp общую /tmp видят все.</summary>
+    public static string FilesDirectory => Path.Combine(DataDirectory, "Файлы");
 }
 
 /// <summary>Какая СУБД под моделью: PostgreSQL — рабочая база, SQLite — учебный режим и тесты.</summary>

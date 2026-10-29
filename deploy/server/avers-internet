@@ -23,7 +23,10 @@ cat > /etc/caddy/Caddyfile <<CADDY
 $domain {
     @mechanics path /m /m/* /api/auth/login /api/mobile/*
     handle @mechanics {
-        reverse_proxy 127.0.0.1:5115
+        reverse_proxy 127.0.0.1:5115 {
+            # Из интернета сервер пускает только механиков (роль «Читатель»).
+            header_up X-Avers-Internet 1
+        }
     }
     handle {
         respond 404
