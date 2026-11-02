@@ -19,6 +19,8 @@ public static class UserEndpoints
 
         app.MapGet("/api/change-log", (AversDbContext db) => ChangeLog.Latest(db))
             .WithTags("Журнал изменений").RequireAuthorization(Policies.UsersManage);
+        app.MapGet("/api/access-log", (AversDbContext db) => AccessLog.Latest(db))
+            .WithTags("Журнал просмотров").RequireAuthorization(Policies.UsersManage);
     }
 
     private static Results<NoContent, ValidationProblem> Save(int id, SaveUserRequest request, ClaimsPrincipal admin, AversDbContext db, TimeProvider time)

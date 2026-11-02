@@ -17,7 +17,8 @@ public static class DocumentEndpoints
 
         api.MapGet("/subscribers/{id:int}/documents", (int id, AversDbContext db) => TypedResults.Ok(SubscriberDocuments.List(db, id)))
             .RequireAuthorization(Policies.LegalView);
-        api.MapGet("/documents/{id:int}/file", File).RequireAuthorization(Policies.LegalView);
+        api.MapGet("/documents/{id:int}/file", File).RequireAuthorization(Policies.LegalView)
+            .LogsView("Скан документа", AccessLogFilter.Document("id"));
         api.MapPost("/subscribers/{id:int}/documents", Add).RequireAuthorization(Policies.CourtCasesEdit);
         api.MapDelete("/documents/{id:int}", Delete).RequireAuthorization(Policies.CourtCasesEdit);
     }

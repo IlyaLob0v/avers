@@ -26,6 +26,7 @@ public sealed class AversDbContext : DbContext
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<AppSetting> Settings => Set<AppSetting>();
     public DbSet<ChangeLogEntry> ChangeLog => Set<ChangeLogEntry>();
+    public DbSet<AccessLogEntry> AccessLog => Set<AccessLogEntry>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -150,6 +151,13 @@ public sealed class AversDbContext : DbContext
         });
 
         model.Entity<ChangeLogEntry>(e =>
+        {
+            e.Property(x => x.UserName).HasMaxLength(200);
+            e.Property(x => x.Action).HasMaxLength(100);
+            e.Property(x => x.Target).HasMaxLength(400);
+        });
+
+        model.Entity<AccessLogEntry>(e =>
         {
             e.Property(x => x.UserName).HasMaxLength(200);
             e.Property(x => x.Action).HasMaxLength(100);
