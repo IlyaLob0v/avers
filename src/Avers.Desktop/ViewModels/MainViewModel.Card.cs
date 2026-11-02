@@ -49,7 +49,7 @@ public sealed partial class MainViewModel
     public string CardNameRest => SelectedSubscriber is null ? "" : $"{SelectedSubscriber.FirstName} {SelectedSubscriber.Patronymic}".Trim();
     public string CardAccount => SelectedSubscriber?.Account ?? "";
     public string CardAddress => SelectedSubscriber is null ? "" :
-        $"{SelectedSubscriber.House.AddressLine}, секц. {SelectedSubscriber.Section}, кв. {SelectedSubscriber.Apartment}";
+        $"{SelectedSubscriber.House.AddressLine}, под. {SelectedSubscriber.Section}, кв. {SelectedSubscriber.Apartment}";
     /// <summary>Обслуживающая дом организация (в старом Аверсе — «домовладелец»).</summary>
     public string CardOrganization => SelectedSubscriber is null ? "" : ServiceOrganizations.Title(HouseOf(SelectedSubscriber).Organization);
     public string CardOrganizationPhones => SelectedSubscriber is null ? "" : HouseOf(SelectedSubscriber).Organization?.Phones ?? "";
