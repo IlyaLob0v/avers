@@ -30,9 +30,15 @@ builder.Services.AddSingleton<LoginFailures>();
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    o.AddPolicy(AuthEndpoints.LoginRateLimit, http => RateLimitPartition.GetFixedWindowLimiter(
-        http.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) }));
+    // Из интернета — 10 входов в минуту с адреса. В офисе сотрудники Windows 7/8 входят через xrdp на сервере,
+    // то есть все с одного адреса, поэтому там лимит шире; подбор пароля сдерживает LoginFailures.
+    o.AddPolicy(AuthEndpoints.LoginRateLimit, http =>
+    {
+        var internet = http.Request.Headers.ContainsKey(AuthEndpoints.InternetHeader);
+        return RateLimitPartition.GetFixedWindowLimiter(
+            (internet ? "internet:" : "office:") + (http.Connection.RemoteIpAddress?.ToString() ?? "unknown"),
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = internet ? 10 : 60, Window = TimeSpan.FromMinutes(1) });
+    });
 });
 
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));

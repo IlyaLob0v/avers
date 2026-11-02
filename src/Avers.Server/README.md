@@ -53,7 +53,7 @@ dotnet ef migrations add <Название> --project src/Avers.Data --output-di
 
 Вход: `POST /api/auth/login` с `{ "login": "admin", "password": "avers" }` (учебные пользователи) →
 `{ "accessToken": "…", "expiresIn": 43200, … }`. Дальше заголовок `Authorization: Bearer <accessToken>`.
-Попыток входа — не больше 10 в минуту с одного адреса.
+Попыток входа — не больше 10 в минуту с одного адреса из интернета и 60 в офисе: сотрудники через xrdp входят с одного адреса сервера.
 
 | Метод | Путь | Кто может |
 |---|---|---|
