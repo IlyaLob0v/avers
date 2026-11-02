@@ -19,7 +19,7 @@
           </StackPanel>
         </Grid>
       </Border>
-      <Border Classes="warn" IsVisible="{Binding HasFault}">
+      <Border Classes.warn="{Binding !FaultOverdue}" Classes.debt="{Binding FaultOverdue}" IsVisible="{Binding HasFault}">
         <TextBlock Text="{Binding FaultBanner}" TextWrapping="Wrap" />
       </Border>
       <Grid ColumnDefinitions="*,*">

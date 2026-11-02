@@ -78,7 +78,7 @@
             </HeaderedContentControl>
           </StackPanel>
           <StackPanel Grid.Column="1">
-            <Border Classes="warn" IsVisible="{Binding HasFault}">
+            <Border Classes.warn="{Binding !FaultOverdue}" Classes.debt="{Binding FaultOverdue}" IsVisible="{Binding HasFault}">
               <TextBlock Text="{Binding FaultBanner}" TextWrapping="Wrap" />
             </Border>
             <Border Classes.card="{Binding !IsPaymentLate}" Classes.warn="{Binding IsPaymentLate}">
