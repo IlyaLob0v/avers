@@ -19,7 +19,7 @@ internal static class Program
         AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .With(new Win32PlatformOptions { RenderingMode = RenderingModes() })
-            .WithInterFont()
+            .WithAversFont()
             .LogToTrace();
 
     /// <summary>
