@@ -54,6 +54,32 @@
         </Grid>
       </Border>
 
+      <!-- Оплаты: кто внёс и кто оплатил -->
+      <HeaderedContentControl Classes="group">
+        <HeaderedContentControl.Header>
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Classes="primary" Margin="0" Content="Внести оплату" Command="{Binding RecordPaymentCommand}" />
+            <TextBox DockPanel.Dock="Right" Width="100" Margin="0,0,8,0" FontWeight="Normal" Text="{Binding PaymentAmount}" PlaceholderText="{Binding ToPayText}" ToolTip.Tip="{Binding PaymentConfirmHint}" />
+            <Button DockPanel.Dock="Right" Margin="0,0,8,0" FontWeight="Normal" Content="Отменить оплату" IsVisible="{Binding CanEditSettings}" Command="{Binding CancelPaymentCommand}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock VerticalAlignment="Center" Text="Оплаты за" />
+              <ComboBox MinWidth="90" FontWeight="Normal" ItemsSource="{Binding CardPaymentYears}" SelectedItem="{Binding CardPaymentYear}" />
+            </StackPanel>
+          </DockPanel>
+        </HeaderedContentControl.Header>
+        <DataGrid ItemsSource="{Binding CardPayments}" SelectedItem="{Binding SelectedCardPayment}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="330">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Месяц" Binding="{Binding Month}" Width="100" />
+            <DataGridTextColumn Header="Тариф" Binding="{Binding Tariff}" Width="90" />
+            <DataGridTextColumn Header="Сумма" Binding="{Binding Amount}" Width="90" />
+            <DataGridTextColumn Header="Дата оплаты" Binding="{Binding PaidAt}" Width="125" />
+            <DataGridTextColumn Header="Источник" Binding="{Binding Source}" Width="110" />
+            <DataGridTextColumn Header="Внёс (сотрудник)" Binding="{Binding RecordedBy}" Width="170" />
+            <DataGridTextColumn Header="Оплатил" Binding="{Binding PayerName}" Width="*" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </HeaderedContentControl>
+
       <Grid ColumnDefinitions="*,*">
         <!-- Договор -->
         <HeaderedContentControl Classes="group" Margin="0,0,5,10" Header="Договор на техобслуживание">
@@ -101,32 +127,6 @@
           </StackPanel>
         </HeaderedContentControl>
       </Grid>
-
-      <!-- Оплаты: кто внёс и кто оплатил -->
-      <HeaderedContentControl Classes="group">
-        <HeaderedContentControl.Header>
-          <DockPanel>
-            <Button DockPanel.Dock="Right" Classes="primary" Margin="0" Content="Внести оплату" Command="{Binding RecordPaymentCommand}" />
-            <TextBox DockPanel.Dock="Right" Width="100" Margin="0,0,8,0" FontWeight="Normal" Text="{Binding PaymentAmount}" PlaceholderText="{Binding ToPayText}" ToolTip.Tip="{Binding PaymentConfirmHint}" />
-            <Button DockPanel.Dock="Right" Margin="0,0,8,0" FontWeight="Normal" Content="Отменить оплату" IsVisible="{Binding CanEditSettings}" Command="{Binding CancelPaymentCommand}" />
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock VerticalAlignment="Center" Text="Оплаты за" />
-              <ComboBox MinWidth="90" FontWeight="Normal" ItemsSource="{Binding CardPaymentYears}" SelectedItem="{Binding CardPaymentYear}" />
-            </StackPanel>
-          </DockPanel>
-        </HeaderedContentControl.Header>
-        <DataGrid ItemsSource="{Binding CardPayments}" SelectedItem="{Binding SelectedCardPayment}" AutoGenerateColumns="False" IsReadOnly="True" MaxHeight="330">
-          <DataGrid.Columns>
-            <DataGridTextColumn Header="Месяц" Binding="{Binding Month}" Width="100" />
-            <DataGridTextColumn Header="Тариф" Binding="{Binding Tariff}" Width="90" />
-            <DataGridTextColumn Header="Сумма" Binding="{Binding Amount}" Width="90" />
-            <DataGridTextColumn Header="Дата оплаты" Binding="{Binding PaidAt}" Width="125" />
-            <DataGridTextColumn Header="Источник" Binding="{Binding Source}" Width="110" />
-            <DataGridTextColumn Header="Внёс (сотрудник)" Binding="{Binding RecordedBy}" Width="170" />
-            <DataGridTextColumn Header="Оплатил" Binding="{Binding PayerName}" Width="*" />
-          </DataGrid.Columns>
-        </DataGrid>
-      </HeaderedContentControl>
 
       <!-- Заявки по квартире -->
       <HeaderedContentControl Classes="group">
