@@ -8,12 +8,16 @@ set -euo pipefail
 [ "$(id -u)" -eq 0 ] || { echo "Запустите через sudo"; exit 1; }
 domain=$1
 
-# С учебным паролем avers из интернета вошёл бы кто угодно.
+# С учебным паролем avers из интернета вошёл бы кто угодно. Любой ответ, кроме «неверный пароль» (401), — стоп:
+# 429 значит, что проверить не удалось.
 for login in admin engineer sokolova orlov orlova lawyer novikov; do
     code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' \
         -d "{\"login\":\"$login\",\"password\":\"avers\"}" http://localhost:5115/api/auth/login)
     if [ "$code" = 200 ]; then
         echo "У пользователя $login учебный пароль avers. Смените его (sudo avers-password $login) или отключите пользователя."
+        exit 1
+    elif [ "$code" != 401 ]; then
+        echo "Не удалось проверить пароль пользователя $login (ответ сервера $code). Подождите 15 минут и запустите снова."
         exit 1
     fi
 done
@@ -21,6 +25,12 @@ done
 apt-get install -y caddy
 cat > /etc/caddy/Caddyfile <<CADDY
 $domain {
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy no-referrer
+    }
     @mechanics path /m /m/* /api/auth/login /api/mobile/*
     handle @mechanics {
         reverse_proxy 127.0.0.1:5115 {

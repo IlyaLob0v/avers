@@ -10,14 +10,20 @@ public static class AversClaims
 {
     public const string UserId = "avers:uid";
     public const string CanEditAccount = "avers:can_edit_account";
+    public const string PasswordStamp = "avers:pwd";
 
     public static Claim[] For(AppUser user) =>
     [
         new(ClaimTypes.Name, user.Login),
         new(ClaimTypes.Role, user.Role.ToString()),
         new(UserId, user.Id.ToString(System.Globalization.CultureInfo.InvariantCulture)),
-        new(CanEditAccount, user.CanEditAccount ? "true" : "false")
+        new(CanEditAccount, user.CanEditAccount ? "true" : "false"),
+        new(PasswordStamp, Stamp(user))
     ];
+
+    /// <summary>Отпечаток хеша пароля: после смены пароля старые входы перестают действовать (<see cref="FreshUser"/>).</summary>
+    public static string Stamp(AppUser user) =>
+        Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(user.PasswordHash)), 0, 8);
 
     public static UserRole? Role(this ClaimsPrincipal user) =>
         Enum.TryParse<UserRole>(user.FindFirstValue(ClaimTypes.Role), out var role) ? role : null;

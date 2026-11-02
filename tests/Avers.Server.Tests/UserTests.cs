@@ -119,6 +119,21 @@ public class UserTests
         Assert.Equal(HttpStatusCode.Unauthorized, disabled.StatusCode);
     }
 
+    [Fact]
+    public async Task PasswordChange_EndsOpenSessions()
+    {
+        await using var app = new AversApp();
+        var admin = await app.LoginAsync("admin");
+        var orlova = await app.LoginAsync("orlova");
+        var id = await IdOf(app, "orlova");
+
+        await admin.PutAsJsonAsync($"/api/users/{id}",
+            new SaveUserRequest("orlova", "Орлова Т.И.", "Dispatcher", "АДС, диспетчерская", false, false, "Новый-пароль-1"));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await orlova.GetAsync("/api/tickets")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync("/api/users")).StatusCode);
+    }
+
     private static Task<int> IdOf(AversApp app, string login) =>
         app.WithDbAsync(db => db.Users.Where(u => u.Login == login).Select(u => u.Id).SingleAsync());
 
