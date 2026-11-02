@@ -43,6 +43,7 @@ public class AuthTests
             {
                 Content = JsonContent.Create(new LoginRequest("admin", "wrong"))
             };
+            request.Headers.Add(AuthEndpoints.InternetHeader, "1");
             request.Headers.Add("X-Forwarded-For", address);
             return (await client.SendAsync(request)).StatusCode;
         }
@@ -52,6 +53,20 @@ public class AuthTests
 
         Assert.Equal(HttpStatusCode.TooManyRequests, await Login("203.0.113.1"));
         Assert.Equal(HttpStatusCode.Unauthorized, await Login("203.0.113.2"));
+    }
+
+    [Fact]
+    public async Task LoginLimit_OfficeServerAddress_LetsWholeStaffLogIn()
+    {
+        // Сотрудники на Windows 7/8 работают через xrdp на сервере: для Аверса все они приходят с одного адреса.
+        await using var app = new AversApp();
+        var client = app.CreateClient();
+
+        for (var i = 0; i < 15; i++)
+        {
+            var response = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest("orlov", "avers"));
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
     }
 
     [Fact]
