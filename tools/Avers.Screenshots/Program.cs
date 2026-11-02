@@ -34,7 +34,7 @@ Directory.CreateDirectory(outDir);
 AppBuilder.Configure<App>()
     .UseSkia()
     .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
-    .WithInterFont()
+    .WithAversFont()
     .SetupWithoutStarting();
 
 var dbPath = Path.Combine(Path.GetTempPath(), $"avers-shots-{Guid.NewGuid():N}.db");

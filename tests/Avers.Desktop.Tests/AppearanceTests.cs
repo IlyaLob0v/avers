@@ -27,6 +27,13 @@ public class AppearanceTests
         Assert.Equal(FontSimulations.None, face.FontSimulations);
     }
 
+    [AvaloniaFact]
+    public void DefaultFont_IsPlex_SoPopupsMatchWindows()
+    {
+        Assert.True(FontManager.Current.TryGetGlyphTypeface(new Typeface(FontFamily.Default), out var face));
+        Assert.StartsWith("IBM Plex Sans", face.FamilyName);
+    }
+
     [Fact]
     public void Catalog_EveryModuleHasTileSummary()
     {
