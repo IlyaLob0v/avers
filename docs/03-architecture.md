@@ -6,14 +6,14 @@
 
 Модульный монолит на .NET 10 LTS: один сервер приложений (ASP.NET Core) с одной базой PostgreSQL,
 к нему подключаются настольное приложение Avalonia 12 на рабочих местах Windows 10/11 и веб-интерфейс
-для телефонов радиомехаников. Машины с Windows 7 работают с тем же настольным приложением через
+для телефонов радиомехаников. Машины с Windows 7 и 8 работают с тем же настольным приложением через
 терминальный сервер Linux с xrdp (ADR-0008). Обмен с 1С и загрузка банковских реестров будут жить на сервере.
 
 ```mermaid
 flowchart LR
   subgraph Рабочие места
     D[Avers.Desktop<br/>Avalonia 12, Win10/11]
-    W7[Windows 7<br/>RDP к терминальному серверу]
+    W7[Windows 7 и 8<br/>RDP к терминальному серверу]
     M[Телефон радиомеханика<br/>браузер, только чтение]
   end
   subgraph Сервер предприятия
@@ -80,7 +80,7 @@ tests/
 | [0005](adr/0005-migration-approach.md) | Миграция: выгрузка JACK → промежуточная схема → преобразование → сверка, параллельная работа |
 | [0006](adr/0006-1c-integration.md) | Обмен с 1С: Аверс — источник начислений и оплат, 1С получает сводные документы |
 | [0007](adr/0007-reports-xlsx-pdf.md) | Отчёты: XLSX (ClosedXML) и PDF |
-| [0008](adr/0008-windows7-terminal-server.md) | Windows 7 — через терминальный сервер Linux с xrdp |
+| [0008](adr/0008-windows7-terminal-server.md) | Windows 7 и 8 — через терминальный сервер Linux с xrdp |
 
 ## Сквозные вопросы
 
@@ -99,7 +99,7 @@ tests/
 - **Обмен с 1С.** Пока файл Excel за месяц (кнопка «Для 1С»); прямая загрузка — позже (ADR-0006).
 - **Развёртывание.** Сервер — Ubuntu Server: `deploy/server/install.sh` ставит PostgreSQL, службу systemd на порту 5115
   и ночной `pg_dump` с хранением 30 дней (`docs/09-server.md`). Доступ из интернета — только страница `/m/`
-  через Caddy (`avers-internet`). Desktop — самодостаточные сборки win-x64 и linux-x64 из CI; Windows 7 — через xrdp
+  через Caddy (`avers-internet`). Desktop — самодостаточные сборки win-x64 и linux-x64 из CI; Windows 7 и 8 — через xrdp
   (`deploy/xrdp`), запасной вариант на Windows Server — `deploy/rds`.
 - **Тесты и CI.** xUnit; серверные тесты идут на SQLite, а в CI ещё и на настоящем PostgreSQL (`AVERS_TEST_POSTGRES`).
   CI собирает, гоняет тесты, проверяет `dotnet format` и пробный запуск программы.

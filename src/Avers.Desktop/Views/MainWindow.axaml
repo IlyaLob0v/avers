@@ -106,7 +106,6 @@
               </MenuItem.Styles>
             </MenuItem>
             <MenuItem Header="_Справка">
-              <MenuItem Header="Образцы оформления" Click="OnStyleGuideClick" />
               <MenuItem Header="О программе" Click="OnAboutClick" />
             </MenuItem>
           </Menu>

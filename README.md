@@ -23,7 +23,7 @@
 | Сервер | ASP.NET Core 10, Minimal API, вход по токену, права по ролям на сервере |
 | База | PostgreSQL 18 (EF Core 10, миграции); SQLite — учебный режим без сервера |
 | Документы | PDF, Excel (ClosedXML), Word |
-| Windows 7 | Ubuntu Server 24.04 + xrdp: сотрудники работают в удалённом сеансе |
+| Windows 7 и 8 | Ubuntu Server 24.04 + xrdp: сотрудники работают в удалённом сеансе |
 | Сборка | GitHub Actions: сборка, тесты, `dotnet format`, сборки для Windows и Linux |
 
 Архитектурные решения — [docs/adr/](docs/adr/): модульный монолит, один сервер и одна база.
@@ -35,7 +35,7 @@ src/                Domain, Data, Contracts, Server, Desktop
 tests/              тесты xUnit (домен, данные, сервер, интерфейс без монитора)
 db/                 стенд PostgreSQL, выгрузка и перенос данных из Oracle JACK
 deploy/server/      установка сервера Аверса на Ubuntu: PostgreSQL, служба, резервные копии
-deploy/xrdp/        терминальный сервер для Windows 7
+deploy/xrdp/        терминальный сервер для Windows 7 и 8
 deploy/rds/         запасной вариант на Windows Server (RemoteApp)
 docs/               описание старой системы, требования, архитектура, план миграции, ADR
 tools/              снимки экранов без монитора, служебные скрипты
