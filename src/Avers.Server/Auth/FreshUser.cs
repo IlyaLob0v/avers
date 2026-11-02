@@ -6,7 +6,7 @@ namespace Avers.Server.Auth;
 
 /// <summary>
 /// Роль и права берутся из базы на каждом запросе, а не из токена: отключение сотрудника и смена роли
-/// действуют сразу, а не после окончания сеанса (до 12 часов). Отключённому — 401, как при истёкшем сеансе.
+/// действуют сразу, а не после окончания сеанса (до 12 часов). Отключённому и сменившему пароль — 401, как при истёкшем сеансе.
 /// </summary>
 public static class FreshUser
 {
@@ -17,7 +17,7 @@ public static class FreshUser
         {
             var db = http.RequestServices.GetRequiredService<AversDbContext>();
             var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id, http.RequestAborted);
-            if (user is null || user.IsDisabled)
+            if (user is null || user.IsDisabled || http.User.FindFirstValue(AversClaims.PasswordStamp) != AversClaims.Stamp(user))
             {
                 http.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 return;
