@@ -241,6 +241,9 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public async Task<IReadOnlyList<ChangeLogEntry>> LoadChangeLogAsync() =>
         await Read<List<ChangeLogEntry>>(() => http.GetAsync("api/change-log"));
 
+    public async Task<IReadOnlyList<AccessLogEntry>> LoadAccessLogAsync() =>
+        await Read<List<AccessLogEntry>>(() => http.GetAsync("api/access-log"));
+
     private async Task<T> Read<T>(Func<Task<HttpResponseMessage>> request)
     {
         using var response = await Send(request);

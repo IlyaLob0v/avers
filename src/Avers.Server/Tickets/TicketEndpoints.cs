@@ -28,7 +28,7 @@ public static class TicketEndpoints
         api.MapPut("/tickets/{id:int}", Update).RequireAuthorization(Policies.TicketsCreate);
         api.MapGet("/houses/{houseId:int}/tickets", ForHouse);
         api.MapGet("/houses/{houseId:int}/service-info", ServiceInfo);
-        api.MapGet("/subscribers/{subscriberId:int}/tickets", ForSubscriber);
+        api.MapGet("/subscribers/{subscriberId:int}/tickets", ForSubscriber).LogsView("Заявки абонента", AccessLogFilter.Subscriber("subscriberId"));
     }
 
     /// <summary>

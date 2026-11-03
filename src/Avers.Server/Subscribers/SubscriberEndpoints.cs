@@ -19,12 +19,14 @@ public static class SubscriberEndpoints
 
         api.MapGet("/streets", Streets);
         api.MapGet("/streets/{streetId:int}/houses", Houses);
-        api.MapGet("/subscribers", Search);
-        api.MapGet("/houses/{houseId:int}/subscribers", (int houseId, AversDbContext db) => TypedResults.Ok(HouseSubscribers.Load(db, houseId)));
-        api.MapGet("/debts", (AversDbContext db, TimeProvider time) => TypedResults.Ok(Debts.Load(db, time.Today())));
+        api.MapGet("/subscribers", Search).LogsView("Поиск абонентов", AccessLogFilter.Query);
+        api.MapGet("/houses/{houseId:int}/subscribers", (int houseId, AversDbContext db) => TypedResults.Ok(HouseSubscribers.Load(db, houseId)))
+            .LogsView("Абоненты дома", AccessLogFilter.House("houseId"));
+        api.MapGet("/debts", (AversDbContext db, TimeProvider time) => TypedResults.Ok(Debts.Load(db, time.Today())))
+            .LogsView("Список должников", AccessLogFilter.Everyone);
         api.MapGet("/reports/accounting", Accounting);
-        api.MapGet("/subscribers/{id:int}", Card);
-        api.MapGet("/subscribers/{id:int}/payments", Payments);
+        api.MapGet("/subscribers/{id:int}", Card).LogsView("Карточка абонента", AccessLogFilter.Subscriber("id"));
+        api.MapGet("/subscribers/{id:int}/payments", Payments).LogsView("Оплаты абонента", AccessLogFilter.Subscriber("id"));
         api.MapPost("/subscribers/{id:int}/payments", PaymentEndpoints.Record).RequireAuthorization(Policies.PaymentsCreate);
         api.MapPost("/subscribers/{id:int}/court-cases", (int id, CourtCaseRequest r, ClaimsPrincipal u, AversDbContext db, TimeProvider t) =>
             ApartmentEndpoints.SaveCourtCase(id, 0, r, u, db, t)).RequireAuthorization(Policies.CourtCasesEdit);

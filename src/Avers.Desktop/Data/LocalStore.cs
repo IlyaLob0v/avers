@@ -344,4 +344,11 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
         using var ctx = db.CreateDbContext();
         return Task.FromResult<IReadOnlyList<ChangeLogEntry>>(ChangeLog.Latest(ctx));
     }
+
+    /// <summary>Просмотры пишет сервер; учебная база на этом компьютере их не ведёт.</summary>
+    public Task<IReadOnlyList<AccessLogEntry>> LoadAccessLogAsync()
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult<IReadOnlyList<AccessLogEntry>>(AccessLog.Latest(ctx));
+    }
 }

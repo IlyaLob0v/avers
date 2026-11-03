@@ -33,6 +33,20 @@ public sealed class ServerModeTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task AccessLog_ShowsWhoOpenedSubscribers()
+    {
+        var cashier = await SignIn("orlov");
+        var house = cashier.SelectedHouse!.AddressLine;
+        var admin = await SignIn("admin");
+
+        admin.ChangeLogScreen.ShowViews = true;
+        await admin.ChangeLogScreen.LoadAsync();
+
+        Assert.Contains(admin.ChangeLogScreen.ChangeLogRows,
+            r => r.UserName == "Орлов С.А. (orlov)" && r.Action == "Абоненты дома" && r.Target == house);
+    }
+
+    [Fact]
     public async Task Find_LoadsHouseOfFoundSubscriber()
     {
         var vm = await SignIn("orlov");

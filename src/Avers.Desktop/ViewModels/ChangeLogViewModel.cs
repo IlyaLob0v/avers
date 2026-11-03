@@ -1,35 +1,60 @@
 using System.Collections.ObjectModel;
 using Avers.Data;
 using Avers.Domain;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Avers.Desktop.ViewModels;
 
-/// <summary>Журнал изменений: только просмотр, только администратор.</summary>
-public sealed class ChangeLogViewModel(MainViewModel shell)
+/// <summary>Журнал изменений и журнал просмотров персональных данных: только просмотр, только администратор.</summary>
+public sealed partial class ChangeLogViewModel(MainViewModel shell) : ObservableObject
 {
     public ObservableCollection<ChangeLogRow> ChangeLogRows { get; } = [];
 
-    public string ChangeLogHint =>
-        $"Последние {ChangeLog.Shown} записей, новые сверху. Записи журнала нельзя изменить или удалить.";
+    /// <summary>false — кто что изменил, true — кто чьи персональные данные открыл (152-ФЗ).</summary>
+    [ObservableProperty] private bool _showViews;
+
+    public string ChangeLogHint => ShowViews
+        ? $"Кто открывал данные абонентов: поиск, абоненты дома, карточка, должники, сканы. Последние {ChangeLog.Shown} записей, новые сверху."
+        : $"Последние {ChangeLog.Shown} записей, новые сверху. Записи журнала нельзя изменить или удалить.";
+
+    partial void OnShowViewsChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ChangeLogHint));
+        _ = LoadAsync();
+    }
 
     /// <summary>Журнал перечитываем при каждом входе в модуль.</summary>
     public Task LoadAsync() =>
         shell.User?.Role == UserRole.Administrator
             ? shell.Save(async () =>
             {
-                var entries = await shell.Store.LoadChangeLogAsync();
+                var rows = ShowViews
+                    ? (await shell.Store.LoadAccessLogAsync()).Select(e => new ChangeLogRow(e))
+                    : (await shell.Store.LoadChangeLogAsync()).Select(e => new ChangeLogRow(e));
                 ChangeLogRows.Clear();
-                foreach (var e in entries)
-                    ChangeLogRows.Add(new ChangeLogRow(e));
+                foreach (var row in rows.ToList())
+                    ChangeLogRows.Add(row);
             })
             : Task.CompletedTask;
 }
 
-public sealed class ChangeLogRow(ChangeLogEntry entry)
+public sealed class ChangeLogRow
 {
-    public string At { get; } = entry.At.ToLocalTime().ToString("dd.MM.yyyy HH:mm");
-    public string UserName => entry.UserName;
-    public string Action => entry.Action;
-    public string Target => entry.Target;
-    public string Changes => entry.Changes;
+    public ChangeLogRow(ChangeLogEntry entry) : this(entry.At, entry.UserName, entry.Action, entry.Target) => Changes = entry.Changes;
+
+    public ChangeLogRow(AccessLogEntry entry) : this(entry.At, entry.UserName, entry.Action, entry.Target) { }
+
+    private ChangeLogRow(DateTimeOffset at, string userName, string action, string target)
+    {
+        At = at.ToLocalTime().ToString("dd.MM.yyyy HH:mm");
+        UserName = userName;
+        Action = action;
+        Target = target;
+    }
+
+    public string At { get; }
+    public string UserName { get; }
+    public string Action { get; }
+    public string Target { get; }
+    public string Changes { get; } = "";
 }

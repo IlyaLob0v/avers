@@ -129,6 +129,9 @@ public interface IAversStore
 
     /// <summary>Последние записи журнала изменений, новые сверху. Только для администратора.</summary>
     Task<IReadOnlyList<ChangeLogEntry>> LoadChangeLogAsync();
+
+    /// <summary>Последние записи журнала просмотров персональных данных, новые сверху. Только для администратора.</summary>
+    Task<IReadOnlyList<AccessLogEntry>> LoadAccessLogAsync();
 }
 
 public sealed class StoreException(string message) : Exception(message);

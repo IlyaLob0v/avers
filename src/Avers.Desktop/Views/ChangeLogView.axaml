@@ -4,6 +4,10 @@
              x:Class="Avers.Desktop.Views.ChangeLogView"
              x:DataType="vm:ChangeLogViewModel">
   <DockPanel Margin="16,0,16,12">
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="16" Margin="0,0,0,8">
+      <RadioButton GroupName="log" Content="Изменения" IsChecked="{Binding !ShowViews, Mode=OneWay}" />
+      <RadioButton GroupName="log" Content="Просмотры данных абонентов" IsChecked="{Binding ShowViews}" />
+    </StackPanel>
     <TextBlock DockPanel.Dock="Top" Classes="hint" Margin="0,0,0,8" Text="{Binding ChangeLogHint}" />
     <DataGrid ItemsSource="{Binding ChangeLogRows}" AutoGenerateColumns="False" IsReadOnly="True" RowHeight="NaN">
       <DataGrid.Columns>
