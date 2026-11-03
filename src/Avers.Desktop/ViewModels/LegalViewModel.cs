@@ -253,7 +253,7 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
         shell.Export("должники", "отчёт по должникам", path => XlsxTable.Write(path,
             $"Должники на {shell.Today:dd.MM.yyyy}",
             ["ФИО", "Адрес", "Лиц. счёт", "Долг, руб.", "Неоплачено мес.", "Последняя оплата", "Судебный приказ"],
-            Debtors.Select(d => new object?[] { d.FullName, d.Address, d.Account, d.Debt, d.Unpaid, d.LastPay, d.Case })));
+            Debtors.Select(d => new object?[] { d.FullName, d.Address, d.Account, d.Debt, d.Unpaid, d.OldPayer ? d.LastPay + " (≥ 3 лет)" : d.LastPay, d.Case })));
 
     public ObservableCollection<DocumentInfo> Documents { get; } = [];
     public IReadOnlyList<string> DocumentKinds => SubscriberDocuments.Kinds;
@@ -387,7 +387,8 @@ public sealed class DebtorRow : IRowTone
         ContractTerminated = d.ContractTerminated;
         DebtText = d.Debt.ToString("N2") + " ₽";
         Unpaid = d.Unpaid;
-        LastPay = d.LastPaymentDate is { } date ? date.ToString("dd.MM.yyyy") + (d.IsOld ? " (≥ 3 лет)" : "") : "нет";
+        LastPay = d.LastPaymentDate is { } date ? date.ToString("dd.MM.yyyy") : "нет";
+        OldPayer = d.IsOld;
         Limitation = d.LimitationEnds is { } end ? $"{d.OldestUnpaid:MM.yyyy} — до {end:dd.MM.yyyy}" : "";
         CourtCase = d.Case;
         Case = d.Case is { } c ? $"{c.OrderNumber} от {c.OrderDate:dd.MM.yyyy}" : "—";
@@ -413,5 +414,8 @@ public sealed class DebtorRow : IRowTone
     public CourtCase? CourtCase { get; }
     public bool IsDebt { get; }
     public bool IsOld { get; }
+
+    /// <summary>Последняя оплата 3 года и более назад — жёлтая метка в столбце даты, видна и в красной строке.</summary>
+    public bool OldPayer { get; }
     public RowTone Tone => IsDebt ? RowTone.Debt : IsOld ? RowTone.Warn : RowTone.None;
 }

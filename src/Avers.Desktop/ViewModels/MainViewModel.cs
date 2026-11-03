@@ -120,7 +120,9 @@ public sealed partial class MainViewModel : ObservableObject
     public string WorkDateText => _today.ToString("dd.MM.yyyy");
     public string FaultBanner => SelectedHouse is { OpenFault: not null } h
         ? $"Неустранённая неисправность СКПТ: {h.OpenFault}. Причина: {h.OpenFaultReason}. План устранения: {h.OpenFaultPlannedFix:dd.MM.yyyy}."
+          + (FaultOverdue ? " Срок устранения прошёл." : "")
         : "";
+    public bool FaultOverdue => SelectedHouse is { OpenFault: not null, OpenFaultPlannedFix: { } plan } && plan < _today;
     public bool HasFault => !string.IsNullOrWhiteSpace(FaultBanner);
     public string ChargedText => Money(SelectedSubscriber is null ? 0 : Billing.Charged(DuePayments));
     public string PaidText => Money(SelectedSubscriber is null ? 0 : Billing.Paid(DuePayments));
@@ -363,6 +365,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         OnPropertyChanged(nameof(FaultBanner));
         OnPropertyChanged(nameof(HasFault));
+        OnPropertyChanged(nameof(FaultOverdue));
         OnPropertyChanged(nameof(ChargedText));
         OnPropertyChanged(nameof(PaidText));
         OnPropertyChanged(nameof(DebtText));
@@ -544,6 +547,7 @@ public sealed partial class MainViewModel : ObservableObject
             EditFaultFix = h.OpenFaultPlannedFix?.ToString("dd.MM.yyyy") ?? "";
             OnPropertyChanged(nameof(FaultBanner));
             OnPropertyChanged(nameof(HasFault));
+            OnPropertyChanged(nameof(FaultOverdue));
             Status = "Паспорт дома сохранён.";
         });
     }

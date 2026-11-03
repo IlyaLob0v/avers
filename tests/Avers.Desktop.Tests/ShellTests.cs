@@ -219,6 +219,39 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public void Debtors_OldPayerMarked_EvenInRedRow()
+    {
+        using var app = new DesktopApp("lawyer");
+
+        var kozlov = app.Vm.LegalScreen.Debtors.Single(d => d.FullName.StartsWith("Козлов", StringComparison.Ordinal));
+        Assert.Equal(RowTone.Debt, kozlov.Tone);
+        Assert.True(kozlov.OldPayer);
+        Assert.DoesNotContain(app.Vm.LegalScreen.Debtors, d => d.OldPayer && d.LastPay.StartsWith("26.02.2026", StringComparison.Ordinal));
+    }
+
+    [AvaloniaFact]
+    public void Fault_PlannedFixInPast_MarkedOverdue()
+    {
+        using var app = new DesktopApp("engineer");
+        House FaultyHouse()
+        {
+            app.Vm.SelectedStreet = app.Vm.Streets.Single(s => s.Name == "Волочаевская");
+            return app.Vm.HousesOnStreet.Single(h => h.OpenFault is not null);
+        }
+        app.Vm.SelectedHouse = FaultyHouse();
+
+        Assert.True(app.Vm.FaultOverdue);
+        Assert.Contains("Срок устранения прошёл", app.Vm.FaultBanner);
+
+        var today = DateOnly.ParseExact(app.Vm.WorkDateText, "dd.MM.yyyy");
+        app.Vm.SelectedHouse.OpenFaultPlannedFix = today.AddDays(3);
+        app.Vm.SelectedHouse = null;
+        app.Vm.SelectedHouse = FaultyHouse();
+        Assert.False(app.Vm.FaultOverdue);
+        Assert.DoesNotContain("Срок устранения прошёл", app.Vm.FaultBanner);
+    }
+
+    [AvaloniaFact]
     public void Claim_FollowsLawyersSampleForSelectedDebtor()
     {
         using var app = new DesktopApp("lawyer");

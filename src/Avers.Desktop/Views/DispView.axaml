@@ -199,7 +199,7 @@
       <ScrollViewer Grid.Column="2">
         <StackPanel>
           <!-- Неисправность по выбранному дому: одна плашка на экране, всегда на виду при приёме заявки -->
-          <Border Classes="warn" IsVisible="{Binding Shell.HasFault}">
+          <Border Classes.warn="{Binding !Shell.FaultOverdue}" Classes.debt="{Binding Shell.FaultOverdue}" IsVisible="{Binding Shell.HasFault}">
             <TextBlock Text="{Binding Shell.FaultBanner}" TextWrapping="Wrap" />
           </Border>
 
