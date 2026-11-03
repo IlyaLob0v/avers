@@ -121,12 +121,11 @@
           </StackPanel>
         </Border>
 
-        <HeaderedContentControl DockPanel.Dock="Top" Classes="group" Padding="10,8,6,8">
+        <HeaderedContentControl DockPanel.Dock="Top" Classes="group" Padding="10,6,6,6">
           <HeaderedContentControl.Header>
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBlock Text="{Binding TicketMonthsCaption}" VerticalAlignment="Center" />
-              <TextBlock Classes="hint" VerticalAlignment="Center"
-                         Text="Принято / выполнено по месяцам. Нажмите месяц, чтобы открыть журнал за него." />
+              <TextBlock Classes="hint" VerticalAlignment="Center" Text="принято / выполнено, нажмите месяц — журнал за него" />
             </StackPanel>
           </HeaderedContentControl.Header>
           <ItemsControl ItemsSource="{Binding TicketMonths}">
@@ -139,9 +138,9 @@
               <DataTemplate x:DataType="vm:TicketMonthRow">
                 <Button Classes="month" Classes.selected="{Binding IsSelected}" Classes.open="{Binding HasOpen}"
                         Command="{Binding Select}" CommandParameter="{Binding Month}" ToolTip.Tip="{Binding Tip}">
-                  <StackPanel>
-                    <TextBlock Text="{Binding Name}" FontSize="12" HorizontalAlignment="Center" />
-                    <TextBlock Classes="counts" Text="{Binding Counts}" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                  <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding Name}" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Classes="counts" Text="{Binding Counts}" FontWeight="SemiBold" VerticalAlignment="Center" />
                   </StackPanel>
                 </Button>
               </DataTemplate>
@@ -149,24 +148,26 @@
           </ItemsControl>
         </HeaderedContentControl>
 
-        <HeaderedContentControl DockPanel.Dock="Bottom" Classes="group" Margin="0" Padding="10,6,10,8" Header="Новая заявка по выбранному дому">
-          <StackPanel>
-            <Grid ColumnDefinitions="*,*,*">
-              <StackPanel Classes="f"><TextBlock Text="Дом / под. / кв"/><TextBox Classes="cell" Text="{Binding Shell.HouseAptLine, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
-              <StackPanel Grid.Column="1" Classes="f" Margin="8,0"><TextBlock Text="Абонент"/><TextBox Classes="cell" Text="{Binding Shell.SelectedSubscriber.FullName, Mode=OneWay}" IsReadOnly="True"/></StackPanel>
-              <StackPanel Grid.Column="2" Classes="f"><TextBlock Text="Вид заявки"/><ComboBox Classes="cell" ItemsSource="{Binding NewTicketKinds}" SelectedItem="{Binding NewTicketKind}"/></StackPanel>
-            </Grid>
-            <Grid ColumnDefinitions="*,200">
-              <StackPanel Classes="f">
-                <TextBlock Text="Характер неисправности" />
-                <TextBox Classes="cell" MinHeight="28" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding NewTicketFault}" PlaceholderText="Что случилось — со слов жильца" />
-              </StackPanel>
-              <StackPanel Grid.Column="1" Classes="f" Margin="8,0,0,0">
-                <TextBlock Text="Телефон заявителя" />
-                <TextBox Classes="cell" Text="{Binding NewTicketPhone}" PlaceholderText="пусто — из карточки" />
-              </StackPanel>
-            </Grid>
-          </StackPanel>
+        <HeaderedContentControl DockPanel.Dock="Bottom" Classes="group" Margin="0" Padding="10,4,10,8">
+          <HeaderedContentControl.Header>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="Новая заявка:" VerticalAlignment="Center" />
+              <TextBlock Classes="hint" Text="дом / под. / кв" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Shell.HouseAptLine}" VerticalAlignment="Center" />
+              <TextBlock Classes="hint" Text="{Binding Shell.SelectedSubscriber.FullName}" VerticalAlignment="Center" />
+            </StackPanel>
+          </HeaderedContentControl.Header>
+          <Grid ColumnDefinitions="140,*,150">
+            <StackPanel Classes="f"><TextBlock Text="Вид заявки"/><ComboBox Classes="cell" HorizontalAlignment="Stretch" ItemsSource="{Binding NewTicketKinds}" SelectedItem="{Binding NewTicketKind}"/></StackPanel>
+            <StackPanel Grid.Column="1" Classes="f" Margin="8,0">
+              <TextBlock Text="Характер неисправности" />
+              <TextBox Classes="cell" MinHeight="28" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding NewTicketFault}" PlaceholderText="Что случилось — со слов жильца" />
+            </StackPanel>
+            <StackPanel Grid.Column="2" Classes="f">
+              <TextBlock Text="Телефон заявителя" />
+              <TextBox Classes="cell" Text="{Binding NewTicketPhone}" PlaceholderText="пусто — из карточки" />
+            </StackPanel>
+          </Grid>
         </HeaderedContentControl>
 
         <HeaderedContentControl Classes="group" Padding="0">
@@ -182,12 +183,12 @@
           <DataGrid MinHeight="110" BorderThickness="0" ItemsSource="{Binding Tickets}" SelectedItem="{Binding SelectedTicket}" AutoGenerateColumns="False" IsReadOnly="True">
             <DataGrid.Columns>
               <DataGridTextColumn Header="№" Binding="{Binding Number}" Width="60" />
-              <DataGridTextColumn Header="Время" Binding="{Binding Time}" Width="72" />
-              <DataGridTextColumn Header="Улица" Binding="{Binding House.Street.Name}" Width="120" />
+              <DataGridTextColumn Header="Время" Binding="{Binding Time}" Width="64" />
+              <DataGridTextColumn Header="Улица" Binding="{Binding House.Street.Name}" Width="110" />
               <DataGridTextColumn Header="Дом" Binding="{Binding House.Number}" Width="62" />
               <DataGridTextColumn Header="Кв" Binding="{Binding Apartment}" Width="52" />
-              <DataGridTextColumn Header="ФИО" Binding="{Binding Subscriber.ShortName}" Width="130" />
-              <DataGridTextColumn Header="Неисправность" Binding="{Binding Fault}" Width="260" />
+              <DataGridTextColumn Header="ФИО" Binding="{Binding Subscriber.ShortName}" Width="120" />
+              <DataGridTextColumn Header="Неисправность" Binding="{Binding Fault}" Width="*" MinWidth="160" />
               <DataGridTextColumn Header="Механик" Binding="{Binding Mechanic}" Width="120" />
               <DataGridTextColumn Header="Выполн." Binding="{Binding StatusLabel}" Width="80" />
             </DataGrid.Columns>
