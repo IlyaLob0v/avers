@@ -31,6 +31,24 @@ public class DesktopTests
     }
 
     [Fact]
+    public async Task Snapshot_ForReader_HasHousesAndSchemesWithoutPersonalData()
+    {
+        // Читателю по матрице — дома и схемы. Радиомеханики с телефонами и адресами, заявки, материалы — нет.
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("novikov");
+
+        var snapshot = (await client.GetFromJsonAsync<AversSnapshot>("/api/desktop/snapshot", Json))!.Link();
+
+        Assert.NotEmpty(snapshot.Houses);
+        Assert.NotEmpty(snapshot.Schemes);
+        Assert.Empty(snapshot.Mechanics);
+        Assert.Empty(snapshot.Materials);
+        Assert.Empty(snapshot.IntercomTickets);
+        Assert.Empty(snapshot.Tickets);
+        Assert.Empty(snapshot.Subscribers);
+    }
+
+    [Fact]
     public async Task Snapshot_HasOnlySubscribersOfTickets()
     {
         await using var app = new AversApp();
