@@ -55,6 +55,9 @@
           <Border Classes="debt" Margin="24,12,24,0" IsVisible="{Binding LoginError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
             <TextBlock Text="{Binding LoginError}" TextWrapping="Wrap" />
           </Border>
+          <Border Classes="warn" Margin="24,12,24,0" IsVisible="{Binding ConnectionWarning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="{Binding ConnectionWarning}" TextWrapping="Wrap" />
+          </Border>
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="24,16">
             <Button Content="Отмена" Command="{Binding LogoutCommand}" MinHeight="30" Padding="16,4" />
             <Button Classes="primary" Content="Войти" Command="{Binding LoginCommand}" IsDefault="True"

@@ -33,7 +33,7 @@ jobs:
       - name: Smoke start
         shell: pwsh
         run: |
-          $app = Start-Process src/Avers.Desktop/bin/publish/Avers/Avers.exe -PassThru
+          $app = Start-Process src/Avers.Desktop/bin/publish/Avers/Avers.exe -ArgumentList --demo -PassThru
           Start-Sleep -Seconds 20
           if ($app.HasExited) { throw "Аверс закрылся при запуске, код $($app.ExitCode)" }
           Stop-Process -Id $app.Id
@@ -58,7 +58,7 @@ jobs:
       - name: Smoke start
         run: |
           sudo apt-get install -y -qq xvfb
-          xvfb-run -a timeout 20 src/Avers.Desktop/bin/publish-linux/Avers/Avers || [ $? -eq 124 ]
+          xvfb-run -a timeout 20 src/Avers.Desktop/bin/publish-linux/Avers/Avers --demo || [ $? -eq 124 ]
       - name: Package
         run: |
           mkdir -p out

@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Учебная база": {
+      "commandName": "Project",
+      "commandLineArgs": "--demo"
+    },
+    "Сервер на этом ПК": {
+      "commandName": "Project",
+      "commandLineArgs": "--server=http://localhost:5115"
+    }
+  }
+}
