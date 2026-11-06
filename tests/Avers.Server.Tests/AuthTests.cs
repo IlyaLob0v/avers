@@ -6,8 +6,11 @@ using System.Text;
 using System.Text.Json;
 using Avers.Contracts;
 using Avers.Server.Auth;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Avers.Server.Tests;
 
@@ -192,6 +195,19 @@ public class AuthTests
         var response = await app.CreateClient().GetAsync("/api/streets");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AddressWithoutPolicy_RequiresLogin()
+    {
+        // Новый адрес, которому забыли указать политику, не должен оказаться открытым без входа.
+        await using var app = new AversApp();
+        var provider = app.Services.GetRequiredService<IAuthorizationPolicyProvider>();
+
+        var fallback = await provider.GetFallbackPolicyAsync();
+
+        Assert.NotNull(fallback);
+        Assert.Contains(fallback.Requirements, r => r is DenyAnonymousAuthorizationRequirement);
     }
 
     [Fact]

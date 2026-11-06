@@ -60,6 +60,9 @@ public static class Policies
 
     public static void Add(AuthorizationOptions options)
     {
+        // Адрес без своей политики требует вход. Без входа открыты только помеченные AllowAnonymous (вход, /health)
+        // и страница /m/: статику отдаёт UseStaticFiles раньше проверки прав.
+        options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
         options.AddPolicy(SubscribersView, p => p.RequireAuthenticatedUser()
             .AddRequirements(new ModuleAccessRequirement(AppModule.Abon, AccessLevel.View)));
         options.AddPolicy(PaymentsCreate, p => p.RequireAuthenticatedUser()
