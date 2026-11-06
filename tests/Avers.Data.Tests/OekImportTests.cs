@@ -1,4 +1,6 @@
+using System.Data.Common;
 using Avers.Domain;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Avers.Data.Tests;
 
@@ -88,5 +90,45 @@ public class OekImportTests
         var paid = db.Payments.Single(p => p.Subscriber.Account == "2");
         Assert.Equal("Касса", paid.Source);
         Assert.Single(db.ChangeLog);
+    }
+
+    [Fact]
+    public void CashierPaysDuringImport_CashierPaymentIsKept()
+    {
+        using var database = new SqliteDatabase();
+        using (var seed = database.CreateContext())
+            Seed(seed);
+        // Кассир вносит август квартиры 1 после того, как загрузка прочитала месяцы, но до её сохранения.
+        var cashier = new BeforeWrite(() =>
+        {
+            using var other = database.CreateContext();
+            var s = other.Subscribers.Single(x => x.Account == "1");
+            var (_, error) = Payments.Record(other, s, 2026, 8, 150, new DateOnly(2026, 9, 20), "Касса", null, "Кассир", "Кассир", At);
+            Assert.Null(error);
+        });
+        using var db = database.CreateContext(cashier);
+
+        var result = OekImport.Apply(db, August(new OekRow("83072480817", "1", "", "", 150, 150, new DateOnly(2026, 8, 14))), "Орлов", At);
+
+        Assert.Equal(0, result.Payments);
+        Assert.StartsWith("месяц уже оплачен в Аверсе", Assert.Single(result.Mismatches).Problem);
+        using var check = database.CreateContext();
+        var august = check.Payments.Single(p => p.Subscriber.Account == "1");
+        Assert.Equal(("Касса", "Кассир", new DateOnly(2026, 9, 20)), (august.Source!, august.RecordedBy!, august.PaidAt!.Value));
+    }
+
+    /// <summary>Один раз выполняет действие перед первой транзакцией контекста — между чтением и записью.</summary>
+    private sealed class BeforeWrite(Action action) : DbTransactionInterceptor
+    {
+        private Action? _action = action;
+
+        public override InterceptionResult<DbTransaction> TransactionStarting(DbConnection connection,
+            TransactionStartingEventData eventData, InterceptionResult<DbTransaction> result)
+        {
+            var run = _action;
+            _action = null;
+            run?.Invoke();
+            return result;
+        }
     }
 }
