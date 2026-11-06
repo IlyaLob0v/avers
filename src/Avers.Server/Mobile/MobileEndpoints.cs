@@ -22,7 +22,7 @@ public static class MobileEndpoints
 
         api.MapGet("/houses", Search);
         api.MapGet("/houses/{id:int}", Get);
-        api.MapGet("/schemes/{id:int}", SchemeEndpoints.File);
+        api.MapGet("/schemes/{id:int}", SchemeEndpoints.Screen);
     }
 
     private static async Task<Ok<List<HouseDto>>> Search(

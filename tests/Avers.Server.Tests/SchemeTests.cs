@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using Avers.Contracts;
+using Avers.Data;
 using Avers.Domain;
+using SkiaSharp;
 
 namespace Avers.Server.Tests;
 
@@ -34,9 +36,58 @@ public class SchemeTests
         Assert.True(scheme.HasImage);
         Assert.Equal("PNG", scheme.Format);
         Assert.Equal(AversApp.Today, scheme.UpdatedAt);
-        var image = await mechanic.GetAsync($"/api/mobile/schemes/{scheme.Id}");
+        var image = await engineer.GetAsync($"/api/schemes/{scheme.Id}/file");
         Assert.Equal("image/png", image.Content.Headers.ContentType!.MediaType);
         Assert.Equal(Png, await image.Content.ReadAsByteArrayAsync());
+    }
+
+    [Fact]
+    public async Task Reader_GetsWatermarkedPicture_NotSourceFile()
+    {
+        await using var app = new AversApp();
+        var engineer = await app.LoginAsync("engineer");
+        var reader = await app.LoginAsync("novikov");
+        var scheme = (await HouseAsync(engineer, "Ленина", "44")).Schemes.Single();
+        var source = await app.WithDbAsync(db => Task.FromResult(SchemeFiles.Content(db, scheme.Id)!));
+
+        var original = await engineer.GetAsync($"/api/schemes/{scheme.Id}/file");
+        var screen = await reader.GetAsync($"/api/schemes/{scheme.Id}/file");
+
+        Assert.Equal(source, await original.Content.ReadAsByteArrayAsync());
+        Assert.Equal(HttpStatusCode.OK, screen.StatusCode);
+        AssertWatermarked(source, await screen.Content.ReadAsByteArrayAsync());
+    }
+
+    [Theory]
+    [InlineData("novikov")]
+    [InlineData("engineer")]
+    public async Task MobileScheme_IsAlwaysWatermarked(string login)
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync(login);
+        var scheme = (await HouseAsync(client, "Ленина", "44")).Schemes.Single();
+        var source = await app.WithDbAsync(db => Task.FromResult(SchemeFiles.Content(db, scheme.Id)!));
+
+        var image = await client.GetAsync($"/api/mobile/schemes/{scheme.Id}");
+
+        Assert.Equal(HttpStatusCode.OK, image.StatusCode);
+        AssertWatermarked(source, await image.Content.ReadAsByteArrayAsync());
+    }
+
+    /// <summary>Картинка того же размера, но с нарисованным поверх знаком: часть точек отличается от исходника.</summary>
+    private static void AssertWatermarked(byte[] source, byte[] received)
+    {
+        Assert.NotEqual(source, received);
+        using var before = SKBitmap.Decode(source);
+        using var after = SKBitmap.Decode(received);
+        Assert.NotNull(after);
+        Assert.Equal((before.Width, before.Height), (after.Width, after.Height));
+        var changed = 0;
+        for (var y = 0; y < before.Height; y += 2)
+            for (var x = 0; x < before.Width; x += 2)
+                if (before.GetPixel(x, y) != after.GetPixel(x, y))
+                    changed++;
+        Assert.True(changed > 100, $"Изменено точек: {changed}");
     }
 
     [Fact]

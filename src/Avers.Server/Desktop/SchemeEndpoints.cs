@@ -6,6 +6,7 @@ using Avers.Server.Auth;
 using Avers.Server.Hosting;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using AccessLevel = Avers.Domain.RoleCatalog.AccessLevel;
 
 namespace Avers.Server.Desktop;
 
@@ -16,20 +17,36 @@ public static class SchemeEndpoints
     {
         var api = app.MapGroup("/api").WithTags("Схемы СКПТ");
 
-        api.MapGet("/schemes/{id:int}/file", File).RequireAuthorization(Policies.SchemesView);
+        api.MapGet("/schemes/{id:int}/file", File).RequireAuthorization(Policies.SchemesScreen);
         api.MapPost("/houses/{id:int}/schemes", Add).RequireAuthorization(Policies.SchemesEdit);
         api.MapPut("/schemes/{id:int}/file", Replace).RequireAuthorization(Policies.SchemesEdit);
         api.MapPut("/schemes/{id:int}/name", Rename).RequireAuthorization(Policies.SchemesEdit);
         api.MapDelete("/schemes/{id:int}", Delete).RequireAuthorization(Policies.SchemesEdit);
     }
 
-    public static async Task<Results<FileContentHttpResult, NotFound>> File(int id, AversDbContext db, CancellationToken ct)
+    /// <summary>Исходный файл — тому, кому схемы открыты на просмотр; роли «только на экране» — картинка со знаком.</summary>
+    private static Task<Results<FileContentHttpResult, NotFound>> File(
+        int id, ClaimsPrincipal user, AversDbContext db, TimeProvider time, CancellationToken ct) =>
+        SendAsync(id, user, db, time, original: user.Role() is { } role && Policies.HasAccess(role, AppModule.Scheme, AccessLevel.View), ct);
+
+    /// <summary>Телефон механика: схема всегда со знаком, кто бы ни смотрел.</summary>
+    public static Task<Results<FileContentHttpResult, NotFound>> Screen(
+        int id, ClaimsPrincipal user, AversDbContext db, TimeProvider time, CancellationToken ct) =>
+        SendAsync(id, user, db, time, original: false, ct);
+
+    private static async Task<Results<FileContentHttpResult, NotFound>> SendAsync(
+        int id, ClaimsPrincipal user, AversDbContext db, TimeProvider time, bool original, CancellationToken ct)
     {
         var scheme = await db.HouseSchemeFiles.AsNoTracking().Where(f => f.HouseSchemeId == id)
             .Select(f => new { f.Content, f.Scheme.Format }).FirstOrDefaultAsync(ct);
-        return scheme is null
+        if (scheme is null)
+            return TypedResults.NotFound();
+        var content = original
+            ? scheme.Content
+            : SchemeWatermark.Apply(scheme.Content, scheme.Format, SchemeWatermark.Text(user.Identity?.Name ?? "", time.GetLocalNow()));
+        return content is null
             ? TypedResults.NotFound()
-            : TypedResults.File(scheme.Content, SchemeFiles.ContentType(scheme.Format));
+            : TypedResults.File(content, SchemeFiles.ContentType(scheme.Format));
     }
 
     private static async Task<Results<NoContent, NotFound, ValidationProblem>> Add(

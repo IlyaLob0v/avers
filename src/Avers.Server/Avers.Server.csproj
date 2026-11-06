@@ -8,5 +8,12 @@
     <ProjectReference Include="..\Avers.Contracts\Avers.Contracts.csproj" />
     <ProjectReference Include="..\Avers.Data\Avers.Data.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
+    <!-- Водяной знак на схемах СКПТ для Читателя. Та же версия, что приходит в Avers.Desktop с Avalonia; лицензия MIT. -->
+    <PackageReference Include="SkiaSharp" Version="3.119.4" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Шрифт водяного знака: на сервере Linux может не быть шрифтов с кириллицей. Лицензия OFL (Assets/Fonts/OFL.txt). -->
+    <EmbeddedResource Include="..\Avers.Desktop\Assets\Fonts\IBMPlexSans-Regular.ttf" LogicalName="Avers.Server.Watermark.ttf" />
   </ItemGroup>
 </Project>

@@ -51,7 +51,7 @@ public static class Policies
     public const string SettingsEdit = "settings.edit";
     public const string HousesView = "houses.view";
     public const string HousesEdit = "houses.edit";
-    public const string SchemesView = "schemes.view";
+    public const string SchemesScreen = "schemes.screen";
     public const string SchemesEdit = "schemes.edit";
     public const string PhonebookEdit = "phonebook.edit";
     public const string UsersManage = "users.manage";
@@ -78,8 +78,9 @@ public static class Policies
             .AddRequirements(new ModuleAccessRequirement(AppModule.Anten, AccessLevel.View)));
         options.AddPolicy(HousesEdit, p => p.RequireAuthenticatedUser()
             .AddRequirements(new ModuleAccessRequirement(AppModule.Anten, AccessLevel.Edit)));
-        options.AddPolicy(SchemesView, p => p.RequireAuthenticatedUser()
-            .AddRequirements(new ModuleAccessRequirement(AppModule.Scheme, AccessLevel.View)));
+        // Смотреть схему может и роль «только на экране», но ей сервер отдаёт картинку с водяным знаком.
+        options.AddPolicy(SchemesScreen, p => p.RequireAuthenticatedUser()
+            .AddRequirements(new ModuleAccessRequirement(AppModule.Scheme, AccessLevel.ScreenOnly)));
         options.AddPolicy(SchemesEdit, p => p.RequireAuthenticatedUser()
             .AddRequirements(new ModuleAccessRequirement(AppModule.Scheme, AccessLevel.Edit)));
         options.AddPolicy(PhonebookEdit, p => p.RequireAuthenticatedUser()
@@ -110,9 +111,11 @@ public static class Policies
     {
         if (!Can(role, module, out var level))
             return false;
+        // «Только на экране» — не просмотр: исходный файл такой роли не отдаётся (REQ-MECH-02).
         return minimum switch
         {
             AccessLevel.Edit => level == AccessLevel.Edit,
+            AccessLevel.View => level is AccessLevel.View or AccessLevel.Edit,
             _ => true
         };
     }
