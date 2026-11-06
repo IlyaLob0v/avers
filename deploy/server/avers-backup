@@ -1,7 +1,54 @@
 #!/usr/bin/env bash
-# Каждую ночь (cron.daily): копия базы Аверса в /var/backups/avers, хранится 30 дней.
+# Копия Аверса в /var/backups/avers. Каждую ночь её делает таймер avers-backup.timer.
+#   avers-<дата>.dump            — база (pg_dump), в том числе сканы документов;
+#   avers-<дата>-files.tar.gz    — ключи входов сервера и центр сертификации Caddy (закрытый ключ корневого сертификата).
+# sudo avers-backup pre-update — то же с именем pre-update-<дата-время> (делает install.sh перед обновлением),
+# без переноса на другой компьютер.
+# Настройки — /etc/avers-backup.env: AVERS_BACKUP_DAYS, AVERS_BACKUP_REMOTE, AVERS_BACKUP_KEY.
 set -euo pipefail
+umask 077
 
-file=/var/backups/avers/avers-$(date +%Y-%m-%d).dump
-su postgres -c "pg_dump --format=custom --file=$file avers"
-find /var/backups/avers -name 'avers-*.dump' -mtime +30 -delete
+[ "$(id -u)" -eq 0 ] || { echo "Запустите через sudo"; exit 1; }
+# shellcheck source=/dev/null
+[ -f /etc/avers-backup.env ] && . /etc/avers-backup.env
+days=${AVERS_BACKUP_DAYS:-30}
+if ! [[ $days =~ ^[1-9][0-9]*$ ]]; then
+    echo "AVERS_BACKUP_DAYS=$days — нужно целое число дней"
+    exit 1
+fi
+
+dir=/var/backups/avers
+case ${1:-} in
+    "") name=$dir/avers-$(date +%Y-%m-%d) ;;
+    pre-update) name=$dir/pre-update-$(date +%Y-%m-%d-%H%M) ;;
+    *) echo "Как: sudo avers-backup [pre-update]"; exit 1 ;;
+esac
+install -d -m 700 "$dir"
+
+trap 'rm -f "$name.dump.part" "$name-files.tar.gz.part"' EXIT
+runuser -u postgres -- pg_dump --format=custom avers > "$name.dump.part"
+mv "$name.dump.part" "$name.dump"
+
+# Без ключей входов после восстановления все сотрудники входят заново; без центра сертификации Caddy
+# выпустит новый корневой сертификат, и его придётся заново ставить на все рабочие места.
+files=()
+for path in var/lib/avers-server/keys var/lib/caddy/.local/share/caddy; do
+    [ -e "/$path" ] && files+=("$path")
+done
+if [ ${#files[@]} -gt 0 ]; then
+    tar -C / -czf "$name-files.tar.gz.part" "${files[@]}"
+    mv "$name-files.tar.gz.part" "$name-files.tar.gz"
+fi
+echo "Копия: $name.dump ($(du -h "$name.dump" | cut -f1))"
+
+find "$dir" -maxdepth 1 -type f \( -name 'avers-*' -o -name 'pre-update-*' \) -mtime "+$days" -delete
+
+[ -z "${1:-}" ] || exit 0
+if [ -z "${AVERS_BACKUP_REMOTE:-}" ]; then
+    echo "ВНИМАНИЕ: копии лежат только на этом сервере. Если он сломается, их не будет." \
+        "Задайте AVERS_BACKUP_REMOTE в /etc/avers-backup.env (docs/09-server.md, «Копии базы»)." >&2
+    exit 0
+fi
+# Вся папка: копии, не ушедшие в прошлые дни (другой компьютер был выключен), уйдут сейчас.
+rsync -a -e "ssh -i ${AVERS_BACKUP_KEY:-/root/.ssh/avers-backup} -o BatchMode=yes" "$dir/" "$AVERS_BACKUP_REMOTE"
+echo "Копии перенесены на $AVERS_BACKUP_REMOTE"

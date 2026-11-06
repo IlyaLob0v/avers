@@ -21,6 +21,13 @@ cp -r "$src" /opt/avers
 rm -f "$config"
 chmod 755 /opt/avers/Avers
 
+# Корневой сертификат сервера Аверса (HTTPS в офисе). Если сервер Аверса стоит на этом же компьютере,
+# его уже поставил deploy/server/install.sh; иначе положите avers-root.crt с сервера рядом с этим сценарием.
+if [ -f "$here/avers-root.crt" ]; then
+    install -m 644 "$here/avers-root.crt" /usr/local/share/ca-certificates/avers-root.crt
+    update-ca-certificates >/dev/null
+fi
+
 install -m 755 "$here/startwm.sh" /etc/xrdp/startwm.sh
 adduser xrdp ssl-cert
 systemctl enable xrdp

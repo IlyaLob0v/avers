@@ -1,0 +1,8 @@
+[Unit]
+Description=Копия базы Аверса (avers-backup)
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/avers-backup

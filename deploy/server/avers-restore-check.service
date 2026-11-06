@@ -1,0 +1,8 @@
+[Unit]
+Description=Проверка восстановления копии базы Аверса (avers-restore-check)
+After=postgresql.service avers-backup.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/avers-restore-check
