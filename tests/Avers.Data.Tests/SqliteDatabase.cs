@@ -1,6 +1,7 @@
 using Avers.Data;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Avers.Data.Tests;
 
@@ -22,6 +23,10 @@ public sealed class SqliteDatabase : IDisposable
     }
 
     public AversDbContext CreateContext() => new(_options);
+
+    /// <summary>Контекст с перехватчиками EF: чтобы вклиниться между чтением и записью операции.</summary>
+    public AversDbContext CreateContext(params IInterceptor[] interceptors) =>
+        new(new DbContextOptionsBuilder<AversDbContext>(_options).AddInterceptors(interceptors).Options);
 
     public void Dispose() => _connection.Dispose();
 }
