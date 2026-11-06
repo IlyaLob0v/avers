@@ -18,9 +18,25 @@ public static class AdminCommands
         command = args switch
         {
             ["set-password", var login] => services => SetPasswordAsync(services, login, Console.In),
+            ["demo-passwords"] => services => DemoPasswordsAsync(services, Console.Out),
             _ => null!
         };
         return command is not null;
+    }
+
+    /// <summary>
+    /// Включённые сотрудники с учебным паролем <c>avers</c> (по одному логину в строке). Код 1 — такие есть.
+    /// Им пользуется <c>avers-internet</c>: с учебным паролем из интернета вошёл бы кто угодно.
+    /// </summary>
+    public static async Task<int> DemoPasswordsAsync(IServiceProvider services, TextWriter output)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AversDbContext>();
+        var users = await db.Users.AsNoTracking().Where(u => !u.IsDisabled).OrderBy(u => u.Login).ToListAsync();
+        var weak = users.Where(u => Password.Verify(u, DemoSeeder.DemoPassword)).Select(u => u.Login).ToList();
+        foreach (var login in weak)
+            await output.WriteLineAsync(login);
+        return weak.Count == 0 ? 0 : 1;
     }
 
     public static async Task<int> SetPasswordAsync(IServiceProvider services, string login, TextReader input)

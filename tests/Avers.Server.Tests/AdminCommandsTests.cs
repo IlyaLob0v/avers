@@ -39,6 +39,31 @@ public class AdminCommandsTests
         Assert.Equal("Administrator", (await client.GetFromJsonAsync<CurrentUserDto>("/api/auth/me"))!.Role);
     }
 
+    [Fact]
+    public async Task DemoPasswords_FoundOnDemoBase()
+    {
+        await using var app = new AversApp();
+        var output = new StringWriter();
+
+        var code = await AdminCommands.DemoPasswordsAsync(app.Services, output);
+
+        Assert.Equal(1, code);
+        Assert.Contains("admin", output.ToString());
+        Assert.Contains("novikov", output.ToString());
+    }
+
+    [Fact]
+    public async Task DemoPasswords_NoneOnBaseWithoutDemoData()
+    {
+        await using var demo = new AversApp();
+        await using var app = demo.WithWebHostBuilder(b => b.UseSetting("Avers:Database:SeedDemo", "false"));
+        await AdminCommands.SetPasswordAsync(app.Services, "admin", new StringReader("Пароль-админа-1\n"));
+
+        var code = await AdminCommands.DemoPasswordsAsync(app.Services, new StringWriter());
+
+        Assert.Equal(0, code);
+    }
+
     [Theory]
     [InlineData("nobody", "достаточно-длинный", 1)]
     [InlineData("orlov", "12345", 2)]
