@@ -81,6 +81,13 @@ tests/
 | [0006](adr/0006-1c-integration.md) | Обмен с 1С: Аверс — источник начислений и оплат, 1С получает сводные документы |
 | [0007](adr/0007-reports-xlsx-pdf.md) | Отчёты: XLSX (ClosedXML) и PDF |
 | [0008](adr/0008-windows7-terminal-server.md) | Windows 7 и 8 — через терминальный сервер Linux с xrdp |
+| [0009](adr/0009-scheme-images-in-database.md) | Картинки схем СКПТ хранятся в PostgreSQL |
+| [0010](adr/0010-accruals-and-payments.md) | Начисление и платёж — отдельные записи, много платежей на месяц, отмена пометкой, знаковое сальдо |
+| [0011](adr/0011-concurrent-edits.md) | Одновременная правка: столбец `Version`, при конфликте 409; деньги — атомарно с блокировкой |
+| [0012](adr/0012-office-https-and-first-install.md) | HTTPS и в офисе (Caddy `tls internal`), Kestrel только 127.0.0.1, первый администратор командой, без учебных данных на сервере |
+| [0013](adr/0013-backups-and-restore-check.md) | Резервные копии: ночной `pg_dump`, копия перед обновлением и на другой компьютер, еженедельная проверка восстановления |
+| [0014](adr/0014-api-contract-and-desktop-updates.md) | По сети — только DTO из `Avers.Contracts`, тесты формы JSON, правила `DesktopClient.Version`; автообновление (Velopack) — предложено |
+| [0015](adr/0015-demands-loading.md) | Заявки — не в снимке, а запросами по фильтру; сводка считается на сервере |
 
 ## Сквозные вопросы
 
