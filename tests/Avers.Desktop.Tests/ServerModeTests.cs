@@ -138,7 +138,23 @@ public sealed class ServerModeTests : IAsyncDisposable
         {
             await base.DisposeAsync();
             SqliteConnection.ClearAllPools();
-            File.Delete(_databaseFile);
+            // На Windows файл ещё может держать запрос, который программа запустила в фоне после входа:
+            // удаление временного файла не должно ронять тест, проверки которого уже прошли.
+            for (var attempt = 0; File.Exists(_databaseFile); attempt++)
+            {
+                try
+                {
+                    File.Delete(_databaseFile);
+                }
+                catch (IOException) when (attempt < 10)
+                {
+                    await Task.Delay(200);
+                }
+                catch (IOException)
+                {
+                    break;
+                }
+            }
         }
     }
 }
