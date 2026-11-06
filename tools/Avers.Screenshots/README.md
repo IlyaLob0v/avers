@@ -9,4 +9,4 @@ dotnet run --project tools/Avers.Screenshots -- shots sokolova Desktop Disp
 dotnet run --project tools/Avers.Screenshots -- shots admin Abon --size=1366x768   # размер окна
 ```
 
-Подробнее — скилл `.claude/skills/avers-ui`.
+Снимки для документации лежат в `docs/images/`.

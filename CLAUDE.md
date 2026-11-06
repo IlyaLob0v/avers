@@ -22,7 +22,14 @@ Claude отвечает на `@claude` в issue и PR — `.github/workflows/cla
 В сообщениях коммитов и описаниях PR не упоминай Claude и ИИ: без строк `Co-Authored-By`, `Claude-Session`,
 «Generated with Claude Code» и ссылок на сессии.
 
-Обзор: `docs/00-index.md`. Архитектура: `docs/03-architecture.md`. Решения: `docs/adr/`.
+Обзор: `docs/README.md`. Архитектура: `docs/03-architecture.md`. Решения: `docs/adr/`.
+
+## Документация
+
+Каждое изменение в коде сопровождается правкой документации в том же PR: строка в `CHANGELOG.md`
+(раздел «Готовится»), раздел `docs/user-guide/` при изменении экранов или порядка работы, `docs/10-traceability.md`
+и `docs/05-roadmap.md`, если сделано требование. Порядок — `docs/development.md#как-вносить-изменения`.
+Тон — как в руководстве для сотрудников: без рабочих заметок, дат «сделано» и упоминаний инструментов разработки.
 
 ## Язык
 
