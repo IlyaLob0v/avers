@@ -57,6 +57,7 @@ public static class Policies
     public const string UsersManage = "users.manage";
     public const string CourtCasesEdit = "court-cases.edit";
     public const string LegalView = "legal.view";
+    public const string ReportsAccounting = "reports.accounting";
 
     public static void Add(AuthorizationOptions options)
     {
@@ -96,6 +97,9 @@ public static class Policies
         options.AddPolicy(PaymentsCancel, p => p.RequireAuthenticatedUser()
             .RequireRole(nameof(UserRole.Administrator), nameof(UserRole.AdsHead)));
         options.AddPolicy(PaymentsImport, p => p.RequireAuthenticatedUser()
+            .RequireRole(nameof(UserRole.Administrator), nameof(UserRole.AdsHead)));
+        // Итоги месяца для 1С — администратор и начальник АДС; роль бухгалтерии ждёт ответа (Q-21).
+        options.AddPolicy(ReportsAccounting, p => p.RequireAuthenticatedUser()
             .RequireRole(nameof(UserRole.Administrator), nameof(UserRole.AdsHead)));
         options.AddPolicy(UsersManage, p => p.RequireAuthenticatedUser().RequireRole(nameof(UserRole.Administrator)));
     }

@@ -91,6 +91,20 @@ public class DesktopTests
         Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync(url)).StatusCode);
     }
 
+    [Theory]
+    [InlineData("admin", HttpStatusCode.OK)]
+    [InlineData("orlov", HttpStatusCode.OK)]
+    [InlineData("lawyer", HttpStatusCode.Forbidden)]
+    [InlineData("sokolova", HttpStatusCode.Forbidden)]
+    public async Task Accounting_OnlyForAdministratorAndAdsHead(string login, HttpStatusCode expected)
+    {
+        // Q-21: до ответа бухгалтерии итоги месяца для 1С видят только администратор и начальник АДС.
+        await using var app = new AversApp();
+        var client = await app.LoginAsync(login);
+
+        Assert.Equal(expected, (await client.GetAsync("/api/reports/accounting?year=2026&month=8")).StatusCode);
+    }
+
     [Fact]
     public async Task Debts_MatchBillingOfEachSubscriber()
     {
