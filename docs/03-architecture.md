@@ -171,21 +171,25 @@ tests/
 | ADR-0010: знаковое сальдо, аванс | `Debt = max(0, …)`, аванса нет (`src/Avers.Domain/Billing.cs`) | `Balance`, `Debt`, `Advance` |
 | ADR-0010/0011: деньги — транзакция с блокировкой строки абонента | `Payments.Record` — условный `UPDATE` без блокировки абонента (`src/Avers.Data/Payments.cs`); загрузка ОЭК ставит оплату без условия «месяц не оплачен» в `UPDATE` и может затереть оплату кассира, внесённую во время загрузки (`src/Avers.Data/OekImport.cs`) | `SELECT … FOR UPDATE` строки абонента в операциях оплаты, отмены и загрузок; тест на два одновременных писателя |
 | ADR-0011: столбец `Version`, ответ 409 | Столбца нет ни у одной сущности, маркеров параллелизма нет (`src/Avers.Data/AversDbContext.cs`) | Миграция, проверка версии в операциях записи, `Version` в DTO, поднять `DesktopClient.Version` |
-| ADR-0012: Kestrel только `127.0.0.1`, HTTPS в офисе | `ASPNETCORE_URLS=http://0.0.0.0:5115` и `ufw allow 5115` (`deploy/server/install.sh`); у Caddy только интернет-сайт `/m/` (`deploy/server/avers-internet`) | `127.0.0.1:5115`, закрыть 5115, офисный сайт Caddy с `tls internal`, шаг с корневым сертификатом в `docs/09-server.md` и `deploy/xrdp` |
-| ADR-0012: учебные данные только в Development и `--demo` | `SeedDemo` срабатывает в любой среде, если включён в настройках (`src/Avers.Server/Hosting/Database.cs`); Desktop без адреса сервера или с ошибкой в адресе открывает учебную базу (`src/Avers.Desktop/App.axaml.cs`) | Проверять среду при `SeedDemo`; Desktop без адреса просит адрес, учебная база — только с `--demo` |
-| ADR-0013: копии на другой компьютер, перед обновлением, проверка восстановления | `pg_dump` из `cron.daily`, 30 дней жёстко, только на этом сервере (`deploy/server/avers-backup`); обновление копию не делает (`deploy/server/install.sh`) | `AVERS_BACKUP_DAYS`, `AVERS_BACKUP_REMOTE`, копия перед обновлением, еженедельная проверка, ключи и данные Caddy в копии |
+| ADR-0012: учебные данные только в Development | `SeedDemo` срабатывает в любой среде, если включён в настройках; на PostgreSQL сервер только предупреждает в журнале (`src/Avers.Server/Hosting/Database.cs`) | Отказ запускаться с `SeedDemo` вне Development |
 | ADR-0014: по сети — только DTO | Снимок отдаёт `AversSnapshot` из `Avers.Data` с классами `Avers.Domain` (`src/Avers.Server/Desktop/DesktopEndpoints.cs`); должники и отчёт для 1С — классы `Debts`, `AccountingReport` (`src/Avers.Server/Subscribers/SubscriberEndpoints.cs`) | DTO в `Avers.Contracts` и тесты формы JSON — сначала снимок, должники, отчёт для 1С |
 | ADR-0016: долгие задачи в `Avers.Worker` | Службы нет; файл ОЭК грузится внутри HTTP-запроса (`src/Avers.Server/Subscribers/PaymentEndpoints.cs`, `ImportOek`); в `deploy/server` только `avers-server.service` | Проект `Avers.Worker`, таблица заданий, `avers-worker.service`, установка в `install.sh`, загрузка ОЭК — заданием |
 
 Уже сделано по ADR-0012: вход из интернета — только с ролью Читатель (`src/Avers.Server/Auth/AuthEndpoints.cs`),
-первый администратор — командой `avers-password` (`src/Avers.Server/Hosting/AdminCommands.cs`), установщик убирает `SeedDemo`.
+первый администратор — командой `avers-password` (`src/Avers.Server/Hosting/AdminCommands.cs`), установщик убирает `SeedDemo`;
+Kestrel слушает `127.0.0.1:5115`, офис — HTTPS через Caddy с `tls internal`, корневой сертификат — `install-root-cert.cmd`
+и `deploy/xrdp/install.sh` (`deploy/server/install.sh`); Desktop без адреса сервера не открывает учебную базу, она — только
+с ключом `--demo` (`src/Avers.Desktop/Data/ServerAddress.cs`). По ADR-0013 сделано: копии по таймеру со сроком
+`AVERS_BACKUP_DAYS`, перенос на другой компьютер, копия перед обновлением, ключи и данные Caddy в копии, еженедельная
+проверка восстановления (`deploy/server/avers-backup`, `avers-restore-check`).
 По ADR-0015 сделано: заявки запросами по фильтру, сводка в базе (`src/Avers.Data/TicketQueries.cs`).
 `DesktopClient.Version` сейчас 3 (`src/Avers.Contracts/DesktopClient.cs`); переходы по ADR-0010, 0011 и 0016 его поднимают.
 
 ## Дальше
 
-Решено, но не сделано — см. таблицу выше: модель платежей (ADR-0010), версии записей (ADR-0011), HTTPS в офисе
-и закрытый порт Kestrel (ADR-0012), резервные копии (ADR-0013), DTO и тесты формы JSON (ADR-0014), фоновая служба и перенос в неё загрузки ОЭК (ADR-0016).
+Решено, но не сделано — см. таблицу выше: модель платежей (ADR-0010), версии записей (ADR-0011), отказ от учебных
+данных вне Development (ADR-0012), DTO и тесты формы JSON (ADR-0014),
+фоновая служба и перенос в неё загрузки ОЭК (ADR-0016).
 
 Решено, этап впереди: загрузка банковских реестров DBF — перенос ImportPay в фоновую службу (ADR-0016), прямой обмен
 с 1С по OData (ADR-0006, ждёт ответов бухгалтерии, Q-05), перенос данных из JACK (ADR-0005, `docs/04-db-migration-plan.md`).
