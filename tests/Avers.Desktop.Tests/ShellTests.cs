@@ -32,6 +32,22 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public async Task Find_ByCallerPhone_OpensApartment()
+    {
+        using var app = new DesktopApp("sokolova");
+        app.Go(AppModule.Abon);
+        var radio = app.Window.GetVisualDescendants().OfType<RadioButton>().Single(r => r.IsEffectivelyVisible && Equals(r.Content, "Телефону"));
+        radio.Command!.Execute(radio.CommandParameter);
+
+        app.Vm.FindQuery = "+7 983 623-31-22";
+        await app.Vm.FindCommand.ExecuteAsync(null);
+
+        Assert.Equal(SearchMode.Phone, app.Vm.SearchMode);
+        Assert.Equal(DemoSeeder.StartAccount, app.Vm.SelectedSubscriber!.Account);
+        Assert.StartsWith("Найден Иванова Мария Петровна", app.Vm.Status);
+    }
+
+    [AvaloniaFact]
     public void ClosedModule_DoesNotOpen()
     {
         using var app = new DesktopApp("lawyer");

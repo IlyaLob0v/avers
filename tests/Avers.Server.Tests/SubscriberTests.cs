@@ -73,6 +73,29 @@ public class SubscriberTests
         Assert.Equal("180090", Assert.Single(found!).Account);
     }
 
+    [Theory]
+    [InlineData("8-983-623-3122")]
+    [InlineData("+7 (983) 623-31-22")]
+    [InlineData("6233122")]
+    public async Task Search_ByPhone_IgnoresFormatAndCountryCode(string phone)
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("sokolova");
+
+        var found = await client.GetFromJsonAsync<List<SubscriberListItem>>($"/api/subscribers?mode=Phone&q={Uri.EscapeDataString(phone)}");
+
+        Assert.Equal("1932068", Assert.Single(found!).Account);
+    }
+
+    [Fact]
+    public async Task Search_ByPhone_TooFewDigits_Returns400()
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("admin");
+
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync("/api/subscribers?mode=Phone&q=31-22")).StatusCode);
+    }
+
     [Fact]
     public async Task Search_ShortSurname_MatchesWholeSurnameOnly()
     {
