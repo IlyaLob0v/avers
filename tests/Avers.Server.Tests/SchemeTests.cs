@@ -1,7 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using Avers.Contracts;
+using Avers.Data;
 using Avers.Domain;
+using Avers.Server.Desktop;
+using SkiaSharp;
 
 namespace Avers.Server.Tests;
 
@@ -34,9 +37,87 @@ public class SchemeTests
         Assert.True(scheme.HasImage);
         Assert.Equal("PNG", scheme.Format);
         Assert.Equal(AversApp.Today, scheme.UpdatedAt);
-        var image = await mechanic.GetAsync($"/api/mobile/schemes/{scheme.Id}");
+        var image = await engineer.GetAsync($"/api/schemes/{scheme.Id}/file");
         Assert.Equal("image/png", image.Content.Headers.ContentType!.MediaType);
         Assert.Equal(Png, await image.Content.ReadAsByteArrayAsync());
+    }
+
+    [Fact]
+    public async Task Reader_GetsWatermarkedPicture_NotSourceFile()
+    {
+        await using var app = new AversApp();
+        var engineer = await app.LoginAsync("engineer");
+        var reader = await app.LoginAsync("novikov");
+        var scheme = (await HouseAsync(engineer, "Ленина", "44")).Schemes.Single();
+        var source = await app.WithDbAsync(db => Task.FromResult(SchemeFiles.Content(db, scheme.Id)!));
+
+        var original = await engineer.GetAsync($"/api/schemes/{scheme.Id}/file");
+        var screen = await reader.GetAsync($"/api/schemes/{scheme.Id}/file");
+
+        Assert.Equal(source, await original.Content.ReadAsByteArrayAsync());
+        Assert.Equal(HttpStatusCode.OK, screen.StatusCode);
+        AssertWatermarked(source, await screen.Content.ReadAsByteArrayAsync());
+    }
+
+    [Theory]
+    [InlineData("novikov")]
+    [InlineData("engineer")]
+    public async Task MobileScheme_IsAlwaysWatermarked(string login)
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync(login);
+        var scheme = (await HouseAsync(client, "Ленина", "44")).Schemes.Single();
+        var source = await app.WithDbAsync(db => Task.FromResult(SchemeFiles.Content(db, scheme.Id)!));
+
+        var image = await client.GetAsync($"/api/mobile/schemes/{scheme.Id}");
+
+        Assert.Equal(HttpStatusCode.OK, image.StatusCode);
+        AssertWatermarked(source, await image.Content.ReadAsByteArrayAsync());
+    }
+
+    [Fact]
+    public void Watermark_TurnsPhonePhotoUpright()
+    {
+        // Снимок 40 × 20: левая половина красная, правая синяя; в EXIF «повернуть на 90° по часовой» (Orientation = 6).
+        using var bitmap = new SKBitmap(40, 20);
+        using (var canvas = new SKCanvas(bitmap))
+        {
+            canvas.Clear(SKColors.Blue);
+            canvas.DrawRect(0, 0, 20, 20, new SKPaint { Color = SKColors.Red });
+        }
+        var jpeg = bitmap.Encode(SKEncodedImageFormat.Jpeg, 95).ToArray();
+        byte[] exif =
+        [
+            0xFF, 0xE1, 0x00, 0x22, (byte)'E', (byte)'x', (byte)'i', (byte)'f', 0, 0,
+            (byte)'M', (byte)'M', 0x00, 0x2A, 0, 0, 0, 8,
+            0x00, 0x01, 0x01, 0x12, 0x00, 0x03, 0, 0, 0, 1, 0x00, 0x06, 0, 0,
+            0, 0, 0, 0,
+        ];
+        var photo = jpeg[..2].Concat(exif).Concat(jpeg[2..]).ToArray();
+
+        using var result = SKBitmap.Decode(SchemeWatermark.Apply(photo, "JPEG", "Аверс · test · 09.11.2026 10:00"));
+
+        Assert.Equal((20, 40), (result.Width, result.Height));
+        var top = result.GetPixel(10, 5);
+        var bottom = result.GetPixel(10, 35);
+        Assert.True(top.Red > top.Blue, $"Сверху {top}");
+        Assert.True(bottom.Blue > bottom.Red, $"Снизу {bottom}");
+    }
+
+    /// <summary>Картинка того же размера, но с нарисованным поверх знаком: часть точек отличается от исходника.</summary>
+    private static void AssertWatermarked(byte[] source, byte[] received)
+    {
+        Assert.NotEqual(source, received);
+        using var before = SKBitmap.Decode(source);
+        using var after = SKBitmap.Decode(received);
+        Assert.NotNull(after);
+        Assert.Equal((before.Width, before.Height), (after.Width, after.Height));
+        var changed = 0;
+        for (var y = 0; y < before.Height; y += 2)
+            for (var x = 0; x < before.Width; x += 2)
+                if (before.GetPixel(x, y) != after.GetPixel(x, y))
+                    changed++;
+        Assert.True(changed > 100, $"Изменено точек: {changed}");
     }
 
     [Fact]

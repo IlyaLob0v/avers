@@ -51,15 +51,19 @@ public static class Policies
     public const string SettingsEdit = "settings.edit";
     public const string HousesView = "houses.view";
     public const string HousesEdit = "houses.edit";
-    public const string SchemesView = "schemes.view";
+    public const string SchemesScreen = "schemes.screen";
     public const string SchemesEdit = "schemes.edit";
     public const string PhonebookEdit = "phonebook.edit";
     public const string UsersManage = "users.manage";
     public const string CourtCasesEdit = "court-cases.edit";
     public const string LegalView = "legal.view";
+    public const string ReportsAccounting = "reports.accounting";
 
     public static void Add(AuthorizationOptions options)
     {
+        // Адрес без своей политики требует вход. Без входа открыты только помеченные AllowAnonymous (вход, /health)
+        // и страница /m/: статику отдаёт UseStaticFiles раньше проверки прав.
+        options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
         options.AddPolicy(SubscribersView, p => p.RequireAuthenticatedUser()
             .AddRequirements(new ModuleAccessRequirement(AppModule.Abon, AccessLevel.View)));
         options.AddPolicy(PaymentsCreate, p => p.RequireAuthenticatedUser()
@@ -75,8 +79,9 @@ public static class Policies
             .AddRequirements(new ModuleAccessRequirement(AppModule.Anten, AccessLevel.View)));
         options.AddPolicy(HousesEdit, p => p.RequireAuthenticatedUser()
             .AddRequirements(new ModuleAccessRequirement(AppModule.Anten, AccessLevel.Edit)));
-        options.AddPolicy(SchemesView, p => p.RequireAuthenticatedUser()
-            .AddRequirements(new ModuleAccessRequirement(AppModule.Scheme, AccessLevel.View)));
+        // Смотреть схему может и роль «только на экране», но ей сервер отдаёт картинку с водяным знаком.
+        options.AddPolicy(SchemesScreen, p => p.RequireAuthenticatedUser()
+            .AddRequirements(new ModuleAccessRequirement(AppModule.Scheme, AccessLevel.ScreenOnly)));
         options.AddPolicy(SchemesEdit, p => p.RequireAuthenticatedUser()
             .AddRequirements(new ModuleAccessRequirement(AppModule.Scheme, AccessLevel.Edit)));
         options.AddPolicy(PhonebookEdit, p => p.RequireAuthenticatedUser()
@@ -93,6 +98,9 @@ public static class Policies
             .RequireRole(nameof(UserRole.Administrator), nameof(UserRole.AdsHead)));
         options.AddPolicy(PaymentsImport, p => p.RequireAuthenticatedUser()
             .RequireRole(nameof(UserRole.Administrator), nameof(UserRole.AdsHead)));
+        // Итоги месяца для 1С — администратор и начальник АДС; роль бухгалтерии ждёт ответа (Q-21).
+        options.AddPolicy(ReportsAccounting, p => p.RequireAuthenticatedUser()
+            .RequireRole(nameof(UserRole.Administrator), nameof(UserRole.AdsHead)));
         options.AddPolicy(UsersManage, p => p.RequireAuthenticatedUser().RequireRole(nameof(UserRole.Administrator)));
     }
 
@@ -107,9 +115,11 @@ public static class Policies
     {
         if (!Can(role, module, out var level))
             return false;
+        // «Только на экране» — не просмотр: исходный файл такой роли не отдаётся (REQ-MECH-02).
         return minimum switch
         {
             AccessLevel.Edit => level == AccessLevel.Edit,
+            AccessLevel.View => level is AccessLevel.View or AccessLevel.Edit,
             _ => true
         };
     }

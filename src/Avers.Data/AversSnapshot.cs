@@ -7,7 +7,7 @@ namespace Avers.Data;
 /// Всё, что настольная программа держит в памяти после входа. Таблицы читаются плоско, по сети
 /// уходят без связей, а связываются по ключам в <see cref="Link"/> уже на месте.
 /// Абонентов со счетами здесь нет: их грузят по дому (<see cref="HouseSubscribers"/>).
-/// Заявки получает только тот, кому они положены по роли, вместе с абонентами этих заявок.
+/// Заявки (и заявки по домофонам) получает только тот, кому они положены по роли, вместе с абонентами этих заявок.
 /// </summary>
 public sealed class AversSnapshot
 {
@@ -36,13 +36,17 @@ public sealed class AversSnapshot
             Houses = db.Houses.AsNoTracking().ToList(),
             Schemes = db.HouseSchemes.AsNoTracking().ToList(),
             Ppr = db.PprEntries.AsNoTracking().ToList(),
-            Intercoms = db.IntercomPanels.AsNoTracking().ToList(),
-            IntercomTickets = db.IntercomTickets.AsNoTracking().OrderByDescending(x => x.Date).ToList(),
-            Mechanics = db.Mechanics.AsNoTracking().OrderBy(x => x.FullName).ToList(),
-            Materials = db.Materials.AsNoTracking().ToList()
+            Intercoms = db.IntercomPanels.AsNoTracking().ToList()
         };
+        // Радиомеханики (телефоны, адреса) и материалы нужны заявкам и словарю; Читателю и юристу — нет.
+        if (RoleCatalog.Can(role, AppModule.Disp, out _) || RoleCatalog.Can(role, AppModule.Phonebook, out _))
+        {
+            snapshot.Mechanics = db.Mechanics.AsNoTracking().OrderBy(x => x.FullName).ToList();
+            snapshot.Materials = db.Materials.AsNoTracking().ToList();
+        }
         if (RoleCatalog.Can(role, AppModule.Disp, out _))
         {
+            snapshot.IntercomTickets = db.IntercomTickets.AsNoTracking().OrderByDescending(x => x.Date).ToList();
             snapshot.Tickets = db.Tickets.AsNoTracking().ToList();
             if (RoleCatalog.Can(role, AppModule.Abon, out _))
                 snapshot.Subscribers = db.Subscribers.AsNoTracking().Where(s => s.Tickets.Any()).ToList();
