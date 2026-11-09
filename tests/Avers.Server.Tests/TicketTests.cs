@@ -54,6 +54,22 @@ public class TicketTests
     }
 
     [Fact]
+    public async Task List_OnlyOverdue_MatchesOpenTicketsPastDue()
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("orlov");
+        var day = new DateOnly(2026, 11, 9);
+
+        var open = await client.GetFromJsonAsync<List<TicketDto>>("/api/tickets?open=true");
+        var overdue = await client.GetFromJsonAsync<List<TicketDto>>("/api/tickets?overdueOn=2026-11-09");
+
+        var expected = open!.Where(t => t.Status is "Accepted" or "InProgress" && t.Date.AddDays(TicketJournal.DueDays) < day)
+            .Select(t => t.Id).Order().ToList();
+        Assert.NotEmpty(expected);
+        Assert.Equal(expected, overdue!.Select(t => t.Id).Order().ToList());
+    }
+
+    [Fact]
     public async Task ByMonth_GivesTwelveMonths()
     {
         await using var app = new AversApp();

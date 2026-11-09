@@ -224,6 +224,7 @@ public sealed class ServerStore(HttpClient http) : IAversStore
             ["kind"] = f.Kind?.ToString(),
             ["status"] = f.Status?.ToString(),
             ["open"] = f.OnlyOpen ? "true" : null,
+            ["overdueOn"] = f.OverdueOn?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             ["q"] = f.Text
         };
         return (await Read<List<TicketDto>>(() => http.GetAsync("api/tickets" + Query(query)))).Select(ToTicket).ToList();

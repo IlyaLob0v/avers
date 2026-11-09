@@ -22,8 +22,6 @@ public sealed partial class MainViewModel : ObservableObject
     private Dictionary<int, decimal> _debtByHouse = [];
     /// <summary>Видит ли сотрудник заявки (модуль «Заявки»): только тогда программа их запрашивает.</summary>
     private bool _seesTickets;
-    /// <summary>Заявки, принятые сегодня: принято и выполнено — для предупреждения о списке ОЭК.</summary>
-    private (int Accepted, int Done) _todayTickets;
     private int? _houseTicketsOf;
     private int _houseTicketsVersion;
     private List<IntercomTicket> _intercomTickets = [];
@@ -140,17 +138,6 @@ public sealed partial class MainViewModel : ObservableObject
         ? Money(p.Tariff)
         : "";
     public string PaymentsCaption => $"Платежи {_today.Year} · тариф / отв. / сумма / дата опл.";
-    public string OekWarning
-    {
-        get
-        {
-            var (accepted, done) = _todayTickets;
-            return accepted > done
-                ? $"На {_today:dd.MM.yyyy} принято {accepted}, выполнено {done}. Список для ОЭК скрыт."
-                : $"На {_today:dd.MM.yyyy} принято {accepted}, выполнено {done}. Можно выгрузить список для ОЭК.";
-        }
-    }
-
     public string HouseCaption => SelectedHouse is null ? "" : SelectedHouse.AddressLine;
     public string HouseStats => SelectedHouse is null ? "" :
         $"{SelectedHouse.Floors} этажей · {SelectedHouse.Entrances} подъезда · {SelectedHouse.Risers} стояков · {SelectedHouse.Apartments} кв. · зона {SelectedHouse.Zone} · {(SelectedHouse.Serviced ? "на обслуживании" : "снят")} · индекс {SelectedHouse.PzhreuIndex} · счёт {SelectedHouse.PzhreuAccount}";
@@ -226,7 +213,7 @@ public sealed partial class MainViewModel : ObservableObject
         // force: журнал мог уже начать грузиться при выборе дома, здесь нужно дождаться ответа.
         await TicketsScreen.RefreshTicketsAsync(force: true);
         TicketsScreen.SelectedTicket ??= TicketsScreen.Tickets.FirstOrDefault(t => t.Number == DemoSeeder.StartTicket);
-        await LoadTodayTicketsAsync();
+        await TicketsScreen.LoadOekDayAsync();
     }
 
     /// <summary>
@@ -238,7 +225,7 @@ public sealed partial class MainViewModel : ObservableObject
         await TicketsScreen.RefreshTicketsAsync(force: true);
         await LoadHouseTicketsAsync(force: true);
         await LoadApartmentTicketsAsync(force: true);
-        await LoadTodayTicketsAsync();
+        await TicketsScreen.LoadOekDayAsync();
     }
 
     /// <summary>Перед входом: заявки прежнего сотрудника забываются, всё запрашивается заново.</summary>
@@ -249,7 +236,6 @@ public sealed partial class MainViewModel : ObservableObject
         _houseTicketsOf = null;
         _apartmentTickets = [];
         _apartmentTicketsOf = null;
-        _todayTickets = (0, 0);
         HouseOpenTickets = 0;
     }
 
@@ -295,21 +281,6 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var t in list)
             HouseTickets.Add(t);
         TicketsScreen.NotifyTicketPanel();
-    }
-
-    private async Task LoadTodayTicketsAsync()
-    {
-        if (!_seesTickets) return;
-        try
-        {
-            var today = await _store.LoadTicketsByHouseAsync(_today, _today);
-            _todayTickets = (today.Sum(s => s.Accepted), today.Sum(s => s.Done));
-        }
-        catch (StoreException e)
-        {
-            Status = e.Message;
-        }
-        OnPropertyChanged(nameof(OekWarning));
     }
 
     /// <summary>Загружает абонентов выбранного дома и выбирает квартиру: нужную, учебную стартовую или первую.</summary>
@@ -479,7 +450,6 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ReceiptSumText));
         OnPropertyChanged(nameof(HasDebt));
         OnPropertyChanged(nameof(ToPayText));
-        OnPropertyChanged(nameof(OekWarning));
         OnPropertyChanged(nameof(HouseCaption));
         OnPropertyChanged(nameof(HouseStats));
         OnPropertyChanged(nameof(WindowTitle));

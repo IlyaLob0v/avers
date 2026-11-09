@@ -117,6 +117,22 @@ public sealed class ServerModeTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task Oek_DayComesFromServer_AcceptedTicketCounts()
+    {
+        var vm = await SignIn("sokolova");
+        var screen = vm.TicketsScreen;
+        var before = screen.OekWarning;
+
+        screen.NewTicketFault = "Нет сигнала";
+        await screen.AcceptTicketCommand.ExecuteAsync(null);
+
+        // День ОЭК — сегодня; принятая заявка не выполнена, значит список скрыт и счёт другой.
+        Assert.Equal(screen.SelectedTicket!.Date, DateOnly.FromDateTime(screen.OekDate!.Value));
+        Assert.Contains("Список для ОЭК скрыт", screen.OekWarning);
+        Assert.NotEqual(before, screen.OekWarning);
+    }
+
+    [Fact]
     public async Task Reader_GetsNoSubscribers()
     {
         var vm = await SignIn("novikov");

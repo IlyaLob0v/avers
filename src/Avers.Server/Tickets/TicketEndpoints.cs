@@ -42,7 +42,7 @@ public static class TicketEndpoints
         ClaimsPrincipal user, AversDbContext db,
         DateOnly? from = null, DateOnly? to = null, int? year = null, int? month = null,
         int? houseId = null, string? apartment = null, int? subscriberId = null,
-        TicketKind? kind = null, TicketStatus? status = null, bool open = false, string? q = null)
+        TicketKind? kind = null, TicketStatus? status = null, bool open = false, DateOnly? overdueOn = null, string? q = null)
     {
         if (month is not null && year is null)
             return Invalid("month", "Месяц указывается вместе с годом.");
@@ -64,6 +64,7 @@ public static class TicketEndpoints
             Kind = kind,
             Status = status,
             OnlyOpen = open,
+            OverdueOn = overdueOn,
             Text = q
         };
         return TypedResults.Ok(ToDtos(TicketQueries.Page(db, filter), user));

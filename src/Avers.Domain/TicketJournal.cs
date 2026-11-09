@@ -17,6 +17,9 @@ public sealed record TicketFilter
     /// <summary>Только невыполненные (принятые, в работе, отложенные).</summary>
     public bool OnlyOpen { get; init; }
 
+    /// <summary>Только просроченные на этот день (<see cref="TicketJournal.IsOverdue"/>).</summary>
+    public DateOnly? OverdueOn { get; init; }
+
     /// <summary>Часть фамилии, неисправности, механика или номера заявки.</summary>
     public string? Text { get; init; }
 
@@ -31,6 +34,24 @@ public sealed record TicketMonthStat(int Month, int Accepted, int Done, int Open
 
 public static class TicketJournal
 {
+    /// <summary>Срок выполнения заявки, дней от приёма (Q-31).</summary>
+    public const int DueDays = 3;
+
+    public static DateOnly DueDate(WorkTicket ticket) => ticket.Date.AddDays(DueDays);
+
+    /// <summary>Срок прошёл, а заявка принята или в работе. Отложенная не просрочена: её отложили с причиной.</summary>
+    public static bool IsOverdue(WorkTicket ticket, DateOnly today) =>
+        ticket.Status is TicketStatus.Accepted or TicketStatus.InProgress && DueDate(ticket) < today;
+
+    /// <summary>
+    /// Список для ОЭК: заявки, принятые за день. Если выполнены не все — null, список не выводится (REQ-ADS-09, Q-02).
+    /// </summary>
+    public static IReadOnlyList<WorkTicket>? ForOek(IEnumerable<WorkTicket> tickets, DateOnly day)
+    {
+        var list = tickets.Where(t => t.Date == day).OrderBy(t => t.Time).ThenBy(t => t.Number).ToList();
+        return list.All(t => t.Status == TicketStatus.Done) ? list : null;
+    }
+
     /// <summary>Применяет отбор. Работает и для запроса EF к базе, и для списка в памяти.</summary>
     public static IQueryable<WorkTicket> Apply(this IQueryable<WorkTicket> q, TicketFilter f)
     {
@@ -53,6 +74,11 @@ public static class TicketJournal
             q = q.Where(t => t.Status == status);
         if (f.OnlyOpen)
             q = q.Where(t => t.Status != TicketStatus.Done);
+        if (f.OverdueOn is { } day)
+        {
+            var acceptedBefore = day.AddDays(-DueDays);
+            q = q.Where(t => (t.Status == TicketStatus.Accepted || t.Status == TicketStatus.InProgress) && t.Date < acceptedBefore);
+        }
         if (!string.IsNullOrWhiteSpace(f.Text))
         {
             var text = f.Text.Trim().ToLower();

@@ -3,8 +3,10 @@ using System.Globalization;
 using System.Windows.Input;
 using Avers.Contracts;
 using Avers.Data;
+using Avers.Desktop.Controls;
 using Avers.Desktop.Data;
 using Avers.Desktop.Printing;
+using Avers.Desktop.Reports;
 using Avers.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -60,6 +62,8 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     [ObservableProperty] private TicketOption<TicketKind> _newTicketKind = null!;
     [ObservableProperty] private TicketOption<TicketStatus> _statusFilter = null!;
     [ObservableProperty] private bool _onlyOpenTickets;
+    [ObservableProperty] private bool _onlyOverdueTickets;
+    [ObservableProperty] private DateTime? _oekDate;
     [ObservableProperty] private DateTime? _ticketFrom;
     [ObservableProperty] private DateTime? _ticketTo;
     [ObservableProperty] private int _ticketYear;
@@ -114,6 +118,7 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         NewTicketKind = NewTicketKinds[0];
         StatusFilter = TicketStatuses[0];
         TicketYear = shell.Today.Year;
+        OekDate = shell.Today.ToDateTime(TimeOnly.MinValue);
         TicketFrom = new DateTime(shell.Today.Year, 1, 1);
         TicketTo = new DateTime(shell.Today.Year, 12, 31);
         _holdTicketRefresh = false;
@@ -124,6 +129,8 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     partial void OnKindFilterChanged(TicketOption<TicketKind> value) => RefreshTickets();
     partial void OnStatusFilterChanged(TicketOption<TicketStatus> value) => RefreshTickets();
     partial void OnOnlyOpenTicketsChanged(bool value) => RefreshTickets();
+    partial void OnOnlyOverdueTicketsChanged(bool value) => RefreshTickets();
+    partial void OnOekDateChanged(DateTime? value) => _ = LoadOekDayAsync();
     partial void OnTicketFromChanged(DateTime? value) => RefreshTickets();
     partial void OnTicketToChanged(DateTime? value) => RefreshTickets();
     partial void OnTicketSearchChanged(string value) => RefreshTickets();
@@ -139,7 +146,9 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         get
         {
             var done = Tickets.Count(t => t.Status == TicketStatus.Done);
-            return $"Всего заявок: {Tickets.Count} · выполнено {done} · не выполнено {Tickets.Count - done}";
+            var overdue = Tickets.Count(t => TicketJournal.IsOverdue(t, shell.Today));
+            return $"Всего заявок: {Tickets.Count} · выполнено {done} · не выполнено {Tickets.Count - done}"
+                   + (overdue > 0 ? $" · просрочено {overdue}" : "");
         }
     }
 
@@ -180,6 +189,14 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         TicketStatus.Accepted => "принята",
         _ => ""
     };
+    /// <summary>Просроченные заявки в журнале — красные.</summary>
+    public Func<object?, RowTone> TicketTone => item =>
+        item is WorkTicket t && TicketJournal.IsOverdue(t, shell.Today) ? RowTone.Debt : RowTone.None;
+
+    public string TicketDueText => SelectedTicket is not { } ticket ? ""
+        : $"до {TicketJournal.DueDate(ticket):dd.MM.yyyy}" + (IsSelectedTicketOverdue ? ", просрочена" : "");
+    public bool IsSelectedTicketOverdue => SelectedTicket is { } t && TicketJournal.IsOverdue(t, shell.Today);
+
     public string TicketAcceptedBy => SelectedTicket?.AcceptedBy ?? "";
     public string TicketSubscriberName => TicketSubscriber?.FullName ?? "без лицевого счёта";
     public string TicketAccount => TicketSubscriber?.Account ?? "—";
@@ -250,6 +267,8 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     {
         _ticketsVersion++;
         _apartmentVersion++;
+        _oekVersion++;
+        _oekTickets = [];
         _loadedFor = null;
         _ticketApartment = null;
         SelectedTicket = null;
@@ -268,6 +287,7 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
             Kind = KindFilter?.Value,
             Status = StatusFilter?.Value,
             OnlyOpen = OnlyOpenTickets,
+            OverdueOn = OnlyOverdueTickets ? shell.Today : null,
             Text = TicketSearch
         };
         return ScopeFilter?.Value switch
@@ -386,6 +406,8 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         OnPropertyChanged(nameof(TicketZone));
         OnPropertyChanged(nameof(TicketKindText));
         OnPropertyChanged(nameof(TicketStatusText));
+        OnPropertyChanged(nameof(TicketDueText));
+        OnPropertyChanged(nameof(IsSelectedTicketOverdue));
         OnPropertyChanged(nameof(TicketAcceptedBy));
         OnPropertyChanged(nameof(CanEditSelectedTicket));
         OnPropertyChanged(nameof(CanAcceptTickets));
@@ -437,6 +459,61 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     {
         var f = TicketFilter.ForMonth(TicketYear, month);
         SetPeriod(f.From, f.To);
+    }
+
+    private DateOnly OekDay => OekDate is { } d ? DateOnly.FromDateTime(d) : shell.Today;
+    /// <summary>Заявки, принятые в <see cref="OekDay"/>: для предупреждения и списка ОЭК.</summary>
+    private List<WorkTicket> _oekTickets = [];
+    private int _oekVersion;
+
+    public string OekWarning
+    {
+        get
+        {
+            var done = _oekTickets.Count(t => t.Status == TicketStatus.Done);
+            return _oekTickets.Count == 0 ? $"За {OekDay:dd.MM.yyyy} заявок нет."
+                : _oekTickets.Count > done ? $"За {OekDay:dd.MM.yyyy} принято {_oekTickets.Count}, выполнено {done}. Список для ОЭК скрыт."
+                : $"За {OekDay:dd.MM.yyyy} принято {_oekTickets.Count}, выполнены все. Можно выгрузить список для ОЭК.";
+        }
+    }
+
+    /// <summary>Перечитывает заявки дня для ОЭК: при смене дня, после входа и после записи заявки.</summary>
+    public async Task LoadOekDayAsync()
+    {
+        var version = ++_oekVersion;
+        var day = OekDay;
+        List<WorkTicket> list = [];
+        if (shell.SeesTickets)
+        {
+            try
+            {
+                list = await shell.Store.LoadTicketsAsync(new TicketFilter { From = day, To = day });
+            }
+            catch (StoreException e)
+            {
+                shell.Status = e.Message;
+            }
+        }
+        if (version != _oekVersion) return;
+        _oekTickets = list;
+        OnPropertyChanged(nameof(OekWarning));
+    }
+
+    /// <summary>Список для ОЭК за выбранный день в Excel; при невыполненных заявках не выводится (Q-02).</summary>
+    [RelayCommand]
+    private async Task ExportOek()
+    {
+        var day = OekDay;
+        await LoadOekDayAsync();
+        if (TicketJournal.ForOek(_oekTickets, day) is not { Count: > 0 } list) { shell.Status = OekWarning; return; }
+        shell.Export($"заявки-для-оэк-за-{day:dd.MM.yyyy}", $"список для ОЭК за {day:dd.MM.yyyy}", path => XlsxTable.Write(path,
+            $"Заявки для ОЭК за {day:dd.MM.yyyy}",
+            ["№", "Время", "Адрес", "Кв.", "ФИО", "Неисправность", "Что сделано", "Выполнена", "Механик"],
+            list.Select(t => new object?[]
+            {
+                t.Number, t.Time.ToString("HH\\:mm"), shell.Houses.FirstOrDefault(h => h.Id == t.HouseId)?.AddressLine, t.Apartment,
+                t.Subscriber?.FullName, t.Fault, t.WorkDone, t.DoneDate?.ToString("dd.MM.yyyy"), t.Mechanic
+            })));
     }
 
     [RelayCommand]

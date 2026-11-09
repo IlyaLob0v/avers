@@ -120,4 +120,54 @@ public class TicketJournalTests
         Assert.Equal(TicketStatus.InProgress, t.Status);
         Assert.Null(t.DoneDate);
     }
+
+    [Theory]
+    [InlineData(TicketStatus.Accepted, "2026-01-08", false)]
+    [InlineData(TicketStatus.Accepted, "2026-01-09", true)]
+    [InlineData(TicketStatus.InProgress, "2026-01-09", true)]
+    [InlineData(TicketStatus.Deferred, "2026-01-09", false)]
+    [InlineData(TicketStatus.Done, "2026-01-09", false)]
+    public void Overdue_AfterDueDate_OnlyAcceptedOrInProgress(TicketStatus status, string today, bool overdue)
+    {
+        var ticket = T(1, new(2026, 1, 5), status: status);
+
+        Assert.Equal(new DateOnly(2026, 1, 8), TicketJournal.DueDate(ticket));
+        Assert.Equal(overdue, TicketJournal.IsOverdue(ticket, DateOnly.Parse(today)));
+    }
+
+    [Fact]
+    public void OverdueFilter_SameAsIsOverdue()
+    {
+        var today = new DateOnly(2026, 9, 3);
+
+        Assert.Equal(
+            Tickets.Where(t => TicketJournal.IsOverdue(t, today)).Select(t => t.Number).Order().ToArray(),
+            Numbers(new TicketFilter { OverdueOn = today }));
+        Assert.Equal([1, 3], Numbers(new TicketFilter { OverdueOn = today }));
+    }
+
+    [Fact]
+    public void Oek_AllDone_ListInTimeOrder()
+    {
+        var day = new DateOnly(2026, 8, 24);
+        List<WorkTicket> tickets =
+        [
+            T(7, day, status: TicketStatus.Done),
+            T(6, day, status: TicketStatus.Done),
+            T(8, day.AddDays(1))
+        ];
+        tickets[0].Time = new(15, 0);
+        tickets[1].Time = new(9, 30);
+
+        Assert.Equal([6, 7], TicketJournal.ForOek(tickets, day)!.Select(t => t.Number));
+    }
+
+    [Fact]
+    public void Oek_AcceptedMoreThanDone_Hidden()
+    {
+        var day = new DateOnly(2026, 8, 24);
+
+        Assert.Null(TicketJournal.ForOek([T(1, day, status: TicketStatus.Done), T(2, day)], day));
+        Assert.Empty(TicketJournal.ForOek([], day)!);
+    }
 }
