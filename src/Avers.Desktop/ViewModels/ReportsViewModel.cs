@@ -36,12 +36,14 @@ public sealed partial class ReportsViewModel(MainViewModel shell) : ObservableOb
     {
         OnPropertyChanged(nameof(ReportFromDate));
         RefreshReport();
+        _ = LoadTicketCountsAsync();
     }
 
     partial void OnReportToChanged(DateOnly value)
     {
         OnPropertyChanged(nameof(ReportToDate));
         RefreshReport();
+        _ = LoadTicketCountsAsync();
     }
 
     /// <summary>Метрики отчёта и их значения по всей базе за период; отметки «в отчёт» сохраняются.</summary>
@@ -59,8 +61,14 @@ public sealed partial class ReportsViewModel(MainViewModel shell) : ObservableOb
     /// <summary>Заявки за период по домам: сервер считает их, когда открывают отчёты или меняют период.</summary>
     internal async Task LoadTicketCountsAsync()
     {
-        if (!shell.SeesTickets) return;
         var version = ++_ticketCountsVersion;
+        if (!shell.SeesTickets)
+        {
+            // Счёт прежнего сотрудника с доступом к заявкам не показываем.
+            _ticketsByHouse = [];
+            RefreshReport();
+            return;
+        }
         List<TicketHouseStat> stats;
         try
         {

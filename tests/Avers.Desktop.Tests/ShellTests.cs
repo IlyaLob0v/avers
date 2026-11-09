@@ -285,6 +285,22 @@ public class ShellTests
     }
 
     [AvaloniaFact]
+    public void Report_NewPeriod_AsksTicketCountsAgain()
+    {
+        using var app = new DesktopApp();
+        app.Go(AppModule.Disp);
+        app.Vm.TicketsScreen.PeriodAllCommand.Execute(null);
+        app.Go(AppModule.Reports);
+        var august = app.Vm.TicketsScreen.Tickets.Where(t => t.Date.Year == 2026 && t.Date.Month == 8).ToList();
+
+        app.Vm.ReportsScreen.ReportFrom = new DateOnly(2026, 8, 1);
+        app.Vm.ReportsScreen.ReportTo = new DateOnly(2026, 8, 31);
+        app.Pump();
+
+        Assert.Equal(august.Count.ToString(), app.Vm.ReportsScreen.ReportMetrics.Single(m => m.Name == "Принято заявок").Value);
+    }
+
+    [AvaloniaFact]
     public void AcceptTicket_AppearsInJournalAndOnlyAuthorEdits()
     {
         using var app = new DesktopApp("orlova");

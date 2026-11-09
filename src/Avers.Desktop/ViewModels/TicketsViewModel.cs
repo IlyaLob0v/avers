@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Windows.Input;
 using Avers.Contracts;
 using Avers.Data;
@@ -213,7 +214,7 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     public string HouseHomeowner => shell.SelectedHouse?.Organization is { } o ? $"{o.Name}, {o.Branch}" : "не указан";
     public string HouseHomeownerPhones => shell.SelectedHouse?.Organization?.Phones ?? "";
     public string HouseOpenTickets => shell.SelectedHouse is null ? ""
-        : shell.HouseTickets.Count(t => t.Status != TicketStatus.Done).ToString();
+        : shell.HouseOpenTickets.ToString(CultureInfo.InvariantCulture);
 
     private string ScopeApartment => shell.SelectedSubscriber?.HouseId == shell.SelectedHouse?.Id && shell.SelectedSubscriber is not null
         ? shell.SelectedSubscriber.Apartment
@@ -296,9 +297,11 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         IReadOnlyList<TicketMonthStat> months;
         try
         {
-            rows = await shell.Store.LoadTicketsAsync(filter);
             // Помесячная сводка — за выбранный год, по тому же дому/квартире и виду, без отбора по датам.
-            months = await shell.Store.LoadTicketMonthsAsync(TicketYear, filter);
+            var rowsTask = shell.Store.LoadTicketsAsync(filter);
+            var monthsTask = shell.Store.LoadTicketMonthsAsync(TicketYear, filter);
+            rows = await rowsTask;
+            months = await monthsTask;
         }
         catch (StoreException e)
         {
@@ -390,8 +393,8 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         OnPropertyChanged(nameof(HasTicketRightsHint));
         NotifyTicketSubscriber();
         shell.NotifyWindowTitle();
-        if (_ticketApartment?.Id != SelectedTicket?.SubscriberId)
-            _ = LoadTicketApartmentAsync();
+        // Каждый раз заново: после оплаты в карточке последняя оплата квартиры уже другая.
+        _ = LoadTicketApartmentAsync();
     }
 
     private void NotifyTicketSubscriber()

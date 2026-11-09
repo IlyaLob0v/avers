@@ -223,7 +223,8 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (!_seesTickets) return;
         await TicketsScreen.LoadTicketYearsAsync();
-        await TicketsScreen.RefreshTicketsAsync(force: false);
+        // force: журнал мог уже начать грузиться при выборе дома, здесь нужно дождаться ответа.
+        await TicketsScreen.RefreshTicketsAsync(force: true);
         TicketsScreen.SelectedTicket ??= TicketsScreen.Tickets.FirstOrDefault(t => t.Number == DemoSeeder.StartTicket);
         await LoadTodayTicketsAsync();
     }
@@ -249,6 +250,7 @@ public sealed partial class MainViewModel : ObservableObject
         _apartmentTickets = [];
         _apartmentTicketsOf = null;
         _todayTickets = (0, 0);
+        HouseOpenTickets = 0;
     }
 
     /// <summary>Связывает строки заявок с домами снимка (улица, организация).</summary>
@@ -259,6 +261,9 @@ public sealed partial class MainViewModel : ObservableObject
             t.House = houses.GetValueOrDefault(t.HouseId) ?? t.House;
     }
 
+    /// <summary>Невыполненные заявки выбранного дома — отдельным запросом: в паспорт приходят только последние 1000.</summary>
+    internal int HouseOpenTickets { get; private set; }
+
     /// <summary>Заявки выбранного дома — для паспорта дома и числа невыполненных на экране приёма.</summary>
     private async Task LoadHouseTicketsAsync(bool force = false)
     {
@@ -267,11 +272,15 @@ public sealed partial class MainViewModel : ObservableObject
         _houseTicketsOf = house?.Id;
         var version = ++_houseTicketsVersion;
         List<WorkTicket> list = [];
+        var open = 0;
         if (house is not null && _seesTickets)
         {
             try
             {
-                list = await _store.LoadTicketsAsync(new TicketFilter { HouseId = house.Id });
+                var listTask = _store.LoadTicketsAsync(new TicketFilter { HouseId = house.Id });
+                var openTask = _store.LoadTicketsAsync(new TicketFilter { HouseId = house.Id, OnlyOpen = true });
+                list = await listTask;
+                open = (await openTask).Count;
             }
             catch (StoreException e)
             {
@@ -281,6 +290,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
         if (version != _houseTicketsVersion) return;
         LinkTickets(list);
+        HouseOpenTickets = open;
         HouseTickets.Clear();
         foreach (var t in list)
             HouseTickets.Add(t);

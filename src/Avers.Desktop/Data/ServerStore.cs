@@ -249,8 +249,11 @@ public sealed class ServerStore(HttpClient http) : IAversStore
         await Read<List<int>>(() => http.GetAsync("api/tickets/years"));
 
     public async Task<List<TicketHouseStat>> LoadTicketsByHouseAsync(DateOnly from, DateOnly to) =>
-        (await Read<List<TicketHouseCountDto>>(() => http.GetAsync(
-            $"api/tickets/by-house?from={from:yyyy-MM-dd}&to={to:yyyy-MM-dd}")))
+        (await Read<List<TicketHouseCountDto>>(() => http.GetAsync("api/tickets/by-house" + Query(new Dictionary<string, string?>
+        {
+            ["from"] = from.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            ["to"] = to.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+        }))))
         .Select(s => new TicketHouseStat(s.HouseId, s.Accepted, s.Done)).ToList();
 
     public async Task<Subscriber?> LoadTicketApartmentAsync(int ticketId)
