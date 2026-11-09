@@ -15,7 +15,7 @@ namespace Avers.Server.Tickets;
 /// </summary>
 public static class TicketEndpoints
 {
-    public const int MaxResults = 1000;
+    public const int MaxResults = TicketQueries.MaxResults;
 
     public static void MapTickets(this IEndpointRouteBuilder app)
     {
@@ -23,7 +23,10 @@ public static class TicketEndpoints
 
         api.MapGet("/tickets", List);
         api.MapGet("/tickets/by-month", ByMonth);
+        api.MapGet("/tickets/by-house", ByHouse);
+        api.MapGet("/tickets/years", (AversDbContext db, TimeProvider time) => TypedResults.Ok(TicketQueries.Years(db, time.Today())));
         api.MapGet("/tickets/{id:int}", Get);
+        api.MapGet("/tickets/{id:int}/apartment", Apartment).RequireAuthorization(Policies.SubscribersView).LogsView("Квартира заявки", AccessLogFilter.TicketSubscriber("id"));
         api.MapPost("/tickets", Create).RequireAuthorization(Policies.TicketsCreate);
         api.MapPut("/tickets/{id:int}", Update).RequireAuthorization(Policies.TicketsCreate);
         api.MapGet("/houses/{houseId:int}/tickets", ForHouse);
@@ -35,11 +38,11 @@ public static class TicketEndpoints
     /// Журнал: <c>from</c>/<c>to</c> или <c>year</c> (+ <c>month</c>), <c>houseId</c>, <c>apartment</c>,
     /// <c>subscriberId</c>, <c>kind</c> (Antenna, Cable…), <c>status</c>, <c>open=true</c>, <c>q</c> — текст.
     /// </summary>
-    private static async Task<Results<Ok<List<TicketDto>>, ValidationProblem>> List(
-        ClaimsPrincipal user, AversDbContext db, CancellationToken ct,
+    private static Results<Ok<List<TicketDto>>, ValidationProblem> List(
+        ClaimsPrincipal user, AversDbContext db,
         DateOnly? from = null, DateOnly? to = null, int? year = null, int? month = null,
         int? houseId = null, string? apartment = null, int? subscriberId = null,
-        TicketKind? kind = null, TicketStatus? status = null, bool open = false, string? q = null)
+        TicketKind? kind = null, TicketStatus? status = null, bool open = false, DateOnly? overdueOn = null, string? q = null)
     {
         if (month is not null && year is null)
             return Invalid("month", "Месяц указывается вместе с годом.");
@@ -61,57 +64,53 @@ public static class TicketEndpoints
             Kind = kind,
             Status = status,
             OnlyOpen = open,
+            OverdueOn = overdueOn,
             Text = q
         };
-        return TypedResults.Ok(await Load(db, filter, user, ct));
+        return TypedResults.Ok(ToDtos(TicketQueries.Page(db, filter), user));
     }
 
-    private static async Task<Ok<List<TicketDto>>> ForHouse(
-        int houseId, ClaimsPrincipal user, AversDbContext db, CancellationToken ct,
+    private static Ok<List<TicketDto>> ForHouse(
+        int houseId, ClaimsPrincipal user, AversDbContext db,
         DateOnly? from = null, DateOnly? to = null, TicketKind? kind = null) =>
-        TypedResults.Ok(await Load(db, new TicketFilter { HouseId = houseId, From = from, To = to, Kind = kind }, user, ct));
+        TypedResults.Ok(ToDtos(TicketQueries.Page(db, new TicketFilter { HouseId = houseId, From = from, To = to, Kind = kind }), user));
 
     /// <summary>Заявки конкретной квартиры (абонента) — для карточки квартиры.</summary>
-    private static async Task<Results<Ok<List<TicketDto>>, NotFound>> ForSubscriber(
-        int subscriberId, ClaimsPrincipal user, AversDbContext db, CancellationToken ct,
-        DateOnly? from = null, DateOnly? to = null)
-    {
-        var subscriber = await db.Subscribers.AsNoTracking().FirstOrDefaultAsync(s => s.Id == subscriberId, ct);
-        if (subscriber is null)
-            return TypedResults.NotFound();
+    private static Results<Ok<List<TicketDto>>, NotFound> ForSubscriber(
+        int subscriberId, ClaimsPrincipal user, AversDbContext db, DateOnly? from = null, DateOnly? to = null) =>
+        TicketQueries.ForApartment(db, subscriberId, from, to) is { } tickets
+            ? TypedResults.Ok(ToDtos(tickets, user))
+            : TypedResults.NotFound();
 
-        // Правило ApartmentTickets.For: свои заявки и принятые по адресу квартиры без абонента.
-        var apartment = subscriber.Apartment.Trim();
-        var tickets = await Query(db)
-            .Where(t => t.SubscriberId == subscriberId
-                        || (apartment != "" && t.SubscriberId == null && t.HouseId == subscriber.HouseId && t.Apartment == apartment))
-            .Apply(new TicketFilter { From = from, To = to })
-            .ToListAsync(ct);
-        return TypedResults.Ok(ToDtos(tickets, user));
-    }
+    private static Results<Ok<TicketDto>, NotFound> Get(int id, ClaimsPrincipal user, AversDbContext db) =>
+        TicketQueries.One(db, id) is { } ticket ? TypedResults.Ok(ToDto(ticket, user)) : TypedResults.NotFound();
 
-    private static async Task<Results<Ok<TicketDto>, NotFound>> Get(
-        int id, ClaimsPrincipal user, AversDbContext db, CancellationToken ct)
-    {
-        var ticket = await Query(db).FirstOrDefaultAsync(t => t.Id == id, ct);
-        return ticket is null ? TypedResults.NotFound() : TypedResults.Ok(ToDto(ticket, user));
-    }
+    /// <summary>Квартира заявки (REQ-ADS-15) — только для открытой заявки; принятая без абонента — 404.</summary>
+    private static Results<Ok<TicketApartmentDto>, NotFound> Apartment(int id, AversDbContext db) =>
+        TicketQueries.Apartment(db, id) is { } s
+            ? TypedResults.Ok(new TicketApartmentDto(s.Id, s.HouseId, s.LastName, s.FirstName, s.Patronymic, s.Account,
+                s.Section, s.Apartment, s.ContractNumber, s.ContractDate, s.ContractTerminated, s.ContractHolder,
+                s.LastPaymentDate, s.Notes, s.PzhreuIndex))
+            : TypedResults.NotFound();
 
-    private static async Task<Results<Ok<List<TicketMonthDto>>, ValidationProblem>> ByMonth(
-        AversDbContext db, TimeProvider time, CancellationToken ct,
-        int? year = null, int? houseId = null, TicketKind? kind = null)
+    /// <summary>Сводка за год по месяцам (REQ-ADS-14): база считает, по сети идут 12 строк.</summary>
+    private static Results<Ok<List<TicketMonthDto>>, ValidationProblem> ByMonth(
+        AversDbContext db, TimeProvider time,
+        int? year = null, int? houseId = null, string? apartment = null, TicketKind? kind = null)
     {
         var y = year ?? time.Today().Year;
         if (y is < 2000 or > 2100)
             return Invalid("year", "Год вне допустимого диапазона.");
 
-        var tickets = await db.Tickets.AsNoTracking()
-            .Apply(TicketFilter.ForYear(y) with { HouseId = houseId, Kind = kind })
-            .Select(t => new WorkTicket { Date = t.Date, Status = t.Status })
-            .ToListAsync(ct);
-        return TypedResults.Ok(TicketJournal.ByMonth(tickets, y)
+        return TypedResults.Ok(TicketQueries.ByMonth(db, y, new TicketFilter { HouseId = houseId, Apartment = apartment, Kind = kind })
             .Select(m => new TicketMonthDto(y, m.Month, m.Accepted, m.Done, m.Open)).ToList());
     }
+
+    /// <summary>Принято и выполнено по домам за период — итоговый отчёт и итоги дня для ОЭК.</summary>
+    private static Results<Ok<List<TicketHouseCountDto>>, ValidationProblem> ByHouse(AversDbContext db, DateOnly from, DateOnly to) =>
+        from > to
+            ? Invalid("from", "Начало периода позже конца.")
+            : TypedResults.Ok(TicketQueries.ByHouse(db, from, to).Select(s => new TicketHouseCountDto(s.HouseId, s.Accepted, s.Done)).ToList());
 
     private static async Task<Results<Ok<HouseServiceInfoDto>, NotFound>> ServiceInfo(
         int houseId, AversDbContext db, CancellationToken ct)
@@ -171,7 +170,7 @@ public static class TicketEndpoints
             AcceptedByUserId = account.Id
         });
 
-        var saved = await Query(db).FirstAsync(t => t.Id == ticket.Id, ct);
+        var saved = TicketQueries.One(db, ticket.Id)!;
         return TypedResults.Created($"/api/tickets/{saved.Id}", ToDto(saved, user));
     }
 
@@ -210,26 +209,11 @@ public static class TicketEndpoints
         ChangeLog.TicketEdit(db, time.GetUtcNow(), ChangeLog.Who(db, user.AppUserId()), ticket, before);
 
         await db.SaveChangesAsync(ct);
-        var saved = await Query(db).FirstAsync(t => t.Id == id, ct);
-        return TypedResults.Ok(ToDto(saved, user));
-    }
-
-    private static IQueryable<WorkTicket> Query(AversDbContext db) => db.Tickets.AsNoTracking()
-        .Include(t => t.House).ThenInclude(h => h.Street)
-        .Include(t => t.House).ThenInclude(h => h.Organization)
-        .Include(t => t.Subscriber);
-
-    private static async Task<List<TicketDto>> Load(AversDbContext db, TicketFilter filter, ClaimsPrincipal user, CancellationToken ct)
-    {
-        var tickets = await Query(db).Apply(filter)
-            .OrderByDescending(t => t.Date).ThenByDescending(t => t.Number)
-            .Take(MaxResults)
-            .ToListAsync(ct);
-        return ToDtos(tickets, user);
+        return TypedResults.Ok(ToDto(TicketQueries.One(db, id)!, user));
     }
 
     private static List<TicketDto> ToDtos(IEnumerable<WorkTicket> tickets, ClaimsPrincipal user) =>
-        tickets.Newest().Select(t => ToDto(t, user)).ToList();
+        tickets.Select(t => ToDto(t, user)).ToList();
 
     private static bool CanEdit(ClaimsPrincipal user, WorkTicket ticket) =>
         user.Role() is { } role && RoleCatalog.Can(role, AppModule.Disp, out var level) &&
@@ -239,7 +223,8 @@ public static class TicketEndpoints
         t.Id, t.Number, t.Date, t.Time, t.HouseId, t.House.AddressLine, t.House.Zone, t.House.Organization?.Name ?? "",
         t.Section, t.Apartment, t.SubscriberId, t.Subscriber?.FullName ?? "", t.Subscriber?.Account ?? "", t.Phone,
         t.Kind.ToString(), Billing.KindTitle(t.Kind), t.Fault, t.WorkDone, t.Mechanic, t.Status.ToString(),
-        t.AcceptedBy, t.DoneDate, t.RisersNote, CanEdit(user, t));
+        t.AcceptedBy, t.DoneDate, t.RisersNote, CanEdit(user, t), t.AcceptedByUserId,
+        t.Subscriber?.LastName ?? "", t.Subscriber?.FirstName ?? "", t.Subscriber?.Patronymic ?? "");
 
     private static bool TryParse<T>(string? value, out T? result) where T : struct, Enum
     {

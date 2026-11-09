@@ -1,4 +1,7 @@
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.VisualTree;
+using Avers.Data;
 using Avers.Domain;
 
 namespace Avers.Desktop.Tests;
@@ -6,6 +9,63 @@ namespace Avers.Desktop.Tests;
 public class TicketScreenTests
 {
     private static readonly DateOnly Today = Avers.Data.DemoSeeder.WorkDate;
+
+    [AvaloniaFact]
+    public void Journal_LoadsTicketsOfYear_ShowsRowsSummaryAndApartment()
+    {
+        using var app = new DesktopApp("sokolova");
+        app.Go(AppModule.Disp);
+        var screen = app.Vm.TicketsScreen;
+
+        var grid = app.Window.GetVisualDescendants().OfType<DataGrid>().Single(g => g.IsEffectivelyVisible && ReferenceEquals(g.ItemsSource, screen.Tickets));
+        var cells = grid.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text).ToList();
+        Assert.Contains("Иванова М.П.", cells);
+        Assert.Contains("Волочаевская", cells);
+        Assert.NotEmpty(screen.Tickets);
+        Assert.All(screen.Tickets, t => Assert.Equal(Today.Year, t.Date.Year));
+        Assert.Equal([2026, 2025], screen.TicketYears);
+        Assert.Equal("6 / 3", screen.TicketMonths.Single(m => m.Month == 8).Counts);
+
+        Assert.Equal(DemoSeeder.StartTicket, screen.SelectedTicket!.Number);
+        Assert.Equal("Иванова Мария Петровна", screen.TicketSubscriberName);
+        Assert.StartsWith("№ ТО-2014/1932068 от 12.03.2014", screen.TicketContract);
+        Assert.StartsWith("09.07.2026", screen.TicketLastPayment);
+    }
+
+    [AvaloniaFact]
+    public void Journal_OtherYear_AskedFromStore()
+    {
+        using var app = new DesktopApp("sokolova");
+        app.Go(AppModule.Disp);
+        var screen = app.Vm.TicketsScreen;
+
+        screen.TicketYear = 2025;
+        app.Pump();
+
+        Assert.NotEmpty(screen.Tickets);
+        Assert.All(screen.Tickets, t => Assert.Equal(2025, t.Date.Year));
+        Assert.Equal(screen.Tickets.Count, screen.TicketMonths.Sum(m => int.TryParse(m.Counts.Split(" / ")[0], out var n) ? n : 0));
+    }
+
+    [AvaloniaFact]
+    public async Task SaveTicket_UpdatesJournal_WithoutReloadingSnapshot()
+    {
+        using var app = new DesktopApp("sokolova");
+        app.Go(AppModule.Disp);
+        var screen = app.Vm.TicketsScreen;
+        var house = app.Vm.SelectedHouse;
+        var street = app.Vm.Streets[0];
+
+        screen.TicketWork = "Заменён штекер";
+        await screen.SaveTicketCommand.ExecuteAsync(null);
+
+        Assert.Equal("Заявка № 1001 записана.", app.Vm.Status);
+        Assert.Equal(TicketStatus.Done, screen.Tickets.Single(t => t.Number == DemoSeeder.StartTicket).Status);
+        Assert.Equal(TicketStatus.Done, screen.SelectedTicket!.Status);
+        Assert.Equal("6 / 4", screen.TicketMonths.Single(m => m.Month == 8).Counts);
+        Assert.Same(house, app.Vm.SelectedHouse);
+        Assert.Same(street, app.Vm.Streets[0]);
+    }
 
     [AvaloniaFact]
     public async Task Dispatcher_DefersThenClosesWithDate_PhoneFromCall()

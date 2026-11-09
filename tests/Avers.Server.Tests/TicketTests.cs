@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using Avers.Contracts;
 using Avers.Data;
+using Avers.Domain;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Avers.Server.Tests;
@@ -52,6 +54,22 @@ public class TicketTests
     }
 
     [Fact]
+    public async Task List_OnlyOverdue_MatchesOpenTicketsPastDue()
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("orlov");
+        var day = new DateOnly(2026, 11, 9);
+
+        var open = await client.GetFromJsonAsync<List<TicketDto>>("/api/tickets?open=true");
+        var overdue = await client.GetFromJsonAsync<List<TicketDto>>("/api/tickets?overdueOn=2026-11-09");
+
+        var expected = open!.Where(t => t.Status is "Accepted" or "InProgress" && t.Date.AddDays(TicketJournal.DueDays) < day)
+            .Select(t => t.Id).Order().ToList();
+        Assert.NotEmpty(expected);
+        Assert.Equal(expected, overdue!.Select(t => t.Id).Order().ToList());
+    }
+
+    [Fact]
     public async Task ByMonth_GivesTwelveMonths()
     {
         await using var app = new AversApp();
@@ -63,6 +81,92 @@ public class TicketTests
         Assert.Equal(12, months!.Count);
         Assert.Equal(all2026!.Count, months.Sum(m => m.Accepted));
         Assert.All(months, m => Assert.Equal(m.Accepted, m.Done + m.Open));
+    }
+
+    [Fact]
+    public async Task ByMonth_ForApartment_MatchesJournalOfApartment()
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("sokolova");
+        var house = await Vol19dAsync(client);
+
+        var months = (await client.GetFromJsonAsync<List<TicketMonthDto>>($"/api/tickets/by-month?year=2026&houseId={house.Id}&apartment=68"))!;
+        var journal = await client.GetFromJsonAsync<List<TicketDto>>($"/api/tickets?year=2026&houseId={house.Id}&apartment=68");
+
+        Assert.NotEmpty(journal!);
+        Assert.Equal(journal!.Count, months.Sum(m => m.Accepted));
+        Assert.Equal(journal.Count(t => t.Status == "Done"), months.Sum(m => m.Done));
+        Assert.Equal(journal.GroupBy(t => t.Date.Month).ToDictionary(g => g.Key, g => g.Count()),
+            months.Where(m => m.Accepted > 0).ToDictionary(m => m.Month, m => m.Accepted));
+    }
+
+    [Fact]
+    public async Task Years_FromFirstTicketToCurrent()
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("sokolova");
+
+        Assert.Equal([2026, 2025], await client.GetFromJsonAsync<List<int>>("/api/tickets/years"));
+    }
+
+    [Fact]
+    public async Task ByHouse_CountsTicketsOfPeriod()
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("orlov");
+
+        var stats = (await client.GetFromJsonAsync<List<TicketHouseCountDto>>("/api/tickets/by-house?from=2026-08-01&to=2026-08-31"))!;
+        var journal = await client.GetFromJsonAsync<List<TicketDto>>("/api/tickets?from=2026-08-01&to=2026-08-31");
+
+        Assert.Equal(journal!.Count, stats.Sum(s => s.Accepted));
+        Assert.Equal(journal.Count(t => t.Status == "Done"), stats.Sum(s => s.Done));
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.GetAsync("/api/tickets/by-house?from=2026-09-01&to=2026-08-01")).StatusCode);
+    }
+
+    [Fact]
+    public async Task List_RowsCarryAuthorAndShortNameOnly()
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("sokolova");
+        var sokolovaId = await app.WithDbAsync(db => db.Users.Where(u => u.Login == "sokolova").Select(u => u.Id).FirstAsync());
+
+        var row = Assert.Single((await client.GetFromJsonAsync<List<TicketDto>>("/api/tickets?q=1001"))!);
+
+        Assert.Equal(sokolovaId, row.AcceptedByUserId);
+        Assert.Equal(("Иванова", "Мария", "Петровна", "1932068"), (row.SubscriberLastName, row.SubscriberFirstName, row.SubscriberPatronymic, row.Account));
+    }
+
+    [Fact]
+    public async Task Apartment_OfOpenTicket_ContractPaymentNotes_LoggedAsView()
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("orlova");
+        var all = (await client.GetFromJsonAsync<List<TicketDto>>("/api/tickets"))!;
+        var foreign = Assert.Single(all, t => t.Number == 1001);
+        var withoutSubscriber = Assert.Single(all, t => t.Number == 812);
+        var expected = await app.WithDbAsync(db => db.Subscribers.FirstAsync(s => s.Id == foreign.SubscriberId));
+
+        var apartment = await client.GetFromJsonAsync<TicketApartmentDto>($"/api/tickets/{foreign.Id}/apartment");
+
+        Assert.False(foreign.CanEdit);
+        Assert.Equal((expected.Id, expected.HouseId, expected.LastName, expected.Account, expected.ContractNumber, expected.ContractDate, expected.LastPaymentDate, expected.Notes),
+            (apartment!.SubscriberId, apartment.HouseId, apartment.LastName, apartment.Account, apartment.ContractNumber, apartment.ContractDate, apartment.LastPaymentDate, apartment.Notes));
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/tickets/{withoutSubscriber.Id}/apartment")).StatusCode);
+        var log = (await (await app.LoginAsync("admin")).GetFromJsonAsync<List<AccessLogEntry>>("/api/access-log"))!;
+        Assert.Contains(log, e => e.Action == "Квартира заявки" && e.Target.Contains("1932068"));
+    }
+
+    [Theory]
+    [InlineData("/api/tickets/years")]
+    [InlineData("/api/tickets/by-house?from=2026-08-01&to=2026-08-31")]
+    [InlineData("/api/tickets/by-month?year=2026")]
+    [InlineData("/api/tickets/1/apartment")]
+    public async Task TicketSummaries_ClosedToLawyer(string url)
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("lawyer");
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync(url)).StatusCode);
     }
 
     [Fact]

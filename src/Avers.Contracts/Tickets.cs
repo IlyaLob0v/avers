@@ -1,6 +1,10 @@
 namespace Avers.Contracts;
 
-/// <summary>Строка журнала заявок АДС и сама заявка.</summary>
+/// <summary>
+/// Строка журнала заявок АДС и сама заявка. Из данных абонента — только ФИО и лицевой счёт;
+/// договор, оплату и примечание открытой заявки даёт <see cref="TicketApartmentDto"/>.
+/// <see cref="AcceptedByUserId"/> — кто принял: по нему рабочее место прячет правку чужих заявок.
+/// </summary>
 public sealed record TicketDto(
     int Id,
     int Number,
@@ -25,7 +29,35 @@ public sealed record TicketDto(
     string AcceptedBy,
     DateOnly? DoneDate,
     string RisersNote,
-    bool CanEdit);
+    bool CanEdit,
+    int? AcceptedByUserId = null,
+    string SubscriberLastName = "",
+    string SubscriberFirstName = "",
+    string SubscriberPatronymic = "");
+
+/// <summary>
+/// Квартира открытой заявки (REQ-ADS-15): ФИО, лицевой счёт, договор (номер, даты, с кем), последняя оплата, примечание.
+/// Пустой <see cref="ContractHolder"/> — договор с самим абонентом.
+/// </summary>
+public sealed record TicketApartmentDto(
+    int SubscriberId,
+    int HouseId,
+    string LastName,
+    string FirstName,
+    string Patronymic,
+    string Account,
+    string Section,
+    string Apartment,
+    string ContractNumber,
+    DateOnly? ContractDate,
+    DateOnly? ContractTerminated,
+    string ContractHolder,
+    DateOnly? LastPaymentDate,
+    string Notes,
+    string PzhreuIndex);
+
+/// <summary>Заявки дома за период: принято и выполнено (по дате приёма).</summary>
+public sealed record TicketHouseCountDto(int HouseId, int Accepted, int Done);
 
 /// <summary>Принять заявку. Квартира и телефон берутся из лицевого счёта, если указан абонент.</summary>
 public sealed record CreateTicketRequest(

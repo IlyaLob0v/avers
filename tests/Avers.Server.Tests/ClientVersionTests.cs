@@ -16,6 +16,7 @@ public class ClientVersionTests
     [Theory]
     [InlineData(null)]
     [InlineData("1")]
+    [InlineData("2")]
     public async Task OldDesktop_IsAskedToUpdate(string? version)
     {
         await using var app = new AversApp();

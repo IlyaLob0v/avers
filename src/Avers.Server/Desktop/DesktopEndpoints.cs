@@ -19,7 +19,7 @@ public static class DesktopEndpoints
         api.MapPut("/houses/{id:int}/passport", SavePassport).RequireAuthorization(Policies.HousesEdit);
     }
 
-    /// <summary>Таблицы без связей; абоненты и заявки — только если они положены роли.</summary>
+    /// <summary>Справочники без связей, только положенные роли; абонентов и заявок в снимке нет, они грузятся частями.</summary>
     private static Results<Ok<AversSnapshot>, ForbidHttpResult> Snapshot(ClaimsPrincipal user, AversDbContext db) =>
         user.Role() is { } role ? TypedResults.Ok(AversSnapshot.Load(db, role)) : TypedResults.Forbid();
 

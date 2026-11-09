@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -207,9 +208,124 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public async Task<int> AcceptTicketAsync(CreateTicketRequest request, AppUser user) =>
         (await Read<TicketDto>(() => http.PostAsJsonAsync("api/tickets", request, Json))).Number;
 
-    public Task SaveTicketAsync(int ticketId, string fault, string mechanic, string workDone, TicketStatus status, DateOnly? doneDate) =>
-        Write(() => http.PutAsJsonAsync($"api/tickets/{ticketId}",
-            new UpdateTicketRequest(fault, workDone, mechanic, Status: status.ToString(), DoneDate: doneDate), Json));
+    public async Task<WorkTicket> SaveTicketAsync(int ticketId, string fault, string mechanic, string workDone, TicketStatus status, DateOnly? doneDate) =>
+        ToTicket(await Read<TicketDto>(() => http.PutAsJsonAsync($"api/tickets/{ticketId}",
+            new UpdateTicketRequest(fault, workDone, mechanic, Status: status.ToString(), DoneDate: doneDate), Json)));
+
+    public async Task<List<WorkTicket>> LoadTicketsAsync(TicketFilter f)
+    {
+        var query = new Dictionary<string, string?>
+        {
+            ["from"] = f.From?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            ["to"] = f.To?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            ["houseId"] = f.HouseId?.ToString(CultureInfo.InvariantCulture),
+            ["apartment"] = f.Apartment,
+            ["subscriberId"] = f.SubscriberId?.ToString(CultureInfo.InvariantCulture),
+            ["kind"] = f.Kind?.ToString(),
+            ["status"] = f.Status?.ToString(),
+            ["open"] = f.OnlyOpen ? "true" : null,
+            ["overdueOn"] = f.OverdueOn?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            ["q"] = f.Text
+        };
+        return (await Read<List<TicketDto>>(() => http.GetAsync("api/tickets" + Query(query)))).Select(ToTicket).ToList();
+    }
+
+    public async Task<List<WorkTicket>> LoadApartmentTicketsAsync(int subscriberId) =>
+        (await Read<List<TicketDto>>(() => http.GetAsync($"api/subscribers/{subscriberId}/tickets"))).Select(ToTicket).ToList();
+
+    public async Task<IReadOnlyList<TicketMonthStat>> LoadTicketMonthsAsync(int year, TicketFilter f)
+    {
+        var query = new Dictionary<string, string?>
+        {
+            ["year"] = year.ToString(CultureInfo.InvariantCulture),
+            ["houseId"] = f.HouseId?.ToString(CultureInfo.InvariantCulture),
+            ["apartment"] = f.Apartment,
+            ["kind"] = f.Kind?.ToString()
+        };
+        return (await Read<List<TicketMonthDto>>(() => http.GetAsync("api/tickets/by-month" + Query(query))))
+            .Select(m => new TicketMonthStat(m.Month, m.Accepted, m.Done, m.Open)).ToList();
+    }
+
+    public async Task<IReadOnlyList<int>> LoadTicketYearsAsync() =>
+        await Read<List<int>>(() => http.GetAsync("api/tickets/years"));
+
+    public async Task<List<TicketHouseStat>> LoadTicketsByHouseAsync(DateOnly from, DateOnly to) =>
+        (await Read<List<TicketHouseCountDto>>(() => http.GetAsync("api/tickets/by-house" + Query(new Dictionary<string, string?>
+        {
+            ["from"] = from.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            ["to"] = to.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+        }))))
+        .Select(s => new TicketHouseStat(s.HouseId, s.Accepted, s.Done)).ToList();
+
+    public async Task<Subscriber?> LoadTicketApartmentAsync(int ticketId)
+    {
+        using var response = await Send(() => http.GetAsync($"api/tickets/{ticketId}/apartment"));
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return null;
+        await EnsureSuccess(response);
+        var a = (await response.Content.ReadFromJsonAsync<TicketApartmentDto>(Json))!;
+        return new Subscriber
+        {
+            Id = a.SubscriberId,
+            HouseId = a.HouseId,
+            LastName = a.LastName,
+            FirstName = a.FirstName,
+            Patronymic = a.Patronymic,
+            Account = a.Account,
+            Section = a.Section,
+            Apartment = a.Apartment,
+            ContractNumber = a.ContractNumber,
+            ContractDate = a.ContractDate,
+            ContractTerminated = a.ContractTerminated,
+            ContractHolder = a.ContractHolder,
+            LastPaymentDate = a.LastPaymentDate,
+            Notes = a.Notes,
+            PzhreuIndex = a.PzhreuIndex
+        };
+    }
+
+    /// <summary>Строка журнала с сервера. Дом — заглушка с адресом, пока его не свяжут со снимком.</summary>
+    private static WorkTicket ToTicket(TicketDto t) => new()
+    {
+        Id = t.Id,
+        Number = t.Number,
+        Date = t.Date,
+        Time = t.Time,
+        HouseId = t.HouseId,
+        House = new House { Id = t.HouseId, Street = new Street { Name = t.Address } },
+        SubscriberId = t.SubscriberId,
+        Subscriber = t.SubscriberId is { } id
+            ? new Subscriber
+            {
+                Id = id,
+                HouseId = t.HouseId,
+                LastName = t.SubscriberLastName,
+                FirstName = t.SubscriberFirstName,
+                Patronymic = t.SubscriberPatronymic,
+                Account = t.Account
+            }
+            : null,
+        Section = t.Section,
+        Apartment = t.Apartment,
+        Phone = t.Phone,
+        Kind = Enum.Parse<TicketKind>(t.Kind),
+        Fault = t.Fault,
+        WorkDone = t.WorkDone,
+        Mechanic = t.Mechanic,
+        Status = Enum.Parse<TicketStatus>(t.Status),
+        AcceptedBy = t.AcceptedBy,
+        AcceptedByUserId = t.AcceptedByUserId,
+        DoneDate = t.DoneDate,
+        RisersNote = t.RisersNote
+    };
+
+    /// <summary>Строка запроса из непустых значений: «?year=2026&amp;houseId=5».</summary>
+    private static string Query(Dictionary<string, string?> values)
+    {
+        var set = values.Where(v => !string.IsNullOrWhiteSpace(v.Value))
+            .Select(v => $"{v.Key}={Uri.EscapeDataString(v.Value!)}").ToList();
+        return set.Count == 0 ? "" : "?" + string.Join("&", set);
+    }
 
     public Task MarkPprAsync(int houseId, int year, int month, PprStatus status) =>
         Write(() => http.PutAsJsonAsync($"api/ppr/{houseId}/{year}/{month}", new PprMarkRequest(status.ToString()), Json));

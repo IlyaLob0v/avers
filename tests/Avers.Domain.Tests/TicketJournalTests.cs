@@ -94,12 +94,6 @@ public class TicketJournalTests
     }
 
     [Fact]
-    public void Years_IncludeCurrentYearEvenWithoutTickets()
-    {
-        Assert.Equal([2027, 2026, 2025], TicketJournal.Years(Tickets, new DateOnly(2027, 1, 1)));
-    }
-
-    [Fact]
     public void Newest_SortsByDateThenTime()
     {
         var a = new WorkTicket { Number = 1, Date = new(2026, 8, 31), Time = new(8, 0) };

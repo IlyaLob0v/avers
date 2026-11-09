@@ -1,7 +1,10 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Windows.Input;
 using Avers.Contracts;
+using Avers.Data;
 using Avers.Desktop.Controls;
+using Avers.Desktop.Data;
 using Avers.Desktop.Printing;
 using Avers.Desktop.Reports;
 using Avers.Domain;
@@ -127,7 +130,7 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     partial void OnStatusFilterChanged(TicketOption<TicketStatus> value) => RefreshTickets();
     partial void OnOnlyOpenTicketsChanged(bool value) => RefreshTickets();
     partial void OnOnlyOverdueTicketsChanged(bool value) => RefreshTickets();
-    partial void OnOekDateChanged(DateTime? value) => OnPropertyChanged(nameof(OekWarning));
+    partial void OnOekDateChanged(DateTime? value) => _ = LoadOekDayAsync();
     partial void OnTicketFromChanged(DateTime? value) => RefreshTickets();
     partial void OnTicketToChanged(DateTime? value) => RefreshTickets();
     partial void OnTicketSearchChanged(string value) => RefreshTickets();
@@ -166,7 +169,9 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
 
 
     public House? TicketHouse => SelectedTicket is null ? null : shell.Houses.FirstOrDefault(h => h.Id == SelectedTicket.HouseId);
-    public Subscriber? TicketSubscriber => SelectedTicket?.Subscriber;
+
+    /// <summary>Квартира открытой заявки с договором и оплатой; пока не пришла — краткий абонент из строки журнала.</summary>
+    public Subscriber? TicketSubscriber => _ticketApartment?.Id == SelectedTicket?.SubscriberId ? _ticketApartment : SelectedTicket?.Subscriber;
     public bool HasTicketSubscriber => TicketSubscriber is not null;
 
     public string TicketHeader => SelectedTicket is null ? "Заявка не выбрана"
@@ -226,20 +231,51 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     public string HouseHomeowner => shell.SelectedHouse?.Organization is { } o ? $"{o.Name}, {o.Branch}" : "не указан";
     public string HouseHomeownerPhones => shell.SelectedHouse?.Organization?.Phones ?? "";
     public string HouseOpenTickets => shell.SelectedHouse is null ? ""
-        : shell.AllTickets.Count(t => t.HouseId == shell.SelectedHouse.Id && t.Status != TicketStatus.Done).ToString();
+        : shell.HouseOpenTickets.ToString(CultureInfo.InvariantCulture);
 
     private string ScopeApartment => shell.SelectedSubscriber?.HouseId == shell.SelectedHouse?.Id && shell.SelectedSubscriber is not null
         ? shell.SelectedSubscriber.Apartment
         : shell.FindApartment.Trim();
 
 
-    internal void LoadTicketYears()
+    private Subscriber? _ticketApartment;
+    private int _ticketsVersion;
+    private int _apartmentVersion;
+    /// <summary>Отбор, по которому загружен журнал: тот же отбор без <c>force</c> повторно не запрашивается.</summary>
+    private (TicketFilter Filter, int Year)? _loadedFor;
+
+    internal async Task LoadTicketYearsAsync()
     {
         EnsureTicketFilter();
-        var years = TicketJournal.Years(shell.AllTickets, shell.Today);
+        IReadOnlyList<int> years;
+        try
+        {
+            years = await shell.Store.LoadTicketYearsAsync();
+        }
+        catch (StoreException e)
+        {
+            shell.Status = e.Message;
+            return;
+        }
         TicketYears.Clear();
         foreach (var y in years) TicketYears.Add(y);
         OnPropertyChanged(nameof(TicketYear));
+    }
+
+    /// <summary>Заявки прежнего сотрудника забываются при смене пользователя.</summary>
+    internal void Forget()
+    {
+        _ticketsVersion++;
+        _apartmentVersion++;
+        _oekVersion++;
+        _oekTickets = [];
+        _loadedFor = null;
+        _ticketApartment = null;
+        SelectedTicket = null;
+        Tickets.Clear();
+        TicketYears.Clear();
+        TicketMonths.Clear();
+        OnPropertyChanged(nameof(TicketCountText));
     }
 
     private TicketFilter CurrentTicketFilter()
@@ -263,29 +299,56 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         };
     }
 
-    internal void RefreshTickets()
+    internal void RefreshTickets() => _ = RefreshTicketsAsync();
+
+    /// <summary>
+    /// Журнал и помесячная сводка по текущему отбору — запросом к серверу (ADR-0015). Ответ на устаревший отбор
+    /// отбрасывается; <paramref name="force"/> перечитывает и тот же отбор (после записи заявки).
+    /// </summary>
+    internal async Task RefreshTicketsAsync(bool force = false)
     {
         EnsureTicketFilter();
-        if (_holdTicketRefresh) return;
+        if (_holdTicketRefresh || !shell.SeesTickets) return;
+        var filter = CurrentTicketFilter();
+        if (!force && _loadedFor == (filter, TicketYear)) return;
+        _loadedFor = (filter, TicketYear);
+        var version = ++_ticketsVersion;
+        List<WorkTicket> rows;
+        IReadOnlyList<TicketMonthStat> months;
+        try
+        {
+            // Помесячная сводка — за выбранный год, по тому же дому/квартире и виду, без отбора по датам.
+            var rowsTask = shell.Store.LoadTicketsAsync(filter);
+            var monthsTask = shell.Store.LoadTicketMonthsAsync(TicketYear, filter);
+            rows = await rowsTask;
+            months = await monthsTask;
+        }
+        catch (StoreException e)
+        {
+            shell.Status = e.Message;
+            _loadedFor = null;
+            return;
+        }
+        if (version != _ticketsVersion) return;
+
+        shell.LinkTickets(rows);
         var keep = SelectedTicket?.Id;
         Tickets.Clear();
-        foreach (var t in shell.AllTickets.Apply(CurrentTicketFilter()).Newest())
+        foreach (var t in rows)
             Tickets.Add(t);
-        if (keep is not null && SelectedTicket is null)
-            SelectedTicket = Tickets.FirstOrDefault(t => t.Id == keep);
+        if (rows.Count == TicketQueries.MaxResults)
+            shell.Status = $"Показаны последние {TicketQueries.MaxResults} заявок. Сузьте отбор, чтобы увидеть остальные.";
+        if (keep is not null)
+            SelectedTicket = Tickets.FirstOrDefault(t => t.Id == keep) ?? SelectedTicket;
 
-        RefreshTicketMonths();
+        ShowTicketMonths(months);
         OnPropertyChanged(nameof(TicketCountText));
         OnPropertyChanged(nameof(TicketPeriodText));
         OnPropertyChanged(nameof(TicketMonthsCaption));
-        OnPropertyChanged(nameof(OekWarning));
     }
 
-    private void RefreshTicketMonths()
+    private void ShowTicketMonths(IReadOnlyList<TicketMonthStat> stats)
     {
-        // Помесячная сводка — за выбранный год, по тому же дому/квартире и виду, без отбора по датам.
-        var filter = CurrentTicketFilter() with { From = null, To = null, Status = null, OnlyOpen = false, OverdueOn = null, Text = null };
-        var stats = TicketJournal.ByMonth(shell.AllTickets.Apply(filter), TicketYear);
         var from = TicketFrom is { } f ? DateOnly.FromDateTime(f) : (DateOnly?)null;
         var to = TicketTo is { } t ? DateOnly.FromDateTime(t) : (DateOnly?)null;
         TicketMonths.Clear();
@@ -295,6 +358,27 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
             var selected = from == month.From && to == month.To;
             TicketMonths.Add(new TicketMonthRow(shell.Months[m.Month - 1], m, selected, SelectTicketMonthCommand, m.Month));
         }
+    }
+
+    /// <summary>Договор, последняя оплата и примечание квартиры открытой заявки — отдельным запросом.</summary>
+    private async Task LoadTicketApartmentAsync()
+    {
+        var version = ++_apartmentVersion;
+        Subscriber? apartment = null;
+        if (SelectedTicket is { SubscriberId: not null } t)
+        {
+            try
+            {
+                apartment = await shell.Store.LoadTicketApartmentAsync(t.Id);
+            }
+            catch (StoreException e)
+            {
+                shell.Status = e.Message;
+            }
+        }
+        if (version != _apartmentVersion) return;
+        _ticketApartment = apartment;
+        NotifyTicketSubscriber();
     }
 
     internal void NotifyTicketPanel()
@@ -316,8 +400,6 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         TicketState = SelectedTicket is { } t ? TicketStates.Single(s => s.Value == t.Status) : null;
         OnPropertyChanged(nameof(MechanicNames));
         OnPropertyChanged(nameof(TicketHouse));
-        OnPropertyChanged(nameof(TicketSubscriber));
-        OnPropertyChanged(nameof(HasTicketSubscriber));
         OnPropertyChanged(nameof(TicketHeader));
         OnPropertyChanged(nameof(TicketAddress));
         OnPropertyChanged(nameof(TicketHomeowner));
@@ -327,17 +409,26 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         OnPropertyChanged(nameof(TicketDueText));
         OnPropertyChanged(nameof(IsSelectedTicketOverdue));
         OnPropertyChanged(nameof(TicketAcceptedBy));
+        OnPropertyChanged(nameof(CanEditSelectedTicket));
+        OnPropertyChanged(nameof(CanAcceptTickets));
+        OnPropertyChanged(nameof(TicketRightsHint));
+        OnPropertyChanged(nameof(HasTicketRightsHint));
+        NotifyTicketSubscriber();
+        shell.NotifyWindowTitle();
+        // Каждый раз заново: после оплаты в карточке последняя оплата квартиры уже другая.
+        _ = LoadTicketApartmentAsync();
+    }
+
+    private void NotifyTicketSubscriber()
+    {
+        OnPropertyChanged(nameof(TicketSubscriber));
+        OnPropertyChanged(nameof(HasTicketSubscriber));
         OnPropertyChanged(nameof(TicketSubscriberName));
         OnPropertyChanged(nameof(TicketAccount));
         OnPropertyChanged(nameof(TicketContract));
         OnPropertyChanged(nameof(TicketLastPayment));
         OnPropertyChanged(nameof(IsTicketPaymentLate));
         OnPropertyChanged(nameof(TicketNotes));
-        OnPropertyChanged(nameof(CanEditSelectedTicket));
-        OnPropertyChanged(nameof(CanAcceptTickets));
-        OnPropertyChanged(nameof(TicketRightsHint));
-        OnPropertyChanged(nameof(HasTicketRightsHint));
-        shell.NotifyWindowTitle();
     }
 
     private void SetPeriod(DateOnly? from, DateOnly? to)
@@ -371,25 +462,50 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     }
 
     private DateOnly OekDay => OekDate is { } d ? DateOnly.FromDateTime(d) : shell.Today;
+    /// <summary>Заявки, принятые в <see cref="OekDay"/>: для предупреждения и списка ОЭК.</summary>
+    private List<WorkTicket> _oekTickets = [];
+    private int _oekVersion;
 
     public string OekWarning
     {
         get
         {
-            var day = shell.AllTickets.Where(t => t.Date == OekDay).ToList();
-            var done = day.Count(t => t.Status == TicketStatus.Done);
-            return day.Count == 0 ? $"За {OekDay:dd.MM.yyyy} заявок нет."
-                : day.Count > done ? $"За {OekDay:dd.MM.yyyy} принято {day.Count}, выполнено {done}. Список для ОЭК скрыт."
-                : $"За {OekDay:dd.MM.yyyy} принято {day.Count}, выполнены все. Можно выгрузить список для ОЭК.";
+            var done = _oekTickets.Count(t => t.Status == TicketStatus.Done);
+            return _oekTickets.Count == 0 ? $"За {OekDay:dd.MM.yyyy} заявок нет."
+                : _oekTickets.Count > done ? $"За {OekDay:dd.MM.yyyy} принято {_oekTickets.Count}, выполнено {done}. Список для ОЭК скрыт."
+                : $"За {OekDay:dd.MM.yyyy} принято {_oekTickets.Count}, выполнены все. Можно выгрузить список для ОЭК.";
         }
+    }
+
+    /// <summary>Перечитывает заявки дня для ОЭК: при смене дня, после входа и после записи заявки.</summary>
+    public async Task LoadOekDayAsync()
+    {
+        var version = ++_oekVersion;
+        var day = OekDay;
+        List<WorkTicket> list = [];
+        if (shell.SeesTickets)
+        {
+            try
+            {
+                list = await shell.Store.LoadTicketsAsync(new TicketFilter { From = day, To = day });
+            }
+            catch (StoreException e)
+            {
+                shell.Status = e.Message;
+            }
+        }
+        if (version != _oekVersion) return;
+        _oekTickets = list;
+        OnPropertyChanged(nameof(OekWarning));
     }
 
     /// <summary>Список для ОЭК за выбранный день в Excel; при невыполненных заявках не выводится (Q-02).</summary>
     [RelayCommand]
-    private void ExportOek()
+    private async Task ExportOek()
     {
         var day = OekDay;
-        if (TicketJournal.ForOek(shell.AllTickets, day) is not { Count: > 0 } list) { shell.Status = OekWarning; return; }
+        await LoadOekDayAsync();
+        if (TicketJournal.ForOek(_oekTickets, day) is not { Count: > 0 } list) { shell.Status = OekWarning; return; }
         shell.Export($"заявки-для-оэк-за-{day:dd.MM.yyyy}", $"список для ОЭК за {day:dd.MM.yyyy}", path => XlsxTable.Write(path,
             $"Заявки для ОЭК за {day:dd.MM.yyyy}",
             ["№", "Время", "Адрес", "Кв.", "ФИО", "Неисправность", "Что сделано", "Выполнена", "Механик"],
@@ -465,7 +581,7 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         await shell.Save(async () =>
         {
             var number = await shell.Store.AcceptTicketAsync(request, shell.User);
-            await shell.ReloadAsync();
+            await shell.ReloadTicketsAsync();
             NewTicketFault = "";
             NewTicketPhone = "";
             SelectedTicket = Tickets.FirstOrDefault(t => t.Number == number);
@@ -492,9 +608,10 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         }
         await shell.Save(async () =>
         {
-            await shell.Store.SaveTicketAsync(id, TicketFault.Trim(), (TicketMechanic ?? "").Trim(), TicketWork, status, doneDate);
-            await shell.ReloadAsync();
-            SelectedTicket = Tickets.FirstOrDefault(x => x.Number == number) ?? shell.AllTickets.FirstOrDefault(x => x.Number == number);
+            var saved = await shell.Store.SaveTicketAsync(id, TicketFault.Trim(), (TicketMechanic ?? "").Trim(), TicketWork, status, doneDate);
+            await shell.ReloadTicketsAsync();
+            shell.LinkTickets([saved]);
+            SelectedTicket = Tickets.FirstOrDefault(x => x.Id == id) ?? saved;
             shell.Status = $"Заявка № {number} записана.";
             shell.Module = AppModule.Disp;
         });
