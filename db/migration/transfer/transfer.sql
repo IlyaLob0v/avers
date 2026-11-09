@@ -92,7 +92,7 @@ select p.physicalpersonid, p.buildingid, coalesce(trim(p.inventno), ''), p.physi
                        join legacy.social s on s.socialpositionid = r.socialpositionid
                       where r.physicalpersonid = p.physicalpersonid and r.enddate is null
                         and lower(trim(s.socialpositionname)) in ('юридическое лицо', 'коллективная оплата', 'коллективный усилитель в квартире')
-                      order by r.dateofupdate desc limit 1) bn on true
+                      order by r.dateofupdate desc nulls last limit 1) bn on true
  where p.physicalpersonid not in (select physicalpersonid from legacy.avers_empty_client);
 
 -- Оплаты: в Аверсе одна строка на абонента и месяц. Начисление — из legacy.avers_accrual (функция JACK, см.
