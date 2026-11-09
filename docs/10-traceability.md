@@ -40,7 +40,7 @@
 | REQ-ADS-06 | M | Сделано | `Subscriber.ContractDate/ContractNumber/ContractParty`; `Desktop/Views/ContractView.axaml`, `ContractsViewModel.cs`; `PUT /api/subscribers/{id}/contract` | `ApartmentCardTests.Card_ContractWithAnotherPerson`, `ApartmentCardTests.UpdateContract_*`, `ContractTests` (Desktop) | |
 | REQ-ADS-07 | M | Сделано | `Desktop/Views/PrintView.axaml`, `PrDublView.axaml`, `ReceiptsViewModel.cs`, `Domain/UnifiedReceipt.cs` (N_OS, N_KASS, N_OPER, N_КВИТ) | `ShellTests.Print_ReceiptAndAccountOpenAsPdf`, `ReceiptTests.FindAnyAccount_ThenFilterByMonth` | |
 | REQ-ADS-08 | M | Сделано | `MainViewModel.RecordPayment` (повторное нажатие от порога); `Data/Settings.cs`; `PUT /api/settings/payment-confirm` (администратор, начальник АДС) | `ShellTests.RecordPayment_FromThreshold_NeedsSecondPress`, `ApartmentCardTests.PaymentConfirm_HeadChanges_LawyerCannot`, `CardDataTests.PaymentConfirmFrom_Defaults_AndIsStored` | Q-01 закрыт |
-| REQ-ADS-09 | M | Частично | `MainViewModel.OekWarning`, блок «Выгрузка для ОЭК» в `DispView.axaml` | нет теста | Есть только подсказка «принято N, выполнено M» и правило «принято больше — скрыто» (Q-02). Самого списка заявок для ОЭК и его выгрузки нет; дата — только рабочая, выбрать другую нельзя |
+| REQ-ADS-09 | M | Сделано | `Domain/TicketJournal.ForOek`, `TicketsViewModel.ExportOek`, блок «Выгрузка для ОЭК» в `DispView.axaml` | `TicketJournalTests.Oek_*`, `TicketScreenTests.Oek_ExportsDayWhenAllDone_HiddenOtherwise` | Заявки, принятые за выбранный день, в Excel; при «принято больше, чем выполнено» список не выводится (Q-02) |
 | REQ-ADS-10 | M | Частично (ждёт Q-29) | `Data/AversDbContext.cs:66-68` — фамилия, имя, отчество по 80 знаков; `ContractHolder` — 250 | нет теста | Ограничение длины есть. Сколько нужно — Q-29 и данные JACK |
 | REQ-ADS-11 | M | Частично (ждёт Q-29) | `AppUser.CanEditAccount`, `Server/Auth/Permissions.cs` (`SubscribersEdit`, `RecordPaymentRequirement`); экран «Права доступа» — `Desktop/Views/AccessView.axaml` | `AuthTests.Me_ReturnsRoleAndPaymentRight`, `AuthTests.RecordPayment_ForbiddenForViewOnlyRoles`, `ApartmentCardTests.UpdateContract_LawyerIsForbidden` | Право даёт оплату, договор, примечание. Правки ФИО и телефона у существующего абонента нет совсем (только при заведении квартиры) — Q-29 |
 | REQ-ADS-12 | S | Сделано | `Subscriber.Benefit`, список `Subscriber.Benefits`; `UpdateContractRequest.Benefit` | `ApartmentCardTests.UpdateContract_ByAdsHead_IsSaved`, `ApartmentCardTests.UpdateContract_Validates` | Q-03 закрыт: только пометка, на начисления не влияет |
@@ -64,7 +64,7 @@
 | REQ-LAW-01 | M | Сделано | `Billing.DebtHighlight` (450 ₽), `Desktop/Views/LegalView.axaml`, `LegalViewModel.cs`, `Desktop/Controls/GridTone.cs`; `GET /api/debts` (`Data/Debts.cs`) | `ShellTests.Debtors_AreColored`, `DesktopTests.Debts_MatchBillingOfEachSubscriber` | |
 | REQ-LAW-02 | M | Сделано | `Billing.IsOldPayer`, `LegalViewModel` | `BillingTests.IsOldPayer_*`, `ShellTests.Debtors_OldPayerMarked_EvenInRedRow` | «Ни разу не платил» = давний неплательщик — REQ-CALC-04, Q-25 |
 | REQ-LAW-03 | S | Частично | `Domain/CourtCase.cs`, `Data/CourtCases.cs`, `Desktop/Views/ClaimView.axaml`, `POST/PUT /api/subscribers/{id}/court-cases` | `CourtCasesTests.*`, `ApartmentCardTests.CourtCase_LawyerAddsAndEdits_AdsHeadIsForbidden`, `ShellTests.CourtCase_LawyerAddsCase_ShownInDebtors` | Судебное дело у абонента есть. Таблица юристов «Дела Аверс.xls» не перенесена (Q-04: после данных JACK) |
-| REQ-LAW-04 | M | Частично | `LegalViewModel.ExportDebtors`, `GET /api/debts` | `ShellTests.Debtors_ExportToExcel` | Выгружается весь список должников в Excel. Своего отбора (сумма, месяцы, дом, есть ли дело) у юристов нет |
+| REQ-LAW-04 | M | Сделано | `LegalViewModel.FilterDebtors`, `ExportDebtors`, `GET /api/debts` | `ShellTests.Debtors_ExportToExcel`, `ShellTests.Debtors_FilterBySumMonthsAddressAndCase_ExportsSelection` | Отбор: долг от, неоплачено от, слова адреса, есть ли судебный приказ. Отчёт и претензии — по отобранным |
 | REQ-LAW-05 | S | Сделано | `Domain/LegalDeadline.cs`, `Domain/WorkCalendar.cs`, `LegalViewModel.LegalRemaining` | `LegalDeadlineTests.*`, `ShellTests.LegalCalculator_ShowsDaysLeft` | Учитывает выходные, праздники и рабочие субботы; срок исковой давности |
 | REQ-LAW-06 | S | Сделано | `LegalViewModel.PrintAllClaims` (от `Billing.ClaimUnpaidMonths` = 3 мес.), `Desktop/Printing/ClaimNotice.cs`, `WordForms.cs` | `ShellTests.Legal_PrintAllClaims_OneWordFileForDebtorsNotInCourt`, `ShellTests.Claim_FollowsLawyersSampleForSelectedDebtor` | Уведомления открываются в Word |
 | REQ-LAW-07 | S | Частично | `LegalViewModel.ExportCourtPackage`, `PdfForms.CourtPackage`; сканы — `Data/SubscriberDocuments.cs`, `Server/Desktop/DocumentEndpoints.cs` | `ShellTests.Claim_OpensNoticeInWordAndCourtPackageAsPdf`, `DocumentTests.*` | В пакете справка о долге и история платежей. Копии договора в пакете нет — скан хранится отдельно |
@@ -112,12 +112,12 @@
 
 | Статус | Сколько | Какие |
 |---|---|---|
-| Сделано | 22 | ENG-01, 02, 03, 05, 06, 07; ADS-01, 02, 03, 05, 06, 07, 08, 13, 14, 15, 16, 17; MECH-01, 02; LAW-01, 02 |
-| Частично | 8 | ENG-04 (Q-24), ADS-09, ADS-10 (Q-29), ADS-11 (Q-29), LAW-04, ACC-01 (Q-28), ACC-03 (Q-12), ACC-06 (Q-05) |
+| Сделано | 24 | ENG-01, 02, 03, 05, 06, 07; ADS-01, 02, 03, 05, 06, 07, 08, 09, 13, 14, 15, 16, 17; MECH-01, 02; LAW-01, 02, 04 |
+| Частично | 6 | ENG-04 (Q-24), ADS-10 (Q-29), ADS-11 (Q-29), ACC-01 (Q-28), ACC-03 (Q-12), ACC-06 (Q-05) |
 | Не начато | 0 | — |
 | Ждёт ответа | 3 | ADS-04 (Q-19), ACC-02 (Q-28), ACC-04 (Q-20, Q-28) |
 
-**M-требования без теста:** REQ-ADS-04, REQ-ADS-09, REQ-ADS-10, REQ-ADS-15, REQ-ACC-02, REQ-ACC-04.
+**M-требования без теста:** REQ-ADS-04, REQ-ADS-10, REQ-ADS-15, REQ-ACC-02, REQ-ACC-04.
 
 Тест есть, но главное не проверяет: REQ-ADS-05 (переключатель «с датой оплаты»),
 REQ-ENG-01 (показ этажности и подъездов — проверена только правка).
