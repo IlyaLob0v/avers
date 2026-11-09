@@ -34,14 +34,46 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
         _ = LoadDocumentsAsync();
     }
 
+    private List<DebtorRow> _allDebtors = [];
+
+    public IReadOnlyList<string> CaseFilters { get; } = ["Любые", "Есть приказ", "Нет приказа"];
+
+    [ObservableProperty] private string _debtFrom = "";
+    [ObservableProperty] private string _unpaidFrom = "";
+    [ObservableProperty] private string _addressFilter = "";
+    [ObservableProperty] private string _caseFilter = "Любые";
+
+    partial void OnDebtFromChanged(string value) => FilterDebtors();
+    partial void OnUnpaidFromChanged(string value) => FilterDebtors();
+    partial void OnAddressFilterChanged(string value) => FilterDebtors();
+    partial void OnCaseFilterChanged(string value) => FilterDebtors();
+
+    public string DebtorsCountText => Debtors.Count == _allDebtors.Count
+        ? $"Должников: {Debtors.Count}"
+        : $"Показано {Debtors.Count} из {_allDebtors.Count}";
+
     /// <summary>Новый список должников; выбранный остаётся выбранным, если он в списке.</summary>
     internal void ShowDebtors(IEnumerable<DebtorRow> rows)
     {
+        _allDebtors = rows.ToList();
+        FilterDebtors();
+    }
+
+    /// <summary>Отбор юристов: долг от суммы, неоплачено от месяцев, слова адреса, есть ли судебный приказ. Пустое поле — не важно.</summary>
+    private void FilterDebtors()
+    {
+        var debtFrom = decimal.TryParse(DebtFrom.Trim(), System.Globalization.NumberStyles.Number, MainViewModel.Ru, out var sum) ? sum : 0;
+        var unpaidFrom = int.TryParse(UnpaidFrom.Trim(), out var months) ? months : 0;
+        var words = AddressFilter.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         var keep = SelectedDebtor?.SubscriberId;
         Debtors.Clear();
-        foreach (var d in rows)
+        foreach (var d in _allDebtors.Where(d =>
+                     d.Debt >= debtFrom && d.Unpaid >= unpaidFrom &&
+                     words.All(w => d.Address.Contains(w, StringComparison.CurrentCultureIgnoreCase)) &&
+                     CaseFilter switch { "Есть приказ" => d.CourtCase is not null, "Нет приказа" => d.CourtCase is null, _ => true }))
             Debtors.Add(d);
         SelectedDebtor = Debtors.FirstOrDefault(d => d.SubscriberId == keep) ?? Debtors.FirstOrDefault();
+        OnPropertyChanged(nameof(DebtorsCountText));
     }
 
     internal void BuildClaim()
@@ -251,7 +283,7 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
     [RelayCommand]
     private void ExportDebtors() =>
         shell.Export("должники", "отчёт по должникам", path => XlsxTable.Write(path,
-            $"Должники на {shell.Today:dd.MM.yyyy}",
+            $"Должники на {shell.Today:dd.MM.yyyy}" + (Debtors.Count == _allDebtors.Count ? "" : $", отбор: {DebtorsCountText.ToLower()}"),
             ["ФИО", "Адрес", "Лиц. счёт", "Долг, руб.", "Неоплачено мес.", "Последняя оплата", "Судебный приказ"],
             Debtors.Select(d => new object?[] { d.FullName, d.Address, d.Account, d.Debt, d.Unpaid, d.OldPayer ? d.LastPay + " (≥ 3 лет)" : d.LastPay, d.Case })));
 
