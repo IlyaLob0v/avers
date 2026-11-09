@@ -14,10 +14,10 @@ public class DesktopTests
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter() } };
 
     [Theory]
-    [InlineData("sokolova", true)]
-    [InlineData("lawyer", false)]
-    [InlineData("novikov", false)]
-    public async Task Snapshot_GivesOnlyWhatTheRoleMaySee(string login, bool tickets)
+    [InlineData("sokolova")]
+    [InlineData("lawyer")]
+    [InlineData("novikov")]
+    public async Task Snapshot_GivesHousesToEveryRole(string login)
     {
         await using var app = new AversApp();
         var client = await app.LoginAsync(login);
@@ -26,21 +26,23 @@ public class DesktopTests
 
         Assert.NotEmpty(snapshot.Houses);
         Assert.All(snapshot.Houses, h => Assert.NotNull(h.Street));
-        Assert.Equal(tickets, snapshot.Tickets.Count > 0);
-        Assert.Equal(tickets, snapshot.Subscribers.Count > 0);
     }
 
+    /// <summary>Замер на учебной базе: заявки и абоненты заявок грузятся частями, в снимок не попадают.</summary>
     [Fact]
-    public async Task Snapshot_HasOnlySubscribersOfTickets()
+    public async Task Snapshot_HasNoTicketsOrSubscribers()
     {
         await using var app = new AversApp();
         var client = await app.LoginAsync("sokolova");
+        var tickets = await app.WithDbAsync(db => db.Tickets.CountAsync());
 
-        var snapshot = (await client.GetFromJsonAsync<AversSnapshot>("/api/desktop/snapshot", Json))!.Link();
+        using var snapshot = JsonDocument.Parse(await client.GetStringAsync("/api/desktop/snapshot"));
 
-        var inTickets = snapshot.Tickets.Where(t => t.SubscriberId is not null).Select(t => t.SubscriberId!.Value).ToHashSet();
-        Assert.Equal(inTickets.Order(), snapshot.Subscribers.Select(s => s.Id).Order());
-        Assert.All(snapshot.Tickets.Where(t => t.SubscriberId is not null), t => Assert.NotNull(t.Subscriber));
+        Assert.True(tickets > 0);
+        var fields = snapshot.RootElement.EnumerateObject().Select(p => p.Name).ToList();
+        Assert.Contains("houses", fields);
+        Assert.DoesNotContain("tickets", fields);
+        Assert.DoesNotContain("subscribers", fields);
     }
 
     [Fact]

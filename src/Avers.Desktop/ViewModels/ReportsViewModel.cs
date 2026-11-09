@@ -56,14 +56,37 @@ public sealed partial class ReportsViewModel(MainViewModel shell) : ObservableOb
         }
     }
 
+    /// <summary>Заявки за период по домам: сервер считает их, когда открывают отчёты или меняют период.</summary>
+    internal async Task LoadTicketCountsAsync()
+    {
+        if (!shell.SeesTickets) return;
+        var version = ++_ticketCountsVersion;
+        List<TicketHouseStat> stats;
+        try
+        {
+            stats = await shell.Store.LoadTicketsByHouseAsync(ReportFrom, ReportTo);
+        }
+        catch (StoreException e)
+        {
+            shell.Status = e.Message;
+            return;
+        }
+        if (version != _ticketCountsVersion) return;
+        _ticketsByHouse = stats.ToDictionary(s => s.HouseId);
+        RefreshReport();
+    }
+
+    private Dictionary<int, TicketHouseStat> _ticketsByHouse = [];
+    private int _ticketCountsVersion;
+
     private IEnumerable<(string Name, Func<IReadOnlyCollection<House>, object> Value)> ReportDefinitions()
     {
-        IEnumerable<WorkTicket> Tickets(IReadOnlyCollection<House> houses) =>
-            shell.AllTickets.Where(t => t.Date >= ReportFrom && t.Date <= ReportTo && houses.Any(h => h.Id == t.HouseId));
+        int Tickets(IReadOnlyCollection<House> houses, Func<TicketHouseStat, int> count) =>
+            houses.Sum(h => _ticketsByHouse.GetValueOrDefault(h.Id) is { } s ? count(s) : 0);
 
         yield return ("Домов на обслуживании", hs => hs.Count(h => h.Serviced));
-        yield return ("Принято заявок", hs => Tickets(hs).Count());
-        yield return ("Выполнено заявок", hs => Tickets(hs).Count(t => t.Status == TicketStatus.Done));
+        yield return ("Принято заявок", hs => Tickets(hs, s => s.Accepted));
+        yield return ("Выполнено заявок", hs => Tickets(hs, s => s.Done));
         yield return ("Неустранённые неисправности СКПТ", hs => hs.Count(h => h.OpenFault != null));
         yield return ("Сумма дебиторской задолженности", hs =>
             hs.Sum(h => shell.DebtByHouse.GetValueOrDefault(h.Id)));

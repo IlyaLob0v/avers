@@ -20,7 +20,12 @@ public sealed partial class MainViewModel : ObservableObject
     private List<Subscriber> _subscribers = [];
     private bool _seesSubscribers;
     private Dictionary<int, decimal> _debtByHouse = [];
-    private List<WorkTicket> _tickets = [];
+    /// <summary>Видит ли сотрудник заявки (модуль «Заявки»): только тогда программа их запрашивает.</summary>
+    private bool _seesTickets;
+    /// <summary>Заявки, принятые сегодня: принято и выполнено — для предупреждения о списке ОЭК.</summary>
+    private (int Accepted, int Done) _todayTickets;
+    private int? _houseTicketsOf;
+    private int _houseTicketsVersion;
     private List<IntercomTicket> _intercomTickets = [];
     private bool _holdRefresh;
     private int? _intercomHouseId;
@@ -47,7 +52,7 @@ public sealed partial class MainViewModel : ObservableObject
     internal IReadOnlyList<House> Houses => _houses;
     internal IReadOnlyList<Subscriber> HouseSubscribers => _subscribers;
     internal IReadOnlyList<IntercomTicket> AllIntercomTickets => _intercomTickets;
-    internal IReadOnlyList<WorkTicket> AllTickets => _tickets;
+    internal bool SeesTickets => _seesTickets;
     internal IReadOnlyDictionary<int, decimal> DebtByHouse => _debtByHouse;
 
     public AccessViewModel AccessScreen { get; }
@@ -139,9 +144,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         get
         {
-            var day = _tickets.Where(t => t.Date == _today).ToList();
-            var accepted = day.Count;
-            var done = day.Count(t => t.Status == TicketStatus.Done);
+            var (accepted, done) = _todayTickets;
             return accepted > done
                 ? $"На {_today:dd.MM.yyyy} принято {accepted}, выполнено {done}. Список для ОЭК скрыт."
                 : $"На {_today:dd.MM.yyyy} принято {accepted}, выполнено {done}. Можно выгрузить список для ОЭК.";
@@ -175,6 +178,7 @@ public sealed partial class MainViewModel : ObservableObject
         var keepSubscriberId = SelectedSubscriber?.Id;
         var keepHouseId = SelectedHouse?.Id;
         _seesSubscribers = RoleCatalog.Can(user.Role, AppModule.Abon, out _);
+        _seesTickets = RoleCatalog.Can(user.Role, AppModule.Disp, out _);
         PaymentWarningMonths = data.PaymentWarningMonths;
         PaymentConfirmFrom = data.PaymentConfirmFrom;
 
@@ -183,9 +187,11 @@ public sealed partial class MainViewModel : ObservableObject
             Streets.Add(s);
 
         _houses = data.Houses;
-        _tickets = data.Tickets;
         _intercomTickets = data.IntercomTickets;
-        TicketsScreen.LoadTicketYears();
+        // Заявок в снимке нет: уже загруженные строки только переставляем на новые дома.
+        LinkTickets(TicketsScreen.Tickets);
+        LinkTickets(HouseTickets);
+        LinkTickets(_apartmentTickets);
 
         Mechanics.Clear();
         foreach (var m in data.Mechanics) Mechanics.Add(m);
@@ -204,11 +210,96 @@ public sealed partial class MainViewModel : ObservableObject
         RefreshHouses();
         SelectedHouse = HousesOnStreet.FirstOrDefault(h => h.Id == keep?.Id)
                         ?? HousesOnStreet.FirstOrDefault(h => h.Number == DemoSeeder.StartHouse) ?? HousesOnStreet.FirstOrDefault();
-        TicketsScreen.SelectedTicket = _tickets.FirstOrDefault(t => t.Number == DemoSeeder.StartTicket);
         _holdRefresh = false;
         _intercomHouseId = null;
         TicketsScreen.BindTicket();
         await ShowHouseAsync(keepSubscriberId);
+    }
+
+    /// <summary>
+    /// После входа: годы журнала, журнал со сводкой и итоги дня. Стартовая заявка учебной базы выбирается, если она в журнале.
+    /// </summary>
+    private async Task LoadTicketsAfterLoginAsync()
+    {
+        if (!_seesTickets) return;
+        await TicketsScreen.LoadTicketYearsAsync();
+        await TicketsScreen.RefreshTicketsAsync(force: false);
+        TicketsScreen.SelectedTicket ??= TicketsScreen.Tickets.FirstOrDefault(t => t.Number == DemoSeeder.StartTicket);
+        await LoadTodayTicketsAsync();
+    }
+
+    /// <summary>
+    /// После записи заявки перечитываются только заявки на экранах: журнал со сводкой, заявки дома и квартиры,
+    /// итоги дня. Снимок справочников не трогаем.
+    /// </summary>
+    internal async Task ReloadTicketsAsync()
+    {
+        await TicketsScreen.RefreshTicketsAsync(force: true);
+        await LoadHouseTicketsAsync(force: true);
+        await LoadApartmentTicketsAsync(force: true);
+        await LoadTodayTicketsAsync();
+    }
+
+    /// <summary>Перед входом: заявки прежнего сотрудника забываются, всё запрашивается заново.</summary>
+    private void ForgetTickets()
+    {
+        TicketsScreen.Forget();
+        HouseTickets.Clear();
+        _houseTicketsOf = null;
+        _apartmentTickets = [];
+        _apartmentTicketsOf = null;
+        _todayTickets = (0, 0);
+    }
+
+    /// <summary>Связывает строки заявок с домами снимка (улица, организация).</summary>
+    internal void LinkTickets(IEnumerable<WorkTicket> tickets)
+    {
+        var houses = _houses.ToDictionary(h => h.Id);
+        foreach (var t in tickets)
+            t.House = houses.GetValueOrDefault(t.HouseId) ?? t.House;
+    }
+
+    /// <summary>Заявки выбранного дома — для паспорта дома и числа невыполненных на экране приёма.</summary>
+    private async Task LoadHouseTicketsAsync(bool force = false)
+    {
+        var house = SelectedHouse;
+        if (!force && house?.Id == _houseTicketsOf) return;
+        _houseTicketsOf = house?.Id;
+        var version = ++_houseTicketsVersion;
+        List<WorkTicket> list = [];
+        if (house is not null && _seesTickets)
+        {
+            try
+            {
+                list = await _store.LoadTicketsAsync(new TicketFilter { HouseId = house.Id });
+            }
+            catch (StoreException e)
+            {
+                Status = e.Message;
+                _houseTicketsOf = null;
+            }
+        }
+        if (version != _houseTicketsVersion) return;
+        LinkTickets(list);
+        HouseTickets.Clear();
+        foreach (var t in list)
+            HouseTickets.Add(t);
+        TicketsScreen.NotifyTicketPanel();
+    }
+
+    private async Task LoadTodayTicketsAsync()
+    {
+        if (!_seesTickets) return;
+        try
+        {
+            var today = await _store.LoadTicketsByHouseAsync(_today, _today);
+            _todayTickets = (today.Sum(s => s.Accepted), today.Sum(s => s.Done));
+        }
+        catch (StoreException e)
+        {
+            Status = e.Message;
+        }
+        OnPropertyChanged(nameof(OekWarning));
     }
 
     /// <summary>Загружает абонентов выбранного дома и выбирает квартиру: нужную, учебную стартовую или первую.</summary>
@@ -304,6 +395,8 @@ public sealed partial class MainViewModel : ObservableObject
             _ = SchemeScreen.ShowSchemeAsync();
         if (value is AppModule.Legal or AppModule.Claim or AppModule.Reports)
             _ = LoadDebtsAsync();
+        if (value == AppModule.Reports)
+            _ = ReportsScreen.LoadTicketCountsAsync();
     }
 
     partial void OnSelectedStreetChanged(Street? value)
@@ -353,7 +446,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (_holdRefresh) return;
         TicketsScreen.RefreshTickets();
-        RebuildHouseTickets();
+        _ = LoadHouseTicketsAsync();
         RebuildPayments();
         ReceiptsScreen.RebuildReceiptPeriods();
 
@@ -387,14 +480,6 @@ public sealed partial class MainViewModel : ObservableObject
         LegalScreen.BuildClaim();
     }
 
-    private void RebuildHouseTickets()
-    {
-        HouseTickets.Clear();
-        if (SelectedHouse is not null)
-            foreach (var t in _tickets.Where(t => t.HouseId == SelectedHouse.Id).Newest())
-                HouseTickets.Add(t);
-    }
-
     internal void NotifyWindowTitle() => OnPropertyChanged(nameof(WindowTitle));
 
     private void RebuildPayments()
@@ -417,7 +502,9 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             var user = await _store.SignInAsync(login, Password);
+            ForgetTickets();
             await Apply(await _store.LoadAsync(user), user);
+            await LoadTicketsAfterLoginAsync();
             User = user;
         }
         catch (StoreException e)

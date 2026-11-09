@@ -39,7 +39,7 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
     public Task<AversSnapshot> LoadAsync(AppUser user)
     {
         using var ctx = db.CreateDbContext();
-        return Task.FromResult(AversSnapshot.Load(ctx, user.Role).Link());
+        return Task.FromResult(AversSnapshot.Load(ctx).Link());
     }
 
     public Task<List<Subscriber>> LoadHouseAsync(House house)
@@ -297,7 +297,7 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
         return Task.FromResult(ticket.Number);
     }
 
-    public Task SaveTicketAsync(int ticketId, string fault, string mechanic, string workDone, TicketStatus status, DateOnly? doneDate)
+    public Task<WorkTicket> SaveTicketAsync(int ticketId, string fault, string mechanic, string workDone, TicketStatus status, DateOnly? doneDate)
     {
         using var ctx = db.CreateDbContext();
         var t = ctx.Tickets.First(x => x.Id == ticketId);
@@ -307,7 +307,43 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
         TicketJournal.SetResult(t, workDone, status, doneDate, Today);
         ChangeLog.TicketEdit(ctx, DateTimeOffset.UtcNow, ChangeLog.Who(ctx, _userId), t, before);
         ctx.SaveChanges();
-        return Task.CompletedTask;
+        return Task.FromResult(TicketQueries.One(ctx, ticketId)!);
+    }
+
+    public Task<List<WorkTicket>> LoadTicketsAsync(TicketFilter filter)
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(TicketQueries.Page(ctx, filter));
+    }
+
+    public Task<List<WorkTicket>> LoadApartmentTicketsAsync(int subscriberId)
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(TicketQueries.ForApartment(ctx, subscriberId) ?? []);
+    }
+
+    public Task<IReadOnlyList<TicketMonthStat>> LoadTicketMonthsAsync(int year, TicketFilter filter)
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(TicketQueries.ByMonth(ctx, year, filter));
+    }
+
+    public Task<IReadOnlyList<int>> LoadTicketYearsAsync()
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(TicketQueries.Years(ctx, Today));
+    }
+
+    public Task<List<TicketHouseStat>> LoadTicketsByHouseAsync(DateOnly from, DateOnly to)
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(TicketQueries.ByHouse(ctx, from, to));
+    }
+
+    public Task<Subscriber?> LoadTicketApartmentAsync(int ticketId)
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(TicketQueries.Apartment(ctx, ticketId));
     }
 
     public Task MarkPprAsync(int houseId, int year, int month, PprStatus status)

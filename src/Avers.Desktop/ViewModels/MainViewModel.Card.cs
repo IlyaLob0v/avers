@@ -3,6 +3,7 @@ using System.Globalization;
 using Avers.Contracts;
 using Avers.Data;
 using Avers.Desktop.Controls;
+using Avers.Desktop.Data;
 using Avers.Desktop.Printing;
 using Avers.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -19,6 +20,10 @@ public sealed partial class MainViewModel
 {
     internal static readonly CultureInfo Ru = CultureInfo.GetCultureInfo("ru-RU");
     private int? _cardBoundId;
+    /// <summary>Заявки квартиры выбранного абонента (свои и по адресу), новые сверху.</summary>
+    private List<WorkTicket> _apartmentTickets = [];
+    private int? _apartmentTicketsOf;
+    private int _apartmentTicketsVersion;
 
     public ObservableCollection<CardPaymentRow> CardPayments { get; } = [];
     public ObservableCollection<WorkTicket> ApartmentTicketRows { get; } = [];
@@ -132,18 +137,10 @@ public sealed partial class MainViewModel
             foreach (var y in SelectedSubscriber?.Payments.Select(p => p.Year).Distinct().OrderDescending() ?? Enumerable.Empty<int>())
                 CardPaymentYears.Add(y);
             CardPaymentYear = CardPaymentYears.Contains(_today.Year) ? _today.Year : CardPaymentYears.FirstOrDefault();
-
-            CardTicketYears.Clear();
-            CardTicketYears.Add(new YearOption(null, "Все годы"));
-            var ticketYears = SelectedSubscriber is null ? Enumerable.Empty<int>() :
-                ApartmentTickets.For(_tickets, SelectedSubscriber).Select(t => t.Date.Year).Distinct().OrderDescending();
-            foreach (var y in ticketYears)
-                CardTicketYears.Add(new YearOption(y, y.ToString(CultureInfo.InvariantCulture)));
-            CardTicketYear = CardTicketYears[0];
         }
 
         RebuildCardPayments();
-        RebuildApartmentTickets();
+        _ = LoadApartmentTicketsAsync();
 
         OnPropertyChanged(nameof(CardSurname));
         OnPropertyChanged(nameof(CardNameRest));
@@ -181,11 +178,46 @@ public sealed partial class MainViewModel
             CardPayments.Add(new CardPaymentRow(p, MonthName(p.Month)));
     }
 
+    /// <summary>
+    /// Заявки квартиры выбранного абонента — запрос при смене квартиры (или после записи заявки, <paramref name="force"/>).
+    /// Новая квартира открывается на «Все годы», после записи выбранный год сохраняется.
+    /// </summary>
+    private async Task LoadApartmentTicketsAsync(bool force = false)
+    {
+        var s = SelectedSubscriber;
+        if (!force && s?.Id == _apartmentTicketsOf) return;
+        _apartmentTicketsOf = s?.Id;
+        var version = ++_apartmentTicketsVersion;
+        List<WorkTicket> list = [];
+        if (s is not null && _seesTickets)
+        {
+            try
+            {
+                list = await _store.LoadApartmentTicketsAsync(s.Id);
+            }
+            catch (StoreException e)
+            {
+                Status = e.Message;
+                _apartmentTicketsOf = null;
+            }
+        }
+        if (version != _apartmentTicketsVersion) return;
+        LinkTickets(list);
+        _apartmentTickets = list;
+
+        var keepYear = force ? CardTicketYear?.Year : null;
+        CardTicketYears.Clear();
+        CardTicketYears.Add(new YearOption(null, "Все годы"));
+        foreach (var y in list.Select(t => t.Date.Year).Distinct().OrderDescending())
+            CardTicketYears.Add(new YearOption(y, y.ToString(CultureInfo.InvariantCulture)));
+        CardTicketYear = CardTicketYears.FirstOrDefault(y => y.Year == keepYear) ?? CardTicketYears[0];
+        RebuildApartmentTickets();
+    }
+
     private void RebuildApartmentTickets()
     {
         ApartmentTicketRows.Clear();
-        if (SelectedSubscriber is null) return;
-        foreach (var t in ApartmentTickets.For(_tickets, SelectedSubscriber, CardTicketYear?.Year))
+        foreach (var t in _apartmentTickets.Where(t => CardTicketYear?.Year is not { } year || t.Date.Year == year))
             ApartmentTicketRows.Add(t);
     }
 

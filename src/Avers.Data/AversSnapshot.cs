@@ -7,7 +7,7 @@ namespace Avers.Data;
 /// Всё, что настольная программа держит в памяти после входа. Таблицы читаются плоско, по сети
 /// уходят без связей, а связываются по ключам в <see cref="Link"/> уже на месте.
 /// Абонентов со счетами здесь нет: их грузят по дому (<see cref="HouseSubscribers"/>).
-/// Заявки получает только тот, кому они положены по роли, вместе с абонентами этих заявок.
+/// Заявок тоже нет: журнал, сводки и квартиру заявки программа запрашивает частями (<see cref="TicketQueries"/>).
 /// </summary>
 public sealed class AversSnapshot
 {
@@ -20,43 +20,29 @@ public sealed class AversSnapshot
     public List<PprEntry> Ppr { get; set; } = [];
     public List<IntercomPanel> Intercoms { get; set; } = [];
     public List<IntercomTicket> IntercomTickets { get; set; } = [];
-    public List<Subscriber> Subscribers { get; set; } = [];
-    public List<WorkTicket> Tickets { get; set; } = [];
     public List<Mechanic> Mechanics { get; set; } = [];
     public List<Material> Materials { get; set; } = [];
 
-    public static AversSnapshot Load(AversDbContext db, UserRole role)
+    public static AversSnapshot Load(AversDbContext db) => new()
     {
-        var snapshot = new AversSnapshot
-        {
-            PaymentWarningMonths = Settings.PaymentWarningMonths(db),
-            PaymentConfirmFrom = Settings.PaymentConfirmFrom(db),
-            Organizations = db.Organizations.AsNoTracking().ToList(),
-            Streets = db.Streets.AsNoTracking().OrderBy(x => x.Name).ToList(),
-            Houses = db.Houses.AsNoTracking().ToList(),
-            Schemes = db.HouseSchemes.AsNoTracking().ToList(),
-            Ppr = db.PprEntries.AsNoTracking().ToList(),
-            Intercoms = db.IntercomPanels.AsNoTracking().ToList(),
-            IntercomTickets = db.IntercomTickets.AsNoTracking().OrderByDescending(x => x.Date).ToList(),
-            Mechanics = db.Mechanics.AsNoTracking().OrderBy(x => x.FullName).ToList(),
-            Materials = db.Materials.AsNoTracking().ToList()
-        };
-        if (RoleCatalog.Can(role, AppModule.Disp, out _))
-        {
-            snapshot.Tickets = db.Tickets.AsNoTracking().ToList();
-            if (RoleCatalog.Can(role, AppModule.Abon, out _))
-                snapshot.Subscribers = db.Subscribers.AsNoTracking().Where(s => s.Tickets.Any()).ToList();
-        }
-        return snapshot;
-    }
+        PaymentWarningMonths = Settings.PaymentWarningMonths(db),
+        PaymentConfirmFrom = Settings.PaymentConfirmFrom(db),
+        Organizations = db.Organizations.AsNoTracking().ToList(),
+        Streets = db.Streets.AsNoTracking().OrderBy(x => x.Name).ToList(),
+        Houses = db.Houses.AsNoTracking().ToList(),
+        Schemes = db.HouseSchemes.AsNoTracking().ToList(),
+        Ppr = db.PprEntries.AsNoTracking().ToList(),
+        Intercoms = db.IntercomPanels.AsNoTracking().ToList(),
+        IntercomTickets = db.IntercomTickets.AsNoTracking().OrderByDescending(x => x.Date).ToList(),
+        Mechanics = db.Mechanics.AsNoTracking().OrderBy(x => x.FullName).ToList(),
+        Materials = db.Materials.AsNoTracking().ToList()
+    };
 
     /// <summary>Расставляет навигационные свойства по ключам.</summary>
     public AversSnapshot Link()
     {
         var streets = Streets.ToDictionary(x => x.Id);
         var organizations = Organizations.ToDictionary(x => x.Id);
-        var houses = Houses.ToDictionary(x => x.Id);
-        var subscribers = Subscribers.ToDictionary(x => x.Id);
 
         var schemes = Schemes.ToLookup(x => x.HouseId);
         var ppr = Ppr.ToLookup(x => x.HouseId);
@@ -68,14 +54,6 @@ public sealed class AversSnapshot
             h.Schemes = schemes[h.Id].ToList();
             h.Ppr = ppr[h.Id].OrderBy(x => x.Year).ThenBy(x => x.Month).ToList();
             h.Intercoms = intercoms[h.Id].OrderBy(x => x.Entrance).ToList();
-        }
-        foreach (var s in Subscribers)
-            s.House = houses[s.HouseId];
-
-        foreach (var t in Tickets)
-        {
-            t.House = houses[t.HouseId];
-            t.Subscriber = t.SubscriberId is { } id ? subscribers.GetValueOrDefault(id) : null;
         }
         return this;
     }

@@ -9,6 +9,9 @@ public static class DesktopClient
 {
     public const string Header = "X-Avers-Desktop";
 
-    /// <summary>2 — паспорт дома с неисправностью и организацией (PR #88).</summary>
-    public const int Version = 2;
+    /// <summary>
+    /// 2 — паспорт дома с неисправностью и организацией (PR #88).
+    /// 3 — заявок и их абонентов нет в снимке, рабочее место запрашивает их частями.
+    /// </summary>
+    public const int Version = 3;
 }

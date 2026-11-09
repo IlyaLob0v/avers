@@ -274,6 +274,8 @@ public class ShellTests
         using var app = new DesktopApp();
         app.Go(AppModule.Disp);
         app.Vm.TicketsScreen.PeriodAllCommand.Execute(null);
+        // Счёт заявок по домам сервер отдаёт, когда открывают отчёты (как долги).
+        app.Go(AppModule.Reports);
         var inPeriod = app.Vm.TicketsScreen.Tickets.Where(t => t.Date >= app.Vm.ReportsScreen.ReportFrom && t.Date <= app.Vm.ReportsScreen.ReportTo).ToList();
 
         Assert.Equal(inPeriod.Count.ToString(), app.Vm.ReportsScreen.ReportMetrics.Single(m => m.Name == "Принято заявок").Value);

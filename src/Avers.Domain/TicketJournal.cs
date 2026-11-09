@@ -88,10 +88,6 @@ public static class TicketJournal
         }).ToList();
     }
 
-    /// <summary>Годы, за которые есть заявки, плюс текущий — для выбора года в журнале.</summary>
-    public static IReadOnlyList<int> Years(IEnumerable<WorkTicket> tickets, DateOnly today) =>
-        tickets.Select(t => t.Date.Year).Append(today.Year).Distinct().OrderDescending().ToList();
-
     /// <summary>
     /// Записать результат работы: заполненное «что произведено» закрывает заявку и ставит дату выполнения,
     /// пустое — возвращает в работу.

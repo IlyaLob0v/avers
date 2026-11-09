@@ -111,10 +111,32 @@ public interface IAversStore
 
     Task DeleteMechanicAsync(int id);
 
+    /// <summary>
+    /// Заявки по отбору, свежие сверху, не больше <see cref="TicketQueries.MaxResults"/>. У абонента только ФИО и лицевой счёт;
+    /// дом связывает вызывающий по снимку.
+    /// </summary>
+    Task<List<WorkTicket>> LoadTicketsAsync(TicketFilter filter);
+
+    /// <summary>Заявки квартиры абонента: свои и принятые по адресу квартиры.</summary>
+    Task<List<WorkTicket>> LoadApartmentTicketsAsync(int subscriberId);
+
+    /// <summary>Сводка за год по месяцам с отбором по дому, квартире и виду — считает база.</summary>
+    Task<IReadOnlyList<TicketMonthStat>> LoadTicketMonthsAsync(int year, TicketFilter filter);
+
+    /// <summary>Годы от первой заявки до текущего, новые сверху.</summary>
+    Task<IReadOnlyList<int>> LoadTicketYearsAsync();
+
+    /// <summary>Принято и выполнено по домам за период.</summary>
+    Task<List<TicketHouseStat>> LoadTicketsByHouseAsync(DateOnly from, DateOnly to);
+
+    /// <summary>Квартира открытой заявки: ФИО, лицевой счёт, договор, последняя оплата, примечание. null — заявка без абонента.</summary>
+    Task<Subscriber?> LoadTicketApartmentAsync(int ticketId);
+
     /// <summary>Принимает заявку и возвращает её номер.</summary>
     Task<int> AcceptTicketAsync(CreateTicketRequest request, AppUser user);
 
-    Task SaveTicketAsync(int ticketId, string fault, string mechanic, string workDone, TicketStatus status, DateOnly? doneDate);
+    /// <summary>Записывает заявку и возвращает её такой, как сохранила база.</summary>
+    Task<WorkTicket> SaveTicketAsync(int ticketId, string fault, string mechanic, string workDone, TicketStatus status, DateOnly? doneDate);
 
     Task MarkPprAsync(int houseId, int year, int month, PprStatus status);
 

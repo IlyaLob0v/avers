@@ -26,6 +26,13 @@ public static class AccessLogFilter
             ? ChangeLog.Account(s)
             : $"абонент № {http.Request.RouteValues[route]}";
 
+    /// <summary>Абонент заявки по номеру заявки из маршрута.</summary>
+    public static Func<HttpContext, AversDbContext, string> TicketSubscriber(string route) => (http, db) =>
+        int.TryParse(http.Request.RouteValues[route]?.ToString(), out var id)
+        && db.Tickets.AsNoTracking().Where(t => t.Id == id).Select(t => t.Subscriber).FirstOrDefault() is { } s
+            ? ChangeLog.Account(s)
+            : $"заявка № {http.Request.RouteValues[route]}";
+
     /// <summary>Дом по номеру из маршрута: «ул. Волочаевская, д. 19Д».</summary>
     public static Func<HttpContext, AversDbContext, string> House(string route) => (http, db) =>
         int.TryParse(http.Request.RouteValues[route]?.ToString(), out var id)
