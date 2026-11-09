@@ -135,19 +135,6 @@ public sealed partial class MainViewModel : ObservableObject
         ? Money(p.Tariff)
         : "";
     public string PaymentsCaption => $"Платежи {_today.Year} · тариф / отв. / сумма / дата опл.";
-    public string OekWarning
-    {
-        get
-        {
-            var day = _tickets.Where(t => t.Date == _today).ToList();
-            var accepted = day.Count;
-            var done = day.Count(t => t.Status == TicketStatus.Done);
-            return accepted > done
-                ? $"На {_today:dd.MM.yyyy} принято {accepted}, выполнено {done}. Список для ОЭК скрыт."
-                : $"На {_today:dd.MM.yyyy} принято {accepted}, выполнено {done}. Можно выгрузить список для ОЭК.";
-        }
-    }
-
     public string HouseCaption => SelectedHouse is null ? "" : SelectedHouse.AddressLine;
     public string HouseStats => SelectedHouse is null ? "" :
         $"{SelectedHouse.Floors} этажей · {SelectedHouse.Entrances} подъезда · {SelectedHouse.Risers} стояков · {SelectedHouse.Apartments} кв. · зона {SelectedHouse.Zone} · {(SelectedHouse.Serviced ? "на обслуживании" : "снят")} · индекс {SelectedHouse.PzhreuIndex} · счёт {SelectedHouse.PzhreuAccount}";
@@ -376,7 +363,6 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ReceiptSumText));
         OnPropertyChanged(nameof(HasDebt));
         OnPropertyChanged(nameof(ToPayText));
-        OnPropertyChanged(nameof(OekWarning));
         OnPropertyChanged(nameof(HouseCaption));
         OnPropertyChanged(nameof(HouseStats));
         OnPropertyChanged(nameof(WindowTitle));

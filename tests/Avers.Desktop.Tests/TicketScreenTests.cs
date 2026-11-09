@@ -42,4 +42,54 @@ public class TicketScreenTests
         Assert.Equal((TicketStatus.Done, (DateOnly?)Today, app.Vm.Mechanics[0].FullName), (ticket.Status, ticket.DoneDate, ticket.Mechanic));
         Assert.Contains(app.Vm.Mechanics[0].FullName, screen.MechanicNames);
     }
+
+    [AvaloniaFact]
+    public void Overdue_RedInJournal_FilterAndDueDate()
+    {
+        var today = Today.AddDays(TicketJournal.DueDays + 1);
+        using var app = new DesktopApp("orlova", today);
+        app.Go(AppModule.Disp);
+        var screen = app.Vm.TicketsScreen;
+        screen.PeriodAllCommand.Execute(null);
+        var overdue = screen.Tickets.ToList().Where(t => TicketJournal.IsOverdue(t, today)).ToList();
+        Assert.NotEmpty(overdue);
+        Assert.Equal(Controls.RowTone.Debt, screen.TicketTone(overdue[0]));
+        Assert.Contains($"просрочено {overdue.Count}", screen.TicketCountText);
+
+        screen.OnlyOverdueTickets = true;
+
+        Assert.Equal(overdue.Select(t => t.Number).Order(), screen.Tickets.Select(t => t.Number).Order());
+        screen.SelectedTicket = screen.Tickets[0];
+        Assert.EndsWith(", просрочена", screen.TicketDueText);
+
+        screen.OnlyOverdueTickets = false;
+        screen.NewTicketFault = "Нет сигнала";
+        screen.AcceptTicketCommand.Execute(null);
+        app.Pump();
+        Assert.Equal($"до {today.AddDays(TicketJournal.DueDays):dd.MM.yyyy}", screen.TicketDueText);
+        Assert.Equal(Controls.RowTone.None, screen.TicketTone(screen.SelectedTicket));
+    }
+
+    [AvaloniaFact]
+    public void Oek_ExportsDayWhenAllDone_HiddenOtherwise()
+    {
+        using var app = new DesktopApp("orlova");
+        app.Go(AppModule.Disp);
+        var screen = app.Vm.TicketsScreen;
+        string? opened = null;
+        app.Vm.OpenFile = path => opened = path;
+        screen.PeriodAllCommand.Execute(null);
+        var doneDay = screen.Tickets.ToList().GroupBy(t => t.Date).First(g => g.All(t => t.Status == TicketStatus.Done));
+        var openDay = screen.Tickets.ToList().GroupBy(t => t.Date).First(g => g.Any(t => t.Status != TicketStatus.Done));
+
+        screen.OekDate = openDay.Key.ToDateTime(TimeOnly.MinValue);
+        screen.ExportOekCommand.Execute(null);
+        Assert.Null(opened);
+        Assert.Contains("скрыт", app.Vm.Status);
+
+        screen.OekDate = doneDay.Key.ToDateTime(TimeOnly.MinValue);
+        screen.ExportOekCommand.Execute(null);
+        using var book = new ClosedXML.Excel.XLWorkbook(opened!);
+        Assert.Equal(doneDay.Count(), book.Worksheet(1).RowsUsed().Count() - 2);
+    }
 }
