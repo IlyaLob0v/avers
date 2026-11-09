@@ -519,6 +519,23 @@ public class ShellTests
         Assert.Contains(debtor.Address, app.Vm.LegalScreen.ClaimText);
     }
 
+    [AvaloniaTheory]
+    [InlineData("admin", true)]
+    [InlineData("orlov", true)]
+    [InlineData("lawyer", false)]
+    public void ForOneC_ShownOnlyToAdministratorAndAdsHead(string login, bool shown)
+    {
+        // Q-21: итоги месяца для 1С сервер отдаёт только администратору и начальнику АДС — у остальных кнопки нет.
+        using var app = new DesktopApp(login);
+        app.Go(AppModule.Reports);
+        Assert.Equal(AppModule.Reports, app.Vm.Module);
+
+        var buttons = app.Window.GetVisualDescendants().OfType<Button>()
+            .Where(b => b.IsEffectivelyVisible && Equals(b.Content, "Для 1С"));
+
+        Assert.Equal(shown, buttons.Any());
+    }
+
     [AvaloniaFact]
     public void Back_ReturnsToPreviousScreens()
     {

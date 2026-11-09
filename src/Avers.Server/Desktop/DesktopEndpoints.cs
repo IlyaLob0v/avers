@@ -19,9 +19,9 @@ public static class DesktopEndpoints
         api.MapPut("/houses/{id:int}/passport", SavePassport).RequireAuthorization(Policies.HousesEdit);
     }
 
-    /// <summary>Справочники без связей; абонентов и заявок в снимке нет, они грузятся частями.</summary>
+    /// <summary>Справочники без связей, только положенные роли; абонентов и заявок в снимке нет, они грузятся частями.</summary>
     private static Results<Ok<AversSnapshot>, ForbidHttpResult> Snapshot(ClaimsPrincipal user, AversDbContext db) =>
-        user.Role() is not null ? TypedResults.Ok(AversSnapshot.Load(db)) : TypedResults.Forbid();
+        user.Role() is { } role ? TypedResults.Ok(AversSnapshot.Load(db, role)) : TypedResults.Forbid();
 
     private static async Task<Results<NoContent, NotFound, ValidationProblem>> SavePassport(
         int id, HousePassportRequest request, ClaimsPrincipal user, AversDbContext db, TimeProvider time, CancellationToken ct)

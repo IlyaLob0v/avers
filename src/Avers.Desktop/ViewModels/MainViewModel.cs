@@ -383,6 +383,7 @@ public sealed partial class MainViewModel : ObservableObject
         IntercomScreen.RefreshRights();
         PhonebookScreen.RefreshRights();
         LegalScreen.RefreshRights();
+        ReportsScreen.RefreshRights();
         TicketsScreen.NotifyTicketPanel();
         TicketsScreen.BindTicket();
         RebuildNavigation();

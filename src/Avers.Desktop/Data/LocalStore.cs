@@ -39,7 +39,7 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
     public Task<AversSnapshot> LoadAsync(AppUser user)
     {
         using var ctx = db.CreateDbContext();
-        return Task.FromResult(AversSnapshot.Load(ctx).Link());
+        return Task.FromResult(AversSnapshot.Load(ctx, user.Role).Link());
     }
 
     public Task<List<Subscriber>> LoadHouseAsync(House house)

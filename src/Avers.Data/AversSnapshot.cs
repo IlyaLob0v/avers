@@ -23,20 +23,29 @@ public sealed class AversSnapshot
     public List<Mechanic> Mechanics { get; set; } = [];
     public List<Material> Materials { get; set; } = [];
 
-    public static AversSnapshot Load(AversDbContext db) => new()
+    public static AversSnapshot Load(AversDbContext db, UserRole role)
     {
-        PaymentWarningMonths = Settings.PaymentWarningMonths(db),
-        PaymentConfirmFrom = Settings.PaymentConfirmFrom(db),
-        Organizations = db.Organizations.AsNoTracking().ToList(),
-        Streets = db.Streets.AsNoTracking().OrderBy(x => x.Name).ToList(),
-        Houses = db.Houses.AsNoTracking().ToList(),
-        Schemes = db.HouseSchemes.AsNoTracking().ToList(),
-        Ppr = db.PprEntries.AsNoTracking().ToList(),
-        Intercoms = db.IntercomPanels.AsNoTracking().ToList(),
-        IntercomTickets = db.IntercomTickets.AsNoTracking().OrderByDescending(x => x.Date).ToList(),
-        Mechanics = db.Mechanics.AsNoTracking().OrderBy(x => x.FullName).ToList(),
-        Materials = db.Materials.AsNoTracking().ToList()
-    };
+        var snapshot = new AversSnapshot
+        {
+            PaymentWarningMonths = Settings.PaymentWarningMonths(db),
+            PaymentConfirmFrom = Settings.PaymentConfirmFrom(db),
+            Organizations = db.Organizations.AsNoTracking().ToList(),
+            Streets = db.Streets.AsNoTracking().OrderBy(x => x.Name).ToList(),
+            Houses = db.Houses.AsNoTracking().ToList(),
+            Schemes = db.HouseSchemes.AsNoTracking().ToList(),
+            Ppr = db.PprEntries.AsNoTracking().ToList(),
+            Intercoms = db.IntercomPanels.AsNoTracking().ToList()
+        };
+        // Радиомеханики (телефоны, адреса) и материалы нужны заявкам и словарю; Читателю и юристу — нет.
+        if (RoleCatalog.Can(role, AppModule.Disp, out _) || RoleCatalog.Can(role, AppModule.Phonebook, out _))
+        {
+            snapshot.Mechanics = db.Mechanics.AsNoTracking().OrderBy(x => x.FullName).ToList();
+            snapshot.Materials = db.Materials.AsNoTracking().ToList();
+        }
+        if (RoleCatalog.Can(role, AppModule.Disp, out _))
+            snapshot.IntercomTickets = db.IntercomTickets.AsNoTracking().OrderByDescending(x => x.Date).ToList();
+        return snapshot;
+    }
 
     /// <summary>Расставляет навигационные свойства по ключам.</summary>
     public AversSnapshot Link()
