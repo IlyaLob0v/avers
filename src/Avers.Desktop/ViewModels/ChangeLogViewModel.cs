@@ -13,6 +13,9 @@ public sealed partial class ChangeLogViewModel(MainViewModel shell) : Observable
     /// <summary>false — кто что изменил, true — кто чьи персональные данные открыл (152-ФЗ).</summary>
     [ObservableProperty] private bool _showViews;
 
+    // Номер последнего запроса: ответ более раннего (например, до переключения журнала) не затирает свежий.
+    private int _loadVersion;
+
     public string ChangeLogHint => ShowViews
         ? $"Кто открывал данные абонентов: поиск, абоненты дома, карточка, должники, сканы. Последние {ChangeLog.Shown} записей, новые сверху."
         : $"Последние {ChangeLog.Shown} записей, новые сверху. Записи журнала нельзя изменить или удалить.";
@@ -28,9 +31,12 @@ public sealed partial class ChangeLogViewModel(MainViewModel shell) : Observable
         shell.User?.Role == UserRole.Administrator
             ? shell.Save(async () =>
             {
+                var version = ++_loadVersion;
                 var rows = ShowViews
                     ? (await shell.Store.LoadAccessLogAsync()).Select(e => new ChangeLogRow(e))
                     : (await shell.Store.LoadChangeLogAsync()).Select(e => new ChangeLogRow(e));
+                if (version != _loadVersion)
+                    return;
                 ChangeLogRows.Clear();
                 foreach (var row in rows.ToList())
                     ChangeLogRows.Add(row);
