@@ -85,7 +85,6 @@ async function api(path) {
 function logout() {
   token = null;
   sessionStorage.removeItem("avers-token");
-  sessionStorage.removeItem("avers-login");
   $("viewer").hidden = true;
   show("login");
 }
@@ -101,7 +100,6 @@ $("login").onsubmit = async e => {
   if (!r.ok) { $("login-error").textContent = r.status === 429 ? "Слишком много попыток, подождите минуту." : "Неверный логин или пароль."; return; }
   token = (await r.json()).accessToken;
   sessionStorage.setItem("avers-token", token);
-  sessionStorage.setItem("avers-login", $("user").value.trim());
   $("pass").value = "";
   show("search");
   $("street").focus();
@@ -200,7 +198,7 @@ async function openHouse(id) {
   }
 }
 
-// REQ-MECH-02: схему не скачать — картинка рисуется на холсте с водяным знаком (логин и дата), прямой ссылки нет.
+// REQ-MECH-02: схему не скачать — сервер отдаёт картинку с водяным знаком, она рисуется на холсте, прямой ссылки нет.
 // Нажатие переключает «по ширине экрана» и «в натуральную величину».
 async function openScheme(id, button) {
   const text = button.textContent;
@@ -214,15 +212,6 @@ async function openScheme(id, button) {
     canvas.width = image.width;
     canvas.height = image.height;
     g.drawImage(image, 0, 0);
-    const size = Math.max(16, Math.round(image.width / 25));
-    g.font = `${size}px sans-serif`;
-    g.fillStyle = "rgba(200, 0, 0, 0.25)";
-    g.rotate(-Math.PI / 6);
-    const mark = `Аверс · ${sessionStorage.getItem("avers-login") ?? ""} · ${new Date().toLocaleDateString("ru-RU")}`;
-    for (let y = 0; y < image.height * 1.6; y += size * 5)
-      for (let x = -image.width; x < image.width * 1.2; x += g.measureText(mark).width + size * 2)
-        g.fillText(mark, x, y);
-    g.setTransform(1, 0, 0, 1, 0, 0);
     $("viewer").className = "";
     $("viewer").hidden = false;
   } catch { alert("Не удалось открыть схему."); }

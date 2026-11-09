@@ -20,6 +20,11 @@ public sealed partial class ReportsViewModel(MainViewModel shell) : ObservableOb
     [ObservableProperty] private DateOnly _reportTo = shell.Today;
     [ObservableProperty] private bool _reportByZone;
 
+    /// <summary>Итоги для 1С сервер отдаёт только администратору и начальнику АДС (Q-21); остальным кнопку не показываем.</summary>
+    public bool CanExportForOneC => shell.User?.Role is UserRole.Administrator or UserRole.AdsHead;
+
+    public void RefreshRights() => OnPropertyChanged(nameof(CanExportForOneC));
+
     public DateTime? ReportFromDate
     {
         get => ReportFrom.ToDateTime(TimeOnly.MinValue);

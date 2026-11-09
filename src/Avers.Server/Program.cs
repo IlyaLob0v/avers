@@ -61,7 +61,7 @@ app.UseDesktopVersionCheck();
 app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
-    app.MapOpenApi();
+    app.MapOpenApi().AllowAnonymous();
 
 app.MapHealthChecks("/health").AllowAnonymous();
 app.MapAuth();
