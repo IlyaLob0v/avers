@@ -24,7 +24,7 @@ public static class SubscriberEndpoints
             .LogsView("Абоненты дома", AccessLogFilter.House("houseId"));
         api.MapGet("/debts", (AversDbContext db, TimeProvider time) => TypedResults.Ok(Debts.Load(db, time.Today())))
             .LogsView("Список должников", AccessLogFilter.Everyone);
-        api.MapGet("/reports/accounting", Accounting);
+        api.MapGet("/reports/accounting", Accounting).RequireAuthorization(Policies.ReportsAccounting);
         api.MapGet("/subscribers/{id:int}", Card).LogsView("Карточка абонента", AccessLogFilter.Subscriber("id"));
         api.MapGet("/subscribers/{id:int}/payments", Payments).LogsView("Оплаты абонента", AccessLogFilter.Subscriber("id"));
         api.MapPost("/subscribers/{id:int}/payments", PaymentEndpoints.Record).RequireAuthorization(Policies.PaymentsCreate);

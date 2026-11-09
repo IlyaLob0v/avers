@@ -31,6 +31,24 @@ public class DesktopTests
     }
 
     [Fact]
+    public async Task Snapshot_ForReader_HasHousesAndSchemesWithoutPersonalData()
+    {
+        // Читателю по матрице — дома и схемы. Радиомеханики с телефонами и адресами, заявки, материалы — нет.
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("novikov");
+
+        var snapshot = (await client.GetFromJsonAsync<AversSnapshot>("/api/desktop/snapshot", Json))!.Link();
+
+        Assert.NotEmpty(snapshot.Houses);
+        Assert.NotEmpty(snapshot.Schemes);
+        Assert.Empty(snapshot.Mechanics);
+        Assert.Empty(snapshot.Materials);
+        Assert.Empty(snapshot.IntercomTickets);
+        Assert.Empty(snapshot.Tickets);
+        Assert.Empty(snapshot.Subscribers);
+    }
+
+    [Fact]
     public async Task Snapshot_HasOnlySubscribersOfTickets()
     {
         await using var app = new AversApp();
@@ -71,6 +89,20 @@ public class DesktopTests
         var client = await app.LoginAsync("novikov");
 
         Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync(url)).StatusCode);
+    }
+
+    [Theory]
+    [InlineData("admin", HttpStatusCode.OK)]
+    [InlineData("orlov", HttpStatusCode.OK)]
+    [InlineData("lawyer", HttpStatusCode.Forbidden)]
+    [InlineData("sokolova", HttpStatusCode.Forbidden)]
+    public async Task Accounting_OnlyForAdministratorAndAdsHead(string login, HttpStatusCode expected)
+    {
+        // Q-21: до ответа бухгалтерии итоги месяца для 1С видят только администратор и начальник АДС.
+        await using var app = new AversApp();
+        var client = await app.LoginAsync(login);
+
+        Assert.Equal(expected, (await client.GetAsync("/api/reports/accounting?year=2026&month=8")).StatusCode);
     }
 
     [Fact]
