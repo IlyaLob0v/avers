@@ -44,7 +44,8 @@ public enum SearchMode
     Account,
     InnerCode,
     Surname,
-    Contract
+    Contract,
+    Phone
 }
 
 public enum AppModule
