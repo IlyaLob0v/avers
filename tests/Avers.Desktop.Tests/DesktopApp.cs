@@ -15,9 +15,10 @@ public sealed class DesktopApp : IDisposable
 {
     private readonly string _databaseFile = Path.Combine(Path.GetTempPath(), $"avers-desktop-test-{Guid.NewGuid():N}.db");
 
-    public DesktopApp(string login = "admin")
+    /// <param name="today">Рабочая дата; по умолчанию — дата учебной базы.</param>
+    public DesktopApp(string login = "admin", DateOnly? today = null)
     {
-        Vm = App.CreateMainViewModel(_databaseFile, DemoSeeder.WorkDate);
+        Vm = App.CreateMainViewModel(_databaseFile, today ?? DemoSeeder.WorkDate);
         Window = new MainWindow { DataContext = Vm, Width = 1280, Height = 840 };
         Window.Show();
         Vm.LoginUser = Vm.Users.Single(u => u.Login == login);
