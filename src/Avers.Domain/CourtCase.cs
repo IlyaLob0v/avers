@@ -1,9 +1,13 @@
+using System.Text.Json.Serialization;
+
 namespace Avers.Domain;
 
 public sealed class CourtCase
 {
     public int Id { get; set; }
     public int SubscriberId { get; set; }
+    /// <summary>Только для базы: по сети дело идёт без абонента, иначе описание API уходит в бесконечную вложенность.</summary>
+    [JsonIgnore]
     public Subscriber Subscriber { get; set; } = null!;
     public string OrderNumber { get; set; } = "";
     public DateOnly OrderDate { get; set; }
