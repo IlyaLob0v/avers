@@ -208,6 +208,13 @@ public class AuthTests
 
         Assert.NotNull(fallback);
         Assert.Contains(fallback.Requirements, r => r is DenyAnonymousAuthorizationRequirement);
+
+        // Без входа по-прежнему открыты страница телефона, проверка сервера и сам вход.
+        var anonymous = app.CreateClient();
+        Assert.Equal(HttpStatusCode.OK, (await anonymous.GetAsync("/m/")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await anonymous.GetAsync("/health")).StatusCode);
+        var login = await anonymous.PostAsJsonAsync("/api/auth/login", new { login = "admin", password = "avers" });
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
     }
 
     [Fact]

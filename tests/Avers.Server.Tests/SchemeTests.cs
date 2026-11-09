@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using Avers.Contracts;
 using Avers.Data;
 using Avers.Domain;
+using Avers.Server.Desktop;
 using SkiaSharp;
 
 namespace Avers.Server.Tests;
@@ -72,6 +73,35 @@ public class SchemeTests
 
         Assert.Equal(HttpStatusCode.OK, image.StatusCode);
         AssertWatermarked(source, await image.Content.ReadAsByteArrayAsync());
+    }
+
+    [Fact]
+    public void Watermark_TurnsPhonePhotoUpright()
+    {
+        // Снимок 40 × 20: левая половина красная, правая синяя; в EXIF «повернуть на 90° по часовой» (Orientation = 6).
+        using var bitmap = new SKBitmap(40, 20);
+        using (var canvas = new SKCanvas(bitmap))
+        {
+            canvas.Clear(SKColors.Blue);
+            canvas.DrawRect(0, 0, 20, 20, new SKPaint { Color = SKColors.Red });
+        }
+        var jpeg = bitmap.Encode(SKEncodedImageFormat.Jpeg, 95).ToArray();
+        byte[] exif =
+        [
+            0xFF, 0xE1, 0x00, 0x22, (byte)'E', (byte)'x', (byte)'i', (byte)'f', 0, 0,
+            (byte)'M', (byte)'M', 0x00, 0x2A, 0, 0, 0, 8,
+            0x00, 0x01, 0x01, 0x12, 0x00, 0x03, 0, 0, 0, 1, 0x00, 0x06, 0, 0,
+            0, 0, 0, 0,
+        ];
+        var photo = jpeg[..2].Concat(exif).Concat(jpeg[2..]).ToArray();
+
+        using var result = SKBitmap.Decode(SchemeWatermark.Apply(photo, "JPEG", "Аверс · test · 09.11.2026 10:00"));
+
+        Assert.Equal((20, 40), (result.Width, result.Height));
+        var top = result.GetPixel(10, 5);
+        var bottom = result.GetPixel(10, 35);
+        Assert.True(top.Red > top.Blue, $"Сверху {top}");
+        Assert.True(bottom.Blue > bottom.Red, $"Снизу {bottom}");
     }
 
     /// <summary>Картинка того же размера, но с нарисованным поверх знаком: часть точек отличается от исходника.</summary>

@@ -12,7 +12,7 @@ src=${1:-$here/avers-server}
 [ "$(id -u)" -eq 0 ] || { echo "Запустите через sudo"; exit 1; }
 
 apt-get update
-apt-get install -y postgresql caddy rsync
+apt-get install -y postgresql caddy rsync libfontconfig1
 systemctl enable --now postgresql
 
 id avers >/dev/null 2>&1 || useradd --system --home-dir /opt/avers-server --shell /usr/sbin/nologin avers

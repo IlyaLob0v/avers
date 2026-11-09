@@ -55,7 +55,7 @@
 | ID | Пр. | Статус | Где в коде | Чем проверено | Примечание |
 |---|---|---|---|---|---|
 | REQ-MECH-01 | M | Сделано | `Server/Mobile/MobileEndpoints.cs`, `Server/wwwroot/m/index.html`, `Contracts/Mobile.cs`; наружу — `deploy/server/avers-internet` (Caddy) | `MobileTests.Mechanic_FindsHouseByStreetAndNumber`, `MobileTests.Mechanic_SeesHomeownerTechnicsAndSchemes`, `MobileTests.Lawyer_HasNoAccess`, `AuthTests.InternetLogin_OnlyReader` | Кто ещё входит из интернета — Q-07 |
-| REQ-MECH-02 | M | Частично | Права — `RoleCatalog` (Читатель только смотрит); водяной знак на сервере — `Server/Desktop/SchemeWatermark.cs`, `SchemeEndpoints.Screen`; холст вместо ссылки — `Server/wwwroot/m/index.html` | `RoleCatalogTests.Reader_CannotEditAnything`, `SchemeTests.Reader_CannotEditSchemes` (Desktop); `SchemeTests` (Server): исходник не отдаётся роли «только на экране» и телефону | Знак рисует сервер, исходный файл получает только роль с правом просмотра схем |
+| REQ-MECH-02 | M | Сделано | Права — `RoleCatalog` (Читатель только смотрит); водяной знак на сервере — `Server/Desktop/SchemeWatermark.cs`, `SchemeEndpoints.Screen`; холст вместо ссылки — `Server/wwwroot/m/index.html` | `RoleCatalogTests.Reader_CannotEditAnything`, `SchemeTests.Reader_CannotEditSchemes` (Desktop); `SchemeTests` (Server): исходник не отдаётся роли «только на экране» и телефону | Знак рисует сервер, исходный файл получает только роль с правом просмотра схем |
 
 ## Юристы
 
@@ -112,8 +112,8 @@
 
 | Статус | Сколько | Какие |
 |---|---|---|
-| Сделано | 21 | ENG-01, 02, 03, 05, 06, 07; ADS-01, 02, 03, 05, 06, 07, 08, 13, 14, 15, 16, 17; MECH-01; LAW-01, 02 |
-| Частично | 9 | ENG-04 (Q-24), ADS-09, ADS-10 (Q-29), ADS-11 (Q-29), MECH-02, LAW-04, ACC-01 (Q-28), ACC-03 (Q-12), ACC-06 (Q-05) |
+| Сделано | 22 | ENG-01, 02, 03, 05, 06, 07; ADS-01, 02, 03, 05, 06, 07, 08, 13, 14, 15, 16, 17; MECH-01, 02; LAW-01, 02 |
+| Частично | 8 | ENG-04 (Q-24), ADS-09, ADS-10 (Q-29), ADS-11 (Q-29), LAW-04, ACC-01 (Q-28), ACC-03 (Q-12), ACC-06 (Q-05) |
 | Не начато | 0 | — |
 | Ждёт ответа | 3 | ADS-04 (Q-19), ACC-02 (Q-28), ACC-04 (Q-20, Q-28) |
 
