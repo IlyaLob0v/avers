@@ -634,4 +634,31 @@ public class ShellTests
         using var book = new ClosedXML.Excel.XLWorkbook(opened!);
         Assert.Equal(app.Vm.LegalScreen.Debtors.Count, book.Worksheet(1).RowsUsed().Count() - 2);
     }
+
+    [AvaloniaFact]
+    public void Debtors_FilterBySumMonthsAddressAndCase_ExportsSelection()
+    {
+        using var app = new DesktopApp("lawyer");
+        var screen = app.Vm.LegalScreen;
+        string? opened = null;
+        app.Vm.OpenFile = path => opened = path;
+        var all = screen.Debtors.ToList();
+        var street = all[0].Address.Split(',')[0].Replace("ул. ", "");
+
+        screen.DebtFrom = "1000";
+        screen.UnpaidFrom = "3";
+        screen.CaseFilter = "Нет приказа";
+        Assert.All(screen.Debtors, d => Assert.True(d.Debt >= 1000 && d.Unpaid >= 3 && d.CourtCase is null));
+        Assert.Equal(all.Count(d => d.Debt >= 1000 && d.Unpaid >= 3 && d.CourtCase is null), screen.Debtors.Count);
+
+        screen.DebtFrom = screen.UnpaidFrom = "";
+        screen.CaseFilter = "Любые";
+        screen.AddressFilter = street.ToLower();
+        Assert.All(screen.Debtors, d => Assert.Contains(street, d.Address));
+        Assert.Equal($"Показано {screen.Debtors.Count} из {all.Count}", screen.DebtorsCountText);
+
+        screen.ExportDebtorsCommand.Execute(null);
+        using var book = new ClosedXML.Excel.XLWorkbook(opened!);
+        Assert.Equal(screen.Debtors.Count, book.Worksheet(1).RowsUsed().Count() - 2);
+    }
 }
