@@ -8,22 +8,16 @@ set -euo pipefail
 [ "$(id -u)" -eq 0 ] || { echo "Запустите через sudo"; exit 1; }
 domain=$1
 
-# С учебным паролем avers из интернета вошёл бы кто угодно. Любой ответ, кроме «неверный пароль» (401), — стоп:
-# 429 значит, что проверить не удалось.
-for login in admin engineer sokolova orlov orlova lawyer novikov; do
-    code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' \
-        -d "{\"login\":\"$login\",\"password\":\"avers\"}" http://localhost:5115/api/auth/login)
-    if [ "$code" = 200 ]; then
-        echo "У пользователя $login учебный пароль avers. Смените его (sudo avers-password $login) или отключите пользователя."
-        exit 1
-    elif [ "$code" != 401 ]; then
-        echo "Не удалось проверить пароль пользователя $login (ответ сервера $code). Подождите 15 минут и запустите снова."
-        exit 1
-    fi
-done
+# Caddy для HTTPS в офисе ставит install.sh; этот сценарий только добавляет к нему сайт для интернета.
+grep -qs 'import /etc/caddy/avers-' /etc/caddy/Caddyfile || {
+    echo "Сначала обновите сервер Аверса: sudo bash install.sh из свежей сборки."
+    exit 1
+}
 
-apt-get install -y caddy
-cat > /etc/caddy/Caddyfile <<CADDY
+# С учебным паролем avers из интернета вошёл бы кто угодно.
+avers-demo-check || { echo "Страница механиков в интернет не открыта."; exit 1; }
+
+cat > /etc/caddy/avers-internet.caddy <<CADDY
 $domain {
     header {
         Strict-Transport-Security "max-age=31536000"
@@ -43,8 +37,7 @@ $domain {
     }
 }
 CADDY
-systemctl enable caddy
-systemctl restart caddy
+systemctl reload caddy
 
 if command -v ufw >/dev/null && ufw status | grep -q "Status: active"; then
     ufw allow 80/tcp

@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Есть ли в базе включённые сотрудники с учебным паролем avers: sudo avers-demo-check
+# Код 0 — нет, 1 — есть (логины на экране), 2 — проверить не удалось.
+set -euo pipefail
+
+[ "$(id -u)" -eq 0 ] || { echo "Запустите через sudo"; exit 2; }
+
+connection=$(sed -n 's/^ConnectionStrings__Avers=//p' /etc/avers-server.env)
+cd /opt/avers-server
+code=0
+logins=$(runuser -u avers -- env ASPNETCORE_ENVIRONMENT=Production Logging__LogLevel__Default=Warning \
+    "ConnectionStrings__Avers=$connection" ./Avers.Server demo-passwords) || code=$?
+case $code in
+    0) echo "Сотрудников с учебным паролем avers нет." ;;
+    1) echo "Учебный пароль avers у сотрудников: ${logins//$'\n'/ }"
+       echo "Смените пароль (sudo avers-password <логин>) или отключите сотрудника в «Правах доступа»." ;;
+    *) echo "Проверить не удалось (код $code). Журнал выше."; exit 2 ;;
+esac
+exit "$code"

@@ -23,6 +23,9 @@ public static class DemoSeeder
     public const string StartAccount = "1932068";
     public const int StartTicket = 1001;
 
+    /// <summary>Пароль всех учебных сотрудников.</summary>
+    public const string DemoPassword = "avers";
+
     public static void EnsureSeeded(AversDbContext db)
     {
         if (db.Users.AsNoTracking().Any())
@@ -328,7 +331,7 @@ public static class DemoSeeder
     {
         Login = login,
         DisplayName = name,
-        PasswordHash = Password.Hash("avers"),
+        PasswordHash = Password.Hash(DemoPassword),
         Role = role,
         Department = dept,
         CanEditAccount = editAccount

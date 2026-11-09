@@ -1,0 +1,10 @@
+[Unit]
+Description=Еженедельная проверка восстановления копии базы Аверса
+
+[Timer]
+# Воскресенье, ночью после копии в 01:30: с момента копии в базе почти ничего не меняется.
+OnCalendar=Sun *-*-* 03:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

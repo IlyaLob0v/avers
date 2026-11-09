@@ -47,9 +47,18 @@ public static class DatabaseSetup
             await db.Database.MigrateAsync();
         else if (options.EnsureCreated)
             await db.Database.EnsureCreatedAsync();
+        if (StartupWarning(options) is { } warning)
+            app.Logger.LogWarning("{Warning}", warning);
         if (options.SeedDemo)
             DemoSeeder.EnsureSeeded(db);
     }
+
+    /// <summary>Учебные данные на PostgreSQL — почти наверняка ошибка настройки рабочего сервера.</summary>
+    public static string? StartupWarning(DatabaseOptions options) =>
+        options is { SeedDemo: true, Provider: DatabaseProvider.Postgres }
+            ? "Включены учебные данные (Avers:Database:SeedDemo) на базе PostgreSQL: в пустую базу попадут учебные абоненты " +
+              "и сотрудники с паролем avers. На рабочем сервере уберите SeedDemo из /etc/avers-server.env."
+            : null;
 }
 
 public sealed class DatabaseHealthCheck(AversDbContext db) : IHealthCheck

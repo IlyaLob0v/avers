@@ -1,0 +1,10 @@
+[Unit]
+Description=Ночная копия базы Аверса
+
+[Timer]
+OnCalendar=*-*-* 01:30
+# Если сервер ночью был выключен, копия делается сразу после включения.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

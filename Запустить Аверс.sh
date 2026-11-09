@@ -7,4 +7,4 @@ if ! command -v dotnet >/dev/null 2>&1; then
   echo "Не найден .NET 10. Установите SDK: https://dotnet.microsoft.com/download/dotnet/10.0"
   exit 1
 fi
-exec dotnet run --project src/Avers.Desktop/Avers.Desktop.csproj -c Release
+exec dotnet run --project src/Avers.Desktop/Avers.Desktop.csproj -c Release -- --demo

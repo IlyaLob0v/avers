@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Проверка, что из ночной копии базу можно восстановить. Раз в неделю её запускает таймер avers-restore-check.timer;
+# вручную: sudo avers-restore-check. Последняя копия avers-<дата>.dump восстанавливается во временную базу,
+# число строк основных таблиц сравнивается с рабочей базой, временная база удаляется.
+# Код 0 — копия годная, иначе — нет (причина в журнале: sudo journalctl -u avers-restore-check).
+set -euo pipefail
+
+[ "$(id -u)" -eq 0 ] || { echo "Запустите через sudo"; exit 1; }
+# shellcheck source=/dev/null
+[ -f /etc/avers-backup.env ] && . /etc/avers-backup.env
+# Допуск: за время между копией и проверкой сотрудники успевают что-то добавить (проверка идёт ночью, разница мала).
+tolerance=${AVERS_RESTORE_TOLERANCE:-2}
+if ! [[ $tolerance =~ ^[0-9]+$ ]]; then
+    echo "AVERS_RESTORE_TOLERANCE=$tolerance — нужно целое число процентов"
+    exit 1
+fi
+
+dir=/var/backups/avers
+check_db=avers_restore_check
+latest=$(find "$dir" -maxdepth 1 -name 'avers-*.dump' -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2-)
+[ -n "$latest" ] || { echo "ОШИБКА: в $dir нет ни одной копии avers-<дата>.dump"; exit 1; }
+if [ -n "$(find "$latest" -mmin +$((2 * 24 * 60)))" ]; then
+    echo "ОШИБКА: последней копии $latest больше двух суток — ночные копии не делаются (sudo systemctl status avers-backup)"
+    exit 1
+fi
+
+sql() { runuser -u postgres -- psql -X -q -t -A -v ON_ERROR_STOP=1 "$@"; }
+drop() { runuser -u postgres -- dropdb --if-exists "$check_db"; }
+trap drop EXIT
+drop
+runuser -u postgres -- createdb -E UTF8 -T template0 "$check_db"
+echo "Восстанавливаю $latest во временную базу $check_db…"
+if ! runuser -u postgres -- pg_restore --no-owner --no-privileges --exit-on-error -d "$check_db" < "$latest"; then
+    echo "ОШИБКА: копия $latest не восстанавливается"
+    exit 1
+fi
+
+failed=0
+for table in Users Streets Houses Subscribers Payments Tickets IntercomTickets SubscriberDocuments HouseSchemeFiles ChangeLog; do
+    live=$(sql -d avers -c "SELECT count(*) FROM \"$table\"")
+    copy=$(sql -d "$check_db" -c "SELECT count(*) FROM \"$table\"")
+    diff=$(( live > copy ? live - copy : copy - live ))
+    allowed=$(( live * tolerance / 100 + 10 ))
+    if (( (live > 0 && copy == 0) || diff > allowed )); then
+        echo "ОШИБКА: $table — в рабочей базе $live строк, в копии $copy (допуск $allowed)"
+        failed=1
+    else
+        echo "$table: в рабочей базе $live, в копии $copy"
+    fi
+done
+
+if [ "$failed" -ne 0 ]; then
+    echo "ОШИБКА: копия $latest не совпадает с рабочей базой"
+    exit 1
+fi
+echo "Копия $latest восстанавливается и совпадает с рабочей базой."

@@ -10,5 +10,5 @@ if errorlevel 1 (
   exit /b 1
 )
 echo Запускаю Аверс...
-dotnet run --project src\Avers.Desktop\Avers.Desktop.csproj -c Release
+dotnet run --project src\Avers.Desktop\Avers.Desktop.csproj -c Release -- --demo
 if errorlevel 1 pause

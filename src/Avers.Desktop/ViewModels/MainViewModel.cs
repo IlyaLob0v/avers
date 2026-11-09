@@ -74,6 +74,8 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _loginName = "";
     [ObservableProperty] private string _password = "";
     [ObservableProperty] private string? _loginError;
+    /// <summary>Предупреждение на экране входа: адрес сервера без https://.</summary>
+    [ObservableProperty] private string? _connectionWarning;
     [ObservableProperty] private AppUser? _user;
     [ObservableProperty] private AppModule _module = AppModule.Desktop;
     [ObservableProperty] private Street? _selectedStreet;
