@@ -195,14 +195,49 @@ cmd_reconcile() {
   return "$rc"
 }
 
+# accruals — начисления JACK по месяцам его же функцией (таблица AVERS_ACCRUAL в копии JACK на стенде).
+# Нужно до schema/data: тогда Ora2Pg переносит таблицу в legacy вместе с остальными.
+cmd_accruals() {
+  say "Считаю начисления JACK по месяцам (может занять несколько часов)"
+  "${COMPOSE[@]}" exec -T -e NLS_LANG=AMERICAN_AMERICA.AL32UTF8 oracle-legacy bash -c \
+    "sqlplus -s -L \"system/\${ORACLE_PASSWORD}@localhost/FREEPDB1\" @/stand/oracle/accruals.sql $ORA_SCHEMA"
+}
+
+# transfer — пробный перенос legacy → таблицы Аверса в базе стенда, затем сверка.
+# Таблицы Аверса на стенде каждый раз создаются заново миграциями (нужен .NET SDK). Боевую базу команда не трогает.
+cmd_transfer() {
+  [[ "$PG_SCHEMA" == legacy ]] || die "перенос читает схему legacy, а задана $PG_SCHEMA"
+  command -v dotnet >/dev/null || die "нужен .NET SDK (docs/development.md): им создаются таблицы Аверса"
+  if [[ -f "$ROOT/.env" ]]; then
+    # shellcheck disable=SC1091 # .env создаёт пользователь, его нет в репозитории
+    set -a && . "$ROOT/.env" && set +a
+  fi
+  say "Создаю пустые таблицы Аверса в базе стенда"
+  pg_sql -c "drop schema if exists public cascade" -c "create schema public"
+  (cd "$ROOT" && dotnet tool restore >/dev/null &&
+    dotnet ef database update --project src/Avers.Data --startup-project src/Avers.Data \
+      --connection "Host=127.0.0.1;Port=5432;Database=avers;Username=avers;Password=${PG_PASSWORD:-avers_dev}")
+  say "Переношу legacy → Аверс"
+  pg_sql -f /migration/transfer/transfer.sql
+  say "Сверяю перенос"
+  local report
+  report="$OUT_HOST/transfer-check-$(date +%Y%m%d-%H%M%S).txt"
+  local rc=0
+  pg_sql -f /migration/transfer/check.sql 2>&1 | tee "$report" || rc=$?
+  echo "Отчёт сверки переноса: ${report#"$ROOT/"}"
+  return "$rc"
+}
+
 cmd_all() {
   local file="${1:-}"
   [[ -n "$file" ]] || die "укажите файл выгрузки: stand.sh all jack.dmp"
   cmd_import "$file"
+  cmd_accruals
   cmd_report
   cmd_schema
   cmd_data
   cmd_reconcile
+  cmd_transfer
 }
 
 # selftest — репетиция всего конвейера на синтетической схеме AVERS_DEMO (данные выдуманы)
@@ -241,15 +276,17 @@ cmd_help() {
 Стенд миграции Аверса. Запуск из корня репозитория: bash db/stand/stand.sh <команда>
 
   selftest            репетиция на учебной схеме (без настоящих данных): проверить, что стенд работает
-  all <файл.dmp>      весь перенос по порядку: import → report → schema → data → reconcile
+  all <файл.dmp>      весь перенос по порядку: import → accruals → report → schema → data → reconcile → transfer
 
   up                  запустить PostgreSQL и Oracle Free
   import <файл.dmp>   восстановить выгрузку expdp из db/legacy/dumps/ в Oracle Free
   import-exp <файл>   то же для выгрузки старой утилитой exp
+  accruals            посчитать начисления JACK по месяцам (до schema и data)
   report              отчёт Ora2Pg о сложности переноса (HTML)
   schema              создать таблицы в PostgreSQL (схема legacy), код Oracle — в файлы для разбора
   data                перенести строки, затем ключи и индексы
   reconcile           сверка Oracle ↔ PostgreSQL; код выхода не 0 = есть расхождения
+  transfer            пробный перенос legacy → таблицы Аверса и сверка; код выхода не 0 = есть расхождения
   psql                консоль PostgreSQL
   status | down       состояние | остановить контейнеры (данные сохраняются)
 
@@ -270,6 +307,8 @@ main() {
     schema) cmd_schema ;;
     data) cmd_data ;;
     reconcile) cmd_reconcile ;;
+    accruals) cmd_accruals ;;
+    transfer) cmd_transfer ;;
     all) cmd_all "$@" ;;
     selftest) cmd_selftest ;;
     psql) cmd_psql "$@" ;;
