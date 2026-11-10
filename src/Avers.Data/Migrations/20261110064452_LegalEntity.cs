@@ -56,11 +56,21 @@ namespace Avers.Data.Migrations
                 maxLength: 15,
                 nullable: false,
                 defaultValue: "");
+
+            // Льгота «юридическое лицо» стала типом клиента.
+            migrationBuilder.Sql("""
+                update "Subscribers" set "IsLegalEntity" = true, "Benefit" = 'не применяется'
+                 where "Benefit" = 'юридическое лицо';
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("""
+                update "Subscribers" set "Benefit" = 'юридическое лицо' where "IsLegalEntity";
+                """);
+
             migrationBuilder.DropColumn(
                 name: "Director",
                 table: "Subscribers");

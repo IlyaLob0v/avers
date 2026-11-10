@@ -30,8 +30,11 @@ public sealed class Subscriber
     public bool PrintAccountWithPayDate { get; set; } = true;
     public const string NoBenefit = "не применяется";
 
-    /// <summary>Льготы, которые ведёт АДС (22.10.2026); остальные оформляет МФЦ. Пока только пометка, на начисления не влияет.</summary>
-    public static IReadOnlyList<string> Benefits { get; } = [NoBenefit, "юридическое лицо", "коллективная оплата", "коллективный усилитель в квартире"];
+    /// <summary>
+    /// Льготы, которые ведёт АДС (22.10.2026); остальные оформляет МФЦ. Пока только пометка, на начисления не влияет.
+    /// Прежняя льгота «юридическое лицо» стала типом клиента (<see cref="IsLegalEntity"/>).
+    /// </summary>
+    public static IReadOnlyList<string> Benefits { get; } = [NoBenefit, "коллективная оплата", "коллективный усилитель в квартире"];
 
     public string Benefit { get; set; } = NoBenefit;
 

@@ -9,6 +9,10 @@ public class LegalEntityTests
         Assert.Equal("Юрлицо", new Subscriber { IsLegalEntity = true }.ClientKind);
     }
 
+    [Fact]
+    public void Benefits_NoLegalEntity_ItIsClientKind() =>
+        Assert.DoesNotContain("юридическое лицо", Subscriber.Benefits);
+
     [Theory]
     [InlineData("", "", "")]
     [InlineData("5503254160", "550301001", "1145543048001")]
