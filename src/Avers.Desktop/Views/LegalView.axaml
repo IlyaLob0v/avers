@@ -37,9 +37,13 @@
           <TextBlock Classes="hint" Text="Адрес: улица, дом" />
           <TextBox Classes="cell" Width="220" Text="{Binding AddressFilter}" PlaceholderText="например, Ленина 12" />
         </StackPanel>
-        <StackPanel>
+        <StackPanel Margin="0,0,10,0">
           <TextBlock Classes="hint" Text="Судебный приказ" />
           <ComboBox Classes="cell" Width="130" ItemsSource="{Binding CaseFilters}" SelectedItem="{Binding CaseFilter}" />
+        </StackPanel>
+        <StackPanel>
+          <TextBlock Classes="hint" Text="Клиенты" />
+          <ComboBox Classes="cell" Width="110" ItemsSource="{Binding ClientFilters}" SelectedItem="{Binding ClientFilter}" />
         </StackPanel>
       </WrapPanel>
     </Border>
@@ -65,7 +69,8 @@
       </HeaderedContentControl.Header>
       <DataGrid ctl:GridTone.Enabled="True" BorderThickness="0" ItemsSource="{Binding Debtors}" SelectedItem="{Binding SelectedDebtor}" AutoGenerateColumns="False" IsReadOnly="True">
         <DataGrid.Columns>
-          <DataGridTextColumn Header="ФИО полностью" Binding="{Binding FullName}" Width="260" />
+          <DataGridTextColumn Header="ФИО или организация" Binding="{Binding FullName}" Width="260" />
+          <DataGridTextColumn Header="Клиент" Binding="{Binding ClientKind}" Width="90" />
           <DataGridTextColumn Header="Адрес" Binding="{Binding Address}" Width="280" />
           <DataGridTextColumn Header="Долг" Binding="{Binding DebtText}" Width="100" />
           <DataGridTextColumn Header="Неоплачено мес." Binding="{Binding Unpaid}" Width="140" />

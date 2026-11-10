@@ -70,17 +70,20 @@ select b.buildingid, b.streetid, trim(b.buildingno),
 
 -- Абоненты. Договор и индекс/лицевой счёт ПЖРЭУ — последние по дате. Льгота — действующая и только из трёх,
 -- которые ведёт АДС (Subscriber.Benefits); остальные льготы оформляет МФЦ, у абонента — «не применяется».
+-- Клиент — юрлицо, если у него действует льгота «юридическое лицо»; в Аверсе это тип клиента, а не льгота.
+-- Реквизиты в JACK не хранятся, их вносят в карточке.
 insert into "Subscribers" ("Id", "HouseId", "InnerCode", "Account", "LastName", "FirstName", "Patronymic", "Phone",
                            "Apartment", "Section", "ContractDate", "ContractTerminated", "ContractNumber", "ContractHolder",
                            "Notes", "PzhreuIndex", "PzhreuAccount", "OekAccount", "SettlementFrom", "LastPaymentDate",
-                           "PrintAccountWithPayDate", "Benefit")
+                           "PrintAccountWithPayDate", "Benefit", "IsLegalEntity", "Inn", "Kpp", "Ogrn", "LegalAddress", "Director")
 select p.physicalpersonid, p.buildingid, coalesce(trim(p.inventno), ''), p.physicalpersonid::text,
        coalesce(trim(p.surname), ''), coalesce(trim(p.name), ''), coalesce(trim(p.patronymicname), ''),
        coalesce(trim(p.phone), ''), p.flatno::text, case when coalesce(p.section, 0) = 0 then '' else p.section::text end,
        c.begindate::date, c.enddate::date, coalesce(c.contractid::text, ''), '',
        coalesce(trim(p.note), ''), coalesce(sc.pgru_index::text, ''), coalesce(sc.pgru_score::text, ''), '', 0,
        (select max(a.paydate)::date from legacy.abn_pay a where a.physicalpersonid = p.physicalpersonid),
-       true, coalesce(bn.name, 'не применяется')
+       true, case when bn.name is null or bn.name = 'юридическое лицо' then 'не применяется' else bn.name end,
+       coalesce(bn.name = 'юридическое лицо', false), '', '', '', '', ''
   from legacy.physpers p
   left join lateral (select c.contractid, c.begindate, c.enddate from legacy.contract c
                       where c.physicalpersonid = p.physicalpersonid

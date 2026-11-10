@@ -74,8 +74,8 @@ insert into legacy.contract values
     (9001, 1001, '2010-02-01', null, null),
     (9000, 1001, '2001-01-01', '2009-12-31', null),
     (9002, 1003, '2015-06-01', '2026-03-31', null);
-insert into legacy.social values (1, 'Коллективная оплата'), (2, 'Ветеран труда');
-insert into legacy.privroll values (1001, 1, '2020-01-01', null), (1002, 2, '2018-01-01', null);
+insert into legacy.social values (1, 'Коллективная оплата'), (2, 'Ветеран труда'), (3, 'Юридическое лицо');
+insert into legacy.privroll values (1001, 1, '2020-01-01', null), (1002, 2, '2018-01-01', null), (1003, 3, '2015-06-01', null);
 insert into legacy.connlist values (1001, '1996-05-01', 1, 1), (1002, '2026-01-01', 1, 1), (1002, '2026-01-01', 1, 46),
                                    (1003, '2025-12-01', 1, 1);
 

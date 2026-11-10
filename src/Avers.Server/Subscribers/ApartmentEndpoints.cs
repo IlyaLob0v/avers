@@ -28,6 +28,11 @@ public static class ApartmentEndpoints
             errors["contractTerminated"] = ["Договор не может быть расторгнут раньше, чем заключён."];
         if (request.Benefit is { } benefit && !Subscriber.Benefits.Contains(benefit))
             errors["benefit"] = [$"Льгота — одна из: {string.Join(", ", Subscriber.Benefits)}."];
+        var legal = request.LegalEntity;
+        if (legal is not null && Subscriber.RequisitesError(legal.Inn ?? "", legal.Kpp ?? "", legal.Ogrn ?? "") is { } requisites)
+            errors["legalEntity"] = [requisites];
+        if (legal is { Address.Length: > 250 } or { Director.Length: > 250 })
+            errors["legalEntityText"] = ["Юридический адрес и руководитель — не длиннее 250 символов."];
         if (errors.Count > 0)
             return TypedResults.ValidationProblem(errors);
 
@@ -42,7 +47,13 @@ public static class ApartmentEndpoints
             ContractTerminated = request.ContractTerminated,
             ContractHolder = request.ContractHolder ?? "",
             Notes = request.Notes ?? "",
-            Benefit = request.Benefit ?? Subscriber.NoBenefit
+            Benefit = request.Benefit ?? Subscriber.NoBenefit,
+            IsLegalEntity = legal is not null,
+            Inn = legal?.Inn ?? "",
+            Kpp = legal?.Kpp ?? "",
+            Ogrn = legal?.Ogrn ?? "",
+            LegalAddress = legal?.Address ?? "",
+            Director = legal?.Director ?? ""
         };
         SubscriberContracts.Save(db, s, draft, time.Today(), ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
         return TypedResults.NoContent();

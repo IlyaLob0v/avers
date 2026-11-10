@@ -134,6 +134,36 @@ public class ContractTests
     }
 
     [AvaloniaFact]
+    public async Task LegalEntity_MarkedInCard_FiltersDebtors()
+    {
+        using var app = new DesktopApp();
+        app.Go(AppModule.Contract);
+        app.Vm.ContractsScreen.ContractQuery = "ТО-2011/180090";
+        await app.Vm.ContractsScreen.FindContractCommand.ExecuteAsync(null);
+
+        app.Vm.EditIsLegalEntity = true;
+        app.Vm.EditInn = "55032541";
+        await app.Vm.SaveCardCommand.ExecuteAsync(null);
+        Assert.StartsWith("ИНН", app.Vm.Status);
+        Assert.False(app.Vm.SelectedSubscriber!.IsLegalEntity);
+
+        app.Vm.EditInn = "5503254160";
+        app.Vm.EditDirector = "Коньшин С.А.";
+        await app.Vm.SaveCardCommand.ExecuteAsync(null);
+        var s = app.Vm.SelectedSubscriber!;
+        Assert.Equal((true, "5503254160", "Коньшин С.А."), (s.IsLegalEntity, s.Inn, s.Director));
+
+        app.Go(AppModule.Legal);
+        var screen = app.Vm.LegalScreen;
+        screen.ClientFilter = "Юрлица";
+        Assert.Equal(["180090"], screen.Debtors.Select(d => d.Account));
+        Assert.Equal("Юрлицо", screen.Debtors[0].ClientKind);
+        screen.ClientFilter = "Физлица";
+        Assert.NotEmpty(screen.Debtors);
+        Assert.DoesNotContain(screen.Debtors, d => d.Account == "180090");
+    }
+
+    [AvaloniaFact]
     public void Registry_ExportsHouseContracts()
     {
         using var app = new DesktopApp();

@@ -16,7 +16,8 @@ public sealed record Debtor(
     bool IsOld,
     CourtCase? Case,
     DateOnly? OldestUnpaid,
-    DateOnly? ContractTerminated)
+    DateOnly? ContractTerminated,
+    bool IsLegalEntity)
 {
     /// <summary>До какого дня можно взыскать самый старый неоплаченный месяц.</summary>
     public DateOnly? LimitationEnds => OldestUnpaid is { } m ? LegalDeadline.LimitationEnds(m.Year, m.Month) : null;
@@ -55,7 +56,7 @@ public sealed class Debts
             .ToDictionary(c => c.SubscriberId);
         var rows = db.Subscribers.AsNoTracking()
             .OrderBy(s => s.Id)
-            .Select(s => new { s.Id, s.HouseId, s.Account, s.LastName, s.FirstName, s.Patronymic, s.Apartment, s.LastPaymentDate, s.ContractTerminated })
+            .Select(s => new { s.Id, s.HouseId, s.Account, s.LastName, s.FirstName, s.Patronymic, s.Apartment, s.LastPaymentDate, s.ContractTerminated, s.IsLegalEntity })
             .ToList();
 
         var debts = new Debts();
@@ -69,7 +70,7 @@ public sealed class Debts
             {
                 var name = new Subscriber { LastName = r.LastName, FirstName = r.FirstName, Patronymic = r.Patronymic }.FullName;
                 debts.Debtors.Add(new Debtor(r.Id, r.HouseId, r.Account, name, r.Apartment, debt, sum?.Unpaid ?? 0, r.LastPaymentDate, old, cases.GetValueOrDefault(r.Id),
-                    sum?.OldestUnpaid is { } m ? new DateOnly(m / 12, m % 12 + 1, 1) : null, r.ContractTerminated));
+                    sum?.OldestUnpaid is { } m ? new DateOnly(m / 12, m % 12 + 1, 1) : null, r.ContractTerminated, r.IsLegalEntity));
             }
         }
         return debts;

@@ -65,4 +65,34 @@ public class SubscriberContractsTests
         Save(db, id, new DateOnly(2026, 9, 5), null);
         Assert.Equal([1, 2, 3, 9, 10, 11, 12], Months(db, id));
     }
+
+    [Fact]
+    public void LegalEntity_RequisitesSaved_AndClearedWhenBackToPerson()
+    {
+        using var database = new SqliteDatabase();
+        using var db = database.CreateContext();
+        var id = Seed(db);
+        var s = db.Subscribers.Single(x => x.Id == id);
+
+        SubscriberContracts.Save(db, s, new Subscriber
+        {
+            IsLegalEntity = true,
+            Inn = " 5503254160 ",
+            Kpp = "550301001",
+            Ogrn = "1145543048001",
+            LegalAddress = "644007, г. Омск, ул. Третьяковская, д. 73",
+            Director = "Коньшин С.А."
+        }, Today, "Админ", At);
+        db.ChangeTracker.Clear();
+        var saved = db.Subscribers.Single(x => x.Id == id);
+        Assert.True(saved.IsLegalEntity);
+        Assert.Equal(("5503254160", "550301001", "1145543048001", "Коньшин С.А."), (saved.Inn, saved.Kpp, saved.Ogrn, saved.Director));
+        Assert.Contains("Клиент: Физлицо → Юрлицо", db.ChangeLog.Single().Changes);
+
+        SubscriberContracts.Save(db, saved, new Subscriber { Inn = "5503254160" }, Today, "Админ", At);
+        db.ChangeTracker.Clear();
+        var person = db.Subscribers.Single(x => x.Id == id);
+        Assert.False(person.IsLegalEntity);
+        Assert.Equal("", person.Inn + person.Kpp + person.Ogrn + person.LegalAddress + person.Director);
+    }
 }

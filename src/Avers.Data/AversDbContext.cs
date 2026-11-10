@@ -76,6 +76,11 @@ public sealed class AversDbContext : DbContext
             e.Property(x => x.OekAccount).HasMaxLength(20);
             e.Property(x => x.ContractNumber).HasMaxLength(40);
             e.Property(x => x.ContractHolder).HasMaxLength(250);
+            e.Property(x => x.Inn).HasMaxLength(12);
+            e.Property(x => x.Kpp).HasMaxLength(9);
+            e.Property(x => x.Ogrn).HasMaxLength(15);
+            e.Property(x => x.LegalAddress).HasMaxLength(250);
+            e.Property(x => x.Director).HasMaxLength(250);
             e.HasIndex(x => x.Account).IsUnique();
             e.HasIndex(x => x.InnerCode);
             e.HasIndex(x => x.OekAccount);
@@ -83,6 +88,7 @@ public sealed class AversDbContext : DbContext
             e.Ignore(x => x.FullName);
             e.Ignore(x => x.ShortName);
             e.Ignore(x => x.ContractParty);
+            e.Ignore(x => x.ClientKind);
         });
 
         model.Entity<YearPayment>(e =>

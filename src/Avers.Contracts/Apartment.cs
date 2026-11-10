@@ -2,7 +2,7 @@ namespace Avers.Contracts;
 
 /// <summary>
 /// Правка договора, примечания и льготы в карточке. Пустой <c>ContractHolder</c> — договор с самим абонентом,
-/// пустая льгота — «не применяется». Запрос заменяет все поля целиком.
+/// пустая льгота — «не применяется», пустой <c>LegalEntity</c> — клиент физлицо. Запрос заменяет все поля целиком.
 /// </summary>
 public sealed record UpdateContractRequest(
     string? ContractNumber,
@@ -10,7 +10,11 @@ public sealed record UpdateContractRequest(
     DateOnly? ContractTerminated,
     string? ContractHolder,
     string? Notes,
-    string? Benefit = null);
+    string? Benefit = null,
+    LegalEntityRequest? LegalEntity = null);
+
+/// <summary>Реквизиты клиента — юридического лица. Любое поле можно оставить пустым.</summary>
+public sealed record LegalEntityRequest(string? Inn, string? Kpp, string? Ogrn, string? Address, string? Director);
 
 /// <summary>Судебное дело должника. Запрос заменяет все поля целиком.</summary>
 public sealed record CourtCaseRequest(

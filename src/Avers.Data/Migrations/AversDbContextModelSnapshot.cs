@@ -605,6 +605,11 @@ namespace Avers.Data.Migrations
                     b.Property<DateOnly?>("ContractTerminated")
                         .HasColumnType("date");
 
+                    b.Property<string>("Director")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(80)
@@ -613,10 +618,23 @@ namespace Avers.Data.Migrations
                     b.Property<int>("HouseId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Inn")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)");
+
                     b.Property<string>("InnerCode")
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
+
+                    b.Property<bool>("IsLegalEntity")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Kpp")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -626,6 +644,11 @@ namespace Avers.Data.Migrations
                     b.Property<DateOnly?>("LastPaymentDate")
                         .HasColumnType("date");
 
+                    b.Property<string>("LegalAddress")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
                     b.Property<string>("Notes")
                         .IsRequired()
                         .HasColumnType("text");
@@ -634,6 +657,11 @@ namespace Avers.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Ogrn")
+                        .IsRequired()
+                        .HasMaxLength(15)
+                        .HasColumnType("character varying(15)");
 
                     b.Property<string>("Patronymic")
                         .IsRequired()

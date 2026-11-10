@@ -19,7 +19,7 @@ public sealed record SubscriberListItem(
 /// Карточка квартиры: абонент, договор (номер, с кем заключён), обслуживающая дом организация
 /// (в старом Аверсе — «домовладелец»), итоги по лицевому счёту,
 /// последняя оплата и сколько месяцев прошло. <c>IsPaymentLate</c> — подсвечивать жёлтым
-/// (порог <c>PaymentWarningMonths</c> из настроек).
+/// (порог <c>PaymentWarningMonths</c> из настроек). <c>IsLegalEntity</c> — клиент юрлицо (контрагент).
 /// </summary>
 public sealed record SubscriberCard(
     int Id,
@@ -53,7 +53,8 @@ public sealed record SubscriberCard(
     PaymentDto? LastPayment,
     int? MonthsSinceLastPayment,
     bool IsPaymentLate,
-    int PaymentWarningMonths);
+    int PaymentWarningMonths,
+    bool IsLegalEntity);
 
 /// <summary>Месяц лицевого счёта: начислено по тарифу и сколько внесено.</summary>
 public sealed record PaymentDto(

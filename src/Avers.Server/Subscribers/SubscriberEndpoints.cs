@@ -124,7 +124,8 @@ public static class SubscriberEndpoints
             last is null ? null : PaymentEndpoints.ToDto(last),
             PaymentAge.MonthsSince(s.LastPaymentDate, today),
             PaymentAge.IsLate(s, today, warning),
-            warning));
+            warning,
+            s.IsLegalEntity));
     }
 
     private static async Task<Results<Ok<List<PaymentDto>>, NotFound>> Payments(

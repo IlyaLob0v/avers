@@ -104,7 +104,13 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
             ContractTerminated = request.ContractTerminated,
             ContractHolder = request.ContractHolder ?? "",
             Notes = request.Notes ?? "",
-            Benefit = request.Benefit ?? Subscriber.NoBenefit
+            Benefit = request.Benefit ?? Subscriber.NoBenefit,
+            IsLegalEntity = request.LegalEntity is not null,
+            Inn = request.LegalEntity?.Inn ?? "",
+            Kpp = request.LegalEntity?.Kpp ?? "",
+            Ogrn = request.LegalEntity?.Ogrn ?? "",
+            LegalAddress = request.LegalEntity?.Address ?? "",
+            Director = request.LegalEntity?.Director ?? ""
         };
         SubscriberContracts.Save(ctx, s, draft, Today, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
         return Task.CompletedTask;
