@@ -3,7 +3,7 @@ using Avers.Domain;
 namespace Avers.Data;
 
 /// <summary>
-/// Договор, примечание и льгота абонента. Расторжение — это отключение: неоплаченные месяцы после месяца расторжения
+/// Договор, примечание, льгота и тип клиента (у юрлица — реквизиты; у физлица они стираются). Расторжение — это отключение: неоплаченные месяцы после месяца расторжения
 /// снимаются (месяц расторжения начисляется полностью, Q-18). Снятое расторжение возвращает месяцы — с месяца после
 /// прежнего расторжения или с месяца нового договора, если он позже, по декабрь текущего года по последнему тарифу.
 /// </summary>
@@ -11,13 +11,25 @@ public static class SubscriberContracts
 {
     public static void Save(AversDbContext db, Subscriber s, Subscriber draft, DateOnly today, string who, DateTimeOffset at)
     {
+        var legal = draft.IsLegalEntity;
+        draft.Inn = legal ? draft.Inn.Trim() : "";
+        draft.Kpp = legal ? draft.Kpp.Trim() : "";
+        draft.Ogrn = legal ? draft.Ogrn.Trim() : "";
+        draft.LegalAddress = legal ? draft.LegalAddress.Trim() : "";
+        draft.Director = legal ? draft.Director.Trim() : "";
         var changes = ChangeLog.Diff(
             ("Номер договора", s.ContractNumber, draft.ContractNumber),
             ("Заключён", s.ContractDate, draft.ContractDate),
             ("Расторгнут", s.ContractTerminated, draft.ContractTerminated),
             ("С кем заключён", s.ContractHolder, draft.ContractHolder),
             ("Примечание", s.Notes, draft.Notes),
-            ("Льгота", s.Benefit, draft.Benefit));
+            ("Льгота", s.Benefit, draft.Benefit),
+            ("Клиент", s.ClientKind, draft.ClientKind),
+            ("ИНН", s.Inn, draft.Inn),
+            ("КПП", s.Kpp, draft.Kpp),
+            ("ОГРН", s.Ogrn, draft.Ogrn),
+            ("Юридический адрес", s.LegalAddress, draft.LegalAddress),
+            ("Руководитель", s.Director, draft.Director));
         var before = s.ContractTerminated;
         s.ContractNumber = draft.ContractNumber.Trim();
         s.ContractDate = draft.ContractDate;
@@ -25,6 +37,12 @@ public static class SubscriberContracts
         s.ContractHolder = draft.ContractHolder.Trim();
         s.Notes = draft.Notes.Trim();
         s.Benefit = draft.Benefit;
+        s.IsLegalEntity = legal;
+        s.Inn = draft.Inn;
+        s.Kpp = draft.Kpp;
+        s.Ogrn = draft.Ogrn;
+        s.LegalAddress = draft.LegalAddress;
+        s.Director = draft.Director;
 
         var months = db.Payments.Where(p => p.SubscriberId == s.Id).ToList();
         var stop = s.ContractTerminated is { } end ? Index(end) : int.MaxValue;

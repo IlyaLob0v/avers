@@ -37,16 +37,19 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
     private List<DebtorRow> _allDebtors = [];
 
     public IReadOnlyList<string> CaseFilters { get; } = ["Любые", "Есть приказ", "Нет приказа"];
+    public IReadOnlyList<string> ClientFilters { get; } = ["Все", "Физлица", "Юрлица"];
 
     [ObservableProperty] private string _debtFrom = "";
     [ObservableProperty] private string _unpaidFrom = "";
     [ObservableProperty] private string _addressFilter = "";
     [ObservableProperty] private string _caseFilter = "Любые";
+    [ObservableProperty] private string _clientFilter = "Все";
 
     partial void OnDebtFromChanged(string value) => FilterDebtors();
     partial void OnUnpaidFromChanged(string value) => FilterDebtors();
     partial void OnAddressFilterChanged(string value) => FilterDebtors();
     partial void OnCaseFilterChanged(string value) => FilterDebtors();
+    partial void OnClientFilterChanged(string value) => FilterDebtors();
 
     public string DebtorsCountText => Debtors.Count == _allDebtors.Count
         ? $"Должников: {Debtors.Count}"
@@ -59,7 +62,7 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
         FilterDebtors();
     }
 
-    /// <summary>Отбор юристов: долг от суммы, неоплачено от месяцев, слова адреса, есть ли судебный приказ. Пустое поле — не важно.</summary>
+    /// <summary>Отбор юристов: долг от суммы, неоплачено от месяцев, слова адреса, есть ли судебный приказ, физлицо или юрлицо. Пустое поле — не важно.</summary>
     private void FilterDebtors()
     {
         var debtFrom = decimal.TryParse(DebtFrom.Trim(), System.Globalization.NumberStyles.Number, MainViewModel.Ru, out var sum) ? sum : 0;
@@ -70,7 +73,8 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
         foreach (var d in _allDebtors.Where(d =>
                      d.Debt >= debtFrom && d.Unpaid >= unpaidFrom &&
                      words.All(w => d.Address.Contains(w, StringComparison.CurrentCultureIgnoreCase)) &&
-                     CaseFilter switch { "Есть приказ" => d.CourtCase is not null, "Нет приказа" => d.CourtCase is null, _ => true }))
+                     CaseFilter switch { "Есть приказ" => d.CourtCase is not null, "Нет приказа" => d.CourtCase is null, _ => true } &&
+                     ClientFilter switch { "Физлица" => !d.IsLegalEntity, "Юрлица" => d.IsLegalEntity, _ => true }))
             Debtors.Add(d);
         SelectedDebtor = Debtors.FirstOrDefault(d => d.SubscriberId == keep) ?? Debtors.FirstOrDefault();
         OnPropertyChanged(nameof(DebtorsCountText));
@@ -426,6 +430,7 @@ public sealed class DebtorRow : IRowTone
         Case = d.Case is { } c ? $"{c.OrderNumber} от {c.OrderDate:dd.MM.yyyy}" : "—";
         IsDebt = d.Debt >= Billing.DebtHighlight;
         IsOld = d.IsOld && !IsDebt;
+        IsLegalEntity = d.IsLegalEntity;
     }
     public int SubscriberId { get; }
     public int HouseId { get; }
@@ -446,6 +451,8 @@ public sealed class DebtorRow : IRowTone
     public CourtCase? CourtCase { get; }
     public bool IsDebt { get; }
     public bool IsOld { get; }
+    public bool IsLegalEntity { get; }
+    public string ClientKind => IsLegalEntity ? "Юрлицо" : "Физлицо";
 
     /// <summary>Последняя оплата 3 года и более назад — жёлтая метка в столбце даты, видна и в красной строке.</summary>
     public bool OldPayer { get; }

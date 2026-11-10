@@ -47,6 +47,12 @@ public sealed partial class MainViewModel
     [ObservableProperty] private string _editContractHolder = "";
     [ObservableProperty] private string _editNotes = "";
     [ObservableProperty] private string _editBenefit = Subscriber.NoBenefit;
+    [ObservableProperty] private bool _editIsLegalEntity;
+    [ObservableProperty] private string _editInn = "";
+    [ObservableProperty] private string _editKpp = "";
+    [ObservableProperty] private string _editOgrn = "";
+    [ObservableProperty] private string _editLegalAddress = "";
+    [ObservableProperty] private string _editDirector = "";
 
     public IReadOnlyList<string> Benefits => Subscriber.Benefits;
 
@@ -168,6 +174,12 @@ public sealed partial class MainViewModel
         EditContractHolder = s?.ContractHolder ?? "";
         EditNotes = s?.Notes ?? "";
         EditBenefit = s?.Benefit ?? Subscriber.NoBenefit;
+        EditIsLegalEntity = s?.IsLegalEntity ?? false;
+        EditInn = s?.Inn ?? "";
+        EditKpp = s?.Kpp ?? "";
+        EditOgrn = s?.Ogrn ?? "";
+        EditLegalAddress = s?.LegalAddress ?? "";
+        EditDirector = s?.Director ?? "";
     }
 
     private void RebuildCardPayments()
@@ -275,12 +287,20 @@ public sealed partial class MainViewModel
             Status = "Договор не может быть расторгнут раньше, чем заключён.";
             return;
         }
+        if (EditIsLegalEntity && Subscriber.RequisitesError(EditInn, EditKpp, EditOgrn) is { } requisites)
+        {
+            Status = requisites;
+            return;
+        }
 
         var s = SelectedSubscriber;
+        var legal = EditIsLegalEntity
+            ? new LegalEntityRequest(EditInn.Trim(), EditKpp.Trim(), EditOgrn.Trim(), EditLegalAddress.Trim(), EditDirector.Trim())
+            : null;
         await Save(async () =>
         {
             await _store.SaveContractAsync(s.Id, new UpdateContractRequest(
-                EditContractNumber.Trim(), signed, ended, EditContractHolder.Trim(), EditNotes.Trim(), EditBenefit));
+                EditContractNumber.Trim(), signed, ended, EditContractHolder.Trim(), EditNotes.Trim(), EditBenefit, legal));
             _cardBoundId = null;
             await ReloadAsync();
             Status = $"Карточка {s.LastName}, кв. {s.Apartment}, сохранена.";

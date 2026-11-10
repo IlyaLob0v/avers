@@ -266,6 +266,24 @@ public class ApartmentCardTests
     }
 
     [Fact]
+    public async Task UpdateContract_LegalEntity_SavedAndValidated()
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("orlov");
+
+        var badInn = await client.PutAsJsonAsync("/api/subscribers/3/contract", new UpdateContractRequest(
+            "ТО-2018/1200112", null, null, null, null, LegalEntity: new LegalEntityRequest("12345", null, null, null, null)));
+        var saved = await client.PutAsJsonAsync("/api/subscribers/3/contract", new UpdateContractRequest(
+            "ТО-2018/1200112", null, null, null, null,
+            LegalEntity: new LegalEntityRequest("5503254160", "550301001", "1145543048001", "644007, г. Омск, ул. Третьяковская, д. 73", "Коньшин С.А.")));
+        var card = await client.GetFromJsonAsync<SubscriberCard>("/api/subscribers/3");
+
+        Assert.Equal(HttpStatusCode.BadRequest, badInn.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, saved.StatusCode);
+        Assert.True(card!.IsLegalEntity);
+    }
+
+    [Fact]
     public async Task UpdateContract_LawyerIsForbidden()
     {
         await using var app = new AversApp();

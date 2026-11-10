@@ -48,6 +48,7 @@
 | `ContractNumber` | `CONTRACT.CONTRACTID` | допущение: отдельного номера в JACK нет |
 | `ContractHolder` | — | в JACK нет; возможно, в `CONTRACT.NOTE` — на данных |
 | `Benefit` | `PRIVROLL` → `SOCIAL.SOCIALPOSITIONNAME` | действующая на дату переноса (`ENDDATE is null`), только если это одна из трёх льгот АДС (`Subscriber.Benefits`: юрлицо, коллективная оплата, коллективный усилитель в квартире; названия сверить на данных). Прочие льготы оформляет МФЦ — «не применяется» |
+| `IsLegalEntity` | `PRIVROLL` → `SOCIAL` | допущение: юрлицо, если действует льгота «юридическое лицо»; отдельный признак (`TYPEOFPHYSICALPERSON`?, Q-28) проверить на данных. Реквизиты (`Inn`, `Kpp`, `Ogrn`, `LegalAddress`, `Director`) в JACK не хранятся — пустые |
 | `LastPaymentDate` | `ABN_PAY.PAYDATE` | max по абоненту |
 
 Пустые абоненты, которых JACK заводит для заявок на дом (`CreateEmptyClient` пишет только дом и квартиру),

@@ -35,6 +35,37 @@ public sealed class Subscriber
 
     public string Benefit { get; set; } = NoBenefit;
 
+    /// <summary>
+    /// Клиент — юридическое лицо (контрагент). Название организации записано вместо фамилии, как в старом Аверсе.
+    /// Реквизиты ниже заполняются только у юрлица.
+    /// </summary>
+    public bool IsLegalEntity { get; set; }
+    public string Inn { get; set; } = "";
+    public string Kpp { get; set; } = "";
+    public string Ogrn { get; set; } = "";
+    public string LegalAddress { get; set; } = "";
+
+    /// <summary>Руководитель юрлица: должность и ФИО.</summary>
+    public string Director { get; set; } = "";
+
+    public string ClientKind => IsLegalEntity ? "Юрлицо" : "Физлицо";
+
+    /// <summary>
+    /// Что не так с реквизитами юрлица; null — всё верно. ИНН — 10 цифр (12 у ИП), КПП — 9, ОГРН — 13 (15 у ИП).
+    /// Пустое поле допустимо: реквизиты вносят по мере получения.
+    /// </summary>
+    public static string? RequisitesError(string inn, string kpp, string ogrn) =>
+        !Digits(inn, 10, 12) ? "ИНН — 10 цифр (у ИП — 12)."
+        : !Digits(kpp, 9) ? "КПП — 9 цифр."
+        : !Digits(ogrn, 13, 15) ? "ОГРН — 13 цифр (у ИП — 15)."
+        : null;
+
+    private static bool Digits(string value, params int[] lengths)
+    {
+        var v = value.Trim();
+        return v.Length == 0 || (lengths.Contains(v.Length) && v.All(char.IsAsciiDigit));
+    }
+
     public ICollection<YearPayment> Payments { get; set; } = new List<YearPayment>();
     public ICollection<WorkTicket> Tickets { get; set; } = new List<WorkTicket>();
     public ICollection<CourtCase> CourtCases { get; set; } = new List<CourtCase>();

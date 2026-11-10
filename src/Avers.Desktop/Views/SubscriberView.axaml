@@ -106,7 +106,7 @@
         <HeaderedContentControl Grid.Column="1" Classes="group" Margin="5,0,0,10" Header="Квартира и абонент">
           <StackPanel>
             <Grid Classes="form" ColumnDefinitions="150,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
-              <TextBlock Text="ФИО полностью" />
+              <TextBlock Text="ФИО или организация" />
               <TextBox Grid.Column="1" Classes="cell" Text="{Binding SelectedSubscriber.FullName, Mode=OneWay}" IsReadOnly="True" />
               <TextBlock Grid.Row="1" Text="Индекс / счёт ПЖРЭУ" />
               <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" IsReadOnly="True"
@@ -124,6 +124,20 @@
             <TextBox Classes="cell" MinHeight="52" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top"
                      Text="{Binding EditNotes}" IsReadOnly="{Binding !CanEditCard}" />
             <CheckBox Margin="0,6,0,0" IsChecked="{Binding SelectedSubscriber.PrintAccountWithPayDate}" Content="Печатать лицевой счёт с датой оплаты" />
+            <CheckBox Margin="0,6,0,0" IsChecked="{Binding EditIsLegalEntity}" IsEnabled="{Binding CanEditCard}"
+                      Content="Юридическое лицо (контрагент)" ToolTip.Tip="Название организации записано вместо ФИО" />
+            <Grid Classes="form" Margin="0,4,0,0" ColumnDefinitions="150,*,40,*" RowDefinitions="Auto,Auto,Auto,Auto" IsVisible="{Binding EditIsLegalEntity}">
+              <TextBlock Text="ИНН" />
+              <TextBox Grid.Column="1" Classes="cell" Text="{Binding EditInn}" IsReadOnly="{Binding !CanEditCard}" />
+              <TextBlock Grid.Column="2" Margin="8,0,0,0" Text="КПП" />
+              <TextBox Grid.Column="3" Classes="cell" Text="{Binding EditKpp}" IsReadOnly="{Binding !CanEditCard}" />
+              <TextBlock Grid.Row="1" Text="ОГРН" />
+              <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Classes="cell" Text="{Binding EditOgrn}" IsReadOnly="{Binding !CanEditCard}" />
+              <TextBlock Grid.Row="2" Text="Юридический адрес" />
+              <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Classes="cell" Text="{Binding EditLegalAddress}" IsReadOnly="{Binding !CanEditCard}" />
+              <TextBlock Grid.Row="3" Text="Руководитель" />
+              <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" Classes="cell" Text="{Binding EditDirector}" PlaceholderText="должность, ФИО" IsReadOnly="{Binding !CanEditCard}" />
+            </Grid>
           </StackPanel>
         </HeaderedContentControl>
       </Grid>

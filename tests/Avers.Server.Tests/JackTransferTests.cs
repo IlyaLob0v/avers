@@ -98,6 +98,7 @@ public sealed class JackTransferTests : IAsyncLifetime
         Assert.Equal(("12", "2222"), (ivanova.PzhreuIndex, ivanova.PzhreuAccount));
         Assert.Equal("коллективная оплата", ivanova.Benefit);
         Assert.Equal(Subscriber.NoBenefit, petrov.Benefit);
+        Assert.Equal([1003], await db.Subscribers.Where(s => s.IsLegalEntity).Select(s => s.Id).ToListAsync());
         Assert.Equal(new DateOnly(2026, 3, 10), ivanova.LastPaymentDate);
         Assert.Equal(2026, ivanova.SettlementFrom);
         Assert.False(await db.Subscribers.AnyAsync(s => s.Id == 1004));
