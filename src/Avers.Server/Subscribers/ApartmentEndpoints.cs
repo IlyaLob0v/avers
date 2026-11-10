@@ -32,7 +32,7 @@ public static class ApartmentEndpoints
         if (legal is not null && Subscriber.RequisitesError(legal.Inn ?? "", legal.Kpp ?? "", legal.Ogrn ?? "") is { } requisites)
             errors["legalEntity"] = [requisites];
         if (legal is { Address.Length: > 250 } or { Director.Length: > 250 })
-            errors["legalEntity"] = ["Юридический адрес и руководитель — не длиннее 250 символов."];
+            errors["legalEntityText"] = ["Юридический адрес и руководитель — не длиннее 250 символов."];
         if (errors.Count > 0)
             return TypedResults.ValidationProblem(errors);
 
