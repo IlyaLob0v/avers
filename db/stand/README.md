@@ -36,8 +36,15 @@
    bash db/stand/stand.sh all jack.dmp
    ```
 
-   или по шагам: `import jack.dmp` → `report` → `schema` → `data` → `reconcile`. Каждый шаг можно повторять:
-   схема Oracle на стенде и схема `legacy` в PostgreSQL пересоздаются заново.
+   или по шагам: `import jack.dmp` → `accruals` → `report` → `schema` → `data` → `reconcile` → `transfer`.
+   Каждый шаг можно повторять: схема Oracle на стенде и схема `legacy` в PostgreSQL пересоздаются заново.
+
+   - `accruals` считает начисления по месяцам функцией самого JACK (`oracle/accruals.sql`) и кладёт их в таблицу
+     `AVERS_ACCRUAL` копии JACK на стенде. Идёт до `schema` и `data`, чтобы таблица попала в `legacy`. Самый долгий
+     шаг: функция вызывается для каждого абонента и месяца с 1998 года.
+   - `transfer` — пробный перенос в таблицы Аверса и сверка (`db/migration/transfer`). Таблицы Аверса в базе стенда
+     каждый раз создаются заново миграциями, поэтому нужен .NET SDK ([docs/development.md](../../docs/development.md)).
+     Отчёт — `transfer-check-…txt`, в конце «ИТОГ: перенос сошёлся» или «есть расхождения».
    Если выгрузка сделана старой утилитой `exp`, а не `expdp`, вместо `import` — `import-exp jack.dmp`.
 
 Подойдёт и выгрузка только структуры (`jack_metadata.dmp`, см. `db/legacy/README.md`): тогда `schema` покажет,
@@ -54,6 +61,7 @@
 | `code/*.sql` | черновой перевод представлений, процедур, пакетов, триггеров — **только для разбора**, в базу не грузится |
 | `oracle_fingerprint.csv` | отпечаток Oracle: агрегаты по таблицам (без персональных данных) |
 | `reconcile-*.txt` | отчёт сверки |
+| `transfer-check-*.txt` | отчёт сверки после переноса в таблицы Аверса |
 
 В PostgreSQL: схема `legacy` — копия JACK «как есть», схема `recon` — служебные таблицы сверки.
 
