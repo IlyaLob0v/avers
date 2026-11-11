@@ -100,6 +100,7 @@ tests/
 | [0014](adr/0014-api-contract-and-desktop-updates.md) | По сети — только DTO из `Avers.Contracts`, тесты формы JSON, правила `DesktopClient.Version`; автообновление (Velopack) — предложено |
 | [0015](adr/0015-demands-loading.md) | Заявки — не в снимке, а запросами по фильтру; сводка считается на сервере |
 | [0016](adr/0016-modular-monolith-and-worker.md) | Модульный монолит без микросервисов; долгие задачи — в фоновой службе `Avers.Worker` (та же база, тот же `Avers.Data`), задания — через таблицу в PostgreSQL (предложено) |
+| [0017](adr/0017-offline-map.md) | Офлайн-карта Омска: файл OpenStreetMap (PMTiles) на сервере, страница `/m/` в браузере, точки домов в базе (предложено) |
 
 ## Сквозные вопросы
 

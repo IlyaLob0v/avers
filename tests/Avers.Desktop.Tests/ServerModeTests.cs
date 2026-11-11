@@ -33,6 +33,19 @@ public sealed class ServerModeTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task Map_OpensServerPageOnSelectedHouse()
+    {
+        var vm = await SignIn("sokolova");
+        var opened = new List<string>();
+        vm.OpenFile = opened.Add;
+
+        vm.OpenMapCommand.Execute(null);
+
+        Assert.True(vm.CanOpenMap);
+        Assert.EndsWith($"/m/#map={vm.SelectedHouse!.Id}", Assert.Single(opened));
+    }
+
+    [Fact]
     public async Task AccessLog_ShowsWhoOpenedSubscribers()
     {
         var cashier = await SignIn("orlov");

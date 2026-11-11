@@ -29,6 +29,10 @@ public sealed class House
     public string? OpenFaultReason { get; set; }
     public DateOnly? OpenFaultPlannedFix { get; set; }
 
+    /// <summary>Точка дома на офлайн-карте (WGS 84). Пусто — дом ещё не найден на карте.</summary>
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+
     public ICollection<Subscriber> Subscribers { get; set; } = new List<Subscriber>();
     public ICollection<WorkTicket> Tickets { get; set; } = new List<WorkTicket>();
     public ICollection<HouseScheme> Schemes { get; set; } = new List<HouseScheme>();

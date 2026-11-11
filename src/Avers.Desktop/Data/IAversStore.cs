@@ -20,6 +20,9 @@ public interface IAversStore
 
     IReadOnlyList<AppUser> LoginUsers();
 
+    /// <summary>Офлайн-карта на сервере Аверса (страница <c>/m/</c>), открытая на доме; null — карты нет (учебная база).</summary>
+    Uri? MapAddress(int? houseId);
+
     Task<AppUser> SignInAsync(string login, string password);
 
     void SignOut();

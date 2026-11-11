@@ -12,6 +12,8 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
 
     public string Title => "учебная база на этом компьютере";
 
+    public Uri? MapAddress(int? houseId) => null;
+
     public DateOnly Today => today;
 
     /// <summary>Кто вошёл — для журнала изменений.</summary>

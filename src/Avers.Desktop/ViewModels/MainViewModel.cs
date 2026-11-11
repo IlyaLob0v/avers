@@ -359,6 +359,7 @@ public sealed partial class MainViewModel : ObservableObject
         TicketsScreen.BindTicket();
         RebuildNavigation();
         OnPropertyChanged(nameof(UserLine));
+        OnPropertyChanged(nameof(CanOpenMap));
         OnPropertyChanged(nameof(UserRoleTitle));
         OnPropertyChanged(nameof(WindowTitle));
     }
@@ -534,6 +535,23 @@ public sealed partial class MainViewModel : ObservableObject
             Remember(Module);
         Module = page;
         Status = WindowTitle;
+    }
+
+    /// <summary>Кнопка «Карта»: дома видны тем, у кого есть просмотр раздела «Дома и антенны».</summary>
+    public bool CanOpenMap => User is not null && RoleCatalog.Can(User.Role, AppModule.Anten, out var level) && level != RoleCatalog.AccessLevel.ScreenOnly;
+
+    /// <summary>Офлайн-карта в браузере: на заявках — дом выбранной заявки, на остальных экранах — выбранный дом.</summary>
+    [RelayCommand]
+    private void OpenMap()
+    {
+        var house = Module is AppModule.Disp or AppModule.Ticket ? TicketsScreen.TicketHouse ?? SelectedHouse : SelectedHouse;
+        if (_store.MapAddress(house?.Id) is not { } address)
+        {
+            Status = "Карта работает, когда программа подключена к серверу Аверса.";
+            return;
+        }
+        OpenFile(address.ToString());
+        Status = house is null ? "Карта открыта в браузере." : $"Карта открыта в браузере: {house.AddressLine}.";
     }
 
     [RelayCommand]

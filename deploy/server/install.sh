@@ -20,6 +20,7 @@ id avers >/dev/null 2>&1 || useradd --system --home-dir /opt/avers-server --shel
 install -m 755 "$here/avers-password" /usr/local/bin/avers-password
 install -m 755 "$here/avers-demo-check" /usr/local/bin/avers-demo-check
 install -m 755 "$here/avers-internet" /usr/local/bin/avers-internet
+install -m 755 "$here/avers-map" /usr/local/bin/avers-map
 install -m 755 "$here/avers-backup" /usr/local/bin/avers-backup
 install -m 755 "$here/avers-restore-check" /usr/local/bin/avers-restore-check
 install -d -m 700 -o root -g root /var/backups/avers

@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.StaticFiles;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,7 +54,10 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = Forward
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseDefaultFiles();
-app.UseStaticFiles();
+// Глифы подписей офлайн-карты (.pbf) — тип, которого нет в списке по умолчанию.
+var contentTypes = new FileExtensionContentTypeProvider();
+contentTypes.Mappings[".pbf"] = "application/x-protobuf";
+app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = contentTypes });
 app.UseAuthentication();
 app.UseFreshUser();
 app.UseAuthorization();
@@ -75,6 +79,7 @@ app.MapIntercoms();
 app.MapPhonebook();
 app.MapPpr();
 app.MapMobile();
+app.MapMap();
 
 await app.InitializeDatabaseAsync();
 if (AdminCommands.TryRun(args, out var command))

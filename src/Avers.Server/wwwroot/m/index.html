@@ -35,11 +35,24 @@
   #viewer canvas { display: block; width: 100%; }
   #viewer.full canvas { width: auto; }
   #viewer button { position: fixed; top: 8px; right: 8px; padding: 8px 14px; font: inherit; background: #fff; border: 0; border-radius: 3px; }
+  header nav { display: flex; gap: 8px; }
+  #map { position: fixed; left: 0; right: 0; bottom: 0; top: var(--top, 48px); }
+  #map-canvas { position: absolute; inset: 0; }
+  .map-bar { position: absolute; top: 8px; left: 8px; right: 52px; max-width: 420px; z-index: 2; }
+  .map-bar input { box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+  .map-bar ul { list-style: none; margin: 4px 0 0; padding: 4px; background: #fff; border: 1px solid var(--line); border-radius: 3px; max-height: 50vh; overflow: auto; }
+  .map-bar li button { width: 100%; text-align: left; padding: 8px; font: inherit; font-size: 15px; background: none; border: 0; border-bottom: 1px solid var(--face); }
+  .map-bar li.muted { padding: 6px 8px; }
+  #map-missing { margin-top: 6px; padding: 6px 10px; font: inherit; font-size: 14px; background: #fff; border: 1px solid var(--blue); color: var(--blue); border-radius: 3px; }
+  #map-note:not(:empty) { margin-top: 6px; padding: 8px 10px; font-size: 14px; background: var(--warn); border: 1px solid #e0c96a; border-radius: 3px; }
+  .maplibregl-popup-content { font: 15px/1.35 "Segoe UI", Tahoma, sans-serif; }
+  .maplibregl-popup-content div button { display: block; width: 100%; margin-top: 6px; padding: 6px 8px; font: inherit; font-size: 14px; color: var(--blue); background: #fff; border: 1px solid var(--blue); border-radius: 3px; }
+  .fault-note { color: #b00020; font-size: 14px; margin-top: 4px; }
   [hidden] { display: none !important; }
 </style>
 </head>
 <body>
-<header><b>Аверс · дома</b><button id="logout" hidden>Выйти</button></header>
+<header><b>Аверс · дома</b><nav><button id="map-open" hidden>Карта</button><button id="list-open" hidden>Поиск</button><button id="logout" hidden>Выйти</button></nav></header>
 <main>
   <form id="login" hidden>
     <label for="user">Логин</label>
@@ -60,19 +73,41 @@
   </div>
 
   <div id="house" hidden>
-    <button class="back" id="back">← К поиску</button>
+    <button class="back" id="back">← Назад</button>
     <div id="house-body"></div>
   </div>
 </main>
+<div id="map" hidden>
+  <div id="map-canvas"></div>
+  <div class="map-bar">
+    <input id="map-search" placeholder="Улица и дом, например «волоч 19»" autocomplete="off">
+    <ul id="map-results" hidden></ul>
+    <button id="map-missing" hidden></button>
+    <div id="map-note"></div>
+  </div>
+</div>
 <div id="viewer" hidden><canvas id="viewer-canvas"></canvas><button id="viewer-close">Закрыть</button></div>
 <script>
 const $ = id => document.getElementById(id);
 let token = sessionStorage.getItem("avers-token");
 
 function show(id) {
-  for (const s of ["login", "search", "house"]) $(s).hidden = s !== id;
+  for (const s of ["login", "search", "house", "map"]) $(s).hidden = s !== id;
   $("logout").hidden = id === "login";
+  $("map-open").hidden = id === "login" || id === "map";
+  $("list-open").hidden = id !== "map";
+  document.documentElement.style.setProperty("--top", document.querySelector("header").offsetHeight + "px");
 }
+
+// Карта загружается при первом открытии. Адрес …/m/#map=12 (так её открывает программа Аверс) — сразу дом 12 на карте.
+let fromMap = false;
+async function showMap(houseId) {
+  fromMap = true;
+  if (!window.openMap) await new Promise((resolve, reject) => document.head.append(Object.assign(document.createElement("script"),
+    { src: "map/map.js", onload: resolve, onerror: () => reject(new Error("Не удалось загрузить карту с сервера.")) })));
+  await openMap(houseId);
+}
+const hashHouse = () => (/^#map=(\d+)/.exec(location.hash) || [])[1];
 
 async function api(path) {
   const r = await fetch(path, { headers: { Authorization: "Bearer " + token } });
@@ -85,6 +120,7 @@ async function api(path) {
 function logout() {
   token = null;
   sessionStorage.removeItem("avers-token");
+  window.closeMap?.();
   $("viewer").hidden = true;
   show("login");
 }
@@ -101,12 +137,15 @@ $("login").onsubmit = async e => {
   token = (await r.json()).accessToken;
   sessionStorage.setItem("avers-token", token);
   $("pass").value = "";
+  if (location.hash.startsWith("#map")) { showMap(+hashHouse() || null); return; }
   show("search");
   $("street").focus();
 };
 
 $("logout").onclick = logout;
-$("back").onclick = () => show("search");
+$("back").onclick = () => fromMap ? showMap() : show("search");
+$("map-open").onclick = () => showMap(null).catch(err => alert(err.message));
+$("list-open").onclick = () => { fromMap = false; show("search"); };
 
 let timer;
 for (const id of ["street", "number"]) $(id).oninput = () => { clearTimeout(timer); timer = setTimeout(search, 300); };
@@ -155,7 +194,8 @@ function section(title, rows, cls) {
   return s;
 }
 
-async function openHouse(id) {
+async function openHouse(id, fromMapView = false) {
+  fromMap = fromMapView;
   const body = $("house-body");
   body.replaceChildren();
   show("house");
@@ -167,7 +207,11 @@ async function openHouse(id) {
     const facts = document.createElement("div");
     facts.className = "muted";
     facts.textContent = `Этажей ${h.floors} · подъездов ${h.entrances} · квартир ${h.apartments}`;
-    body.append(title, facts);
+    const onMap = document.createElement("button");
+    onMap.className = "scheme";
+    onMap.textContent = "Показать на карте";
+    onMap.onclick = () => showMap(id).catch(err => alert(err.message));
+    body.append(title, facts, onMap);
     if (h.openFault)
       body.append(section("Неустранённая неисправность", [
         ["Что", h.openFault], ["Почему не устранена", h.openFaultReason],
@@ -221,7 +265,9 @@ async function openScheme(id, button) {
 $("viewer-canvas").onclick = () => $("viewer").classList.toggle("full");
 $("viewer-close").onclick = () => $("viewer").hidden = true;
 
-show(token ? "search" : "login");
+if (!token) show("login");
+else if (location.hash.startsWith("#map")) showMap(+hashHouse() || null).catch(err => alert(err.message));
+else show("search");
 </script>
 </body>
 </html>
