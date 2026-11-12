@@ -56,6 +56,7 @@
 |---|---|---|---|---|---|
 | REQ-MECH-01 | M | Сделано | `Server/Mobile/MobileEndpoints.cs`, `Server/wwwroot/m/index.html`, `Contracts/Mobile.cs`; наружу — `deploy/server/avers-internet` (Caddy) | `MobileTests.Mechanic_FindsHouseByStreetAndNumber`, `MobileTests.Mechanic_SeesHomeownerTechnicsAndSchemes`, `MobileTests.Lawyer_HasNoAccess`, `AuthTests.InternetLogin_OnlyReader` | Кто ещё входит из интернета — Q-07 |
 | REQ-MECH-02 | M | Сделано | Права — `RoleCatalog` (Читатель только смотрит); водяной знак на сервере — `Server/Desktop/SchemeWatermark.cs`, `SchemeEndpoints.Screen`; холст вместо ссылки — `Server/wwwroot/m/index.html` | `RoleCatalogTests.Reader_CannotEditAnything`, `SchemeTests.Reader_CannotEditSchemes` (Desktop); `SchemeTests` (Server): исходник не отдаётся роли «только на экране» и телефону | Знак рисует сервер, исходный файл получает только роль с правом просмотра схем |
+| REQ-MAP-01 | S | Сделано | Карта — `Server/wwwroot/m/map/map.js`, файл карты и точки домов — `Server/Mobile/MapEndpoints.cs`, точки по адресам OSM — `Data/HouseLocations.cs`, `avers-map`; кнопка «Карта» — `Desktop/ViewModels/MainViewModel.cs` | `HouseLocationsTests.*`, `MapTests.*` (Server), `ServerModeTests.Map_OpensServerPageOnSelectedHouse`, `ShellTests.Map_*` | ADR-0017. Справочника организаций нет |
 
 ## Юристы
 

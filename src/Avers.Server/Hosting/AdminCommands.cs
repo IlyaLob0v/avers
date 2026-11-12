@@ -5,7 +5,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Avers.Server.Hosting;
 
 /// <summary>
-/// Команды администратора без запуска веб-сервера: <c>Avers.Server set-password &lt;логин&gt;</c>.
+/// Команды администратора без запуска веб-сервера: <c>Avers.Server set-password &lt;логин&gt;</c>,
+/// <c>Avers.Server map-import &lt;адреса.json&gt;</c>.
 /// Новый пароль читается из стандартного ввода, чтобы не оставаться в истории команд.
 /// В пустой базе (первая установка) команда заводит этого сотрудника администратором.
 /// </summary>
@@ -19,6 +20,7 @@ public static class AdminCommands
         {
             ["set-password", var login] => services => SetPasswordAsync(services, login, Console.In),
             ["demo-passwords"] => services => DemoPasswordsAsync(services, Console.Out),
+            ["map-import", var file] => services => MapImportAsync(services, file, Console.Out),
             _ => null!
         };
         return command is not null;
@@ -68,6 +70,21 @@ public static class AdminCommands
             "Изменение сотрудника", $"Сотрудник {login}", ["Пароль: изменён"]);
         await db.SaveChangesAsync();
         Console.WriteLine($"Пароль пользователя {login} изменён.");
+        return 0;
+    }
+
+    /// <summary>Ставит на офлайн-карту дома без точки по адресам OpenStreetMap (ответ Overpass, его скачивает avers-map).</summary>
+    public static async Task<int> MapImportAsync(IServiceProvider services, string file, TextWriter output)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AversDbContext>();
+        await using var json = File.OpenRead(file);
+        var result = HouseLocations.Import(db, HouseLocations.ReadOverpass(json), services.GetRequiredService<TimeProvider>().GetUtcNow());
+        await output.WriteLineAsync($"Поставлено на карту домов: {result.Placed}. Не найдено по адресу: {result.NotFound.Count}.");
+        foreach (var address in result.NotFound)
+            await output.WriteLineAsync("  " + address);
+        if (result.NotFound.Count > 0)
+            await output.WriteLineAsync("Эти дома ставятся на карту вручную: раздел «Карта», «Дома без точки».");
         return 0;
     }
 }

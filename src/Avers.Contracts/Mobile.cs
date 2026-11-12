@@ -28,3 +28,12 @@ public sealed record MobileHouseDto(
 
 /// <summary>Схема дома; картинку отдаёт <c>/api/mobile/schemes/{Id}</c>, если <see cref="HasImage"/>.</summary>
 public sealed record MobileSchemeDto(int Id, string Name, string Format, DateOnly UpdatedAt, bool HasImage);
+
+/// <summary>Дома для офлайн-карты; <see cref="CanPlace"/> — сотрудник может ставить дома на карту вручную.</summary>
+public sealed record MapHousesDto(bool CanPlace, List<MapHouseDto> Houses);
+
+/// <summary>Дом на офлайн-карте. Без точки (<see cref="Latitude"/> пусто) — дом ещё не найден на карте.</summary>
+public sealed record MapHouseDto(int Id, string Address, double? Latitude, double? Longitude, bool HasOpenFault);
+
+/// <summary>Точка на карте (WGS 84), куда ставят дом вручную.</summary>
+public sealed record MapPointDto(double Latitude, double Longitude);

@@ -238,6 +238,12 @@ namespace Avers.Data.Migrations
                     b.Property<DateOnly?>("LastPpr")
                         .HasColumnType("date");
 
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("double precision");
+
                     b.Property<string>("Number")
                         .IsRequired()
                         .HasMaxLength(20)

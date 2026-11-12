@@ -42,3 +42,6 @@ Thumbs.db
 [Rr]elease/
 node_modules/
 .next/
+
+# Офлайн-карта учебного сервера (скачивается «Скачать карту Омска.bat»)
+src/Avers.Server/map/

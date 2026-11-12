@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Скачивает офлайн-карту Омска (OpenStreetMap) на сервер Аверса и ставит на неё дома: sudo avers-map
+# Нужен интернет на самом сервере, только на время скачивания. Сотрудникам карта потом открывается без интернета.
+# Повторный запуск обновляет карту; дома, уже стоящие на карте (в том числе вручную), не сдвигаются.
+set -euo pipefail
+
+[ "$(id -u)" -eq 0 ] || { echo "Запустите через sudo"; exit 1; }
+
+# Границы Омска с запасом: долгота и широта юго-западного и северо-восточного углов.
+bbox_lonlat="73.05,54.80,73.65,55.15"
+bbox_latlon="54.80,73.05,55.15,73.65"
+pmtiles_version="1.31.2"
+dir=/var/lib/avers-server/map
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+
+echo "1/3. Программа для вырезки карты (pmtiles $pmtiles_version)…"
+curl -fsSL "https://github.com/protomaps/go-pmtiles/releases/download/v$pmtiles_version/go-pmtiles_${pmtiles_version}_Linux_x86_64.tar.gz" \
+    | tar -xz -C "$work" pmtiles
+
+echo "2/3. Карта Омска из свежей сборки Protomaps (несколько минут)…"
+for days in 1 2 3 4 5; do
+    build="https://build.protomaps.com/$(date -u -d "-$days day" +%Y%m%d).pmtiles"
+    "$work/pmtiles" extract "$build" "$work/city.pmtiles" --bbox="$bbox_lonlat" && break
+    rm -f "$work/city.pmtiles"
+done
+[ -s "$work/city.pmtiles" ] || { echo "Не удалось скачать карту. Проверьте интернет на сервере и повторите позже."; exit 1; }
+
+echo "3/3. Адреса домов из OpenStreetMap…"
+curl -fsS --retry 3 --max-time 600 https://overpass-api.de/api/interpreter \
+    --data-urlencode "data=[out:json][timeout:300];nwr[\"addr:housenumber\"][\"addr:street\"]($bbox_latlon);out tags center;" \
+    -o "$work/addresses.json"
+
+install -d -m 755 -o avers -g avers "$dir"
+install -m 644 -o avers -g avers "$work/city.pmtiles" "$dir/city.pmtiles"
+install -m 644 -o avers -g avers "$work/addresses.json" "$dir/addresses.json"
+
+connection=$(sed -n 's/^ConnectionStrings__Avers=//p' /etc/avers-server.env)
+cd /opt/avers-server
+runuser -u avers -- env ASPNETCORE_ENVIRONMENT=Production Logging__LogLevel__Default=Warning \
+    "ConnectionStrings__Avers=$connection" ./Avers.Server map-import "$dir/addresses.json"
+echo "Карта готова: $(du -h "$dir/city.pmtiles" | cut -f1). Сотрудникам — кнопка «Карта» в программе или на странице /m/."

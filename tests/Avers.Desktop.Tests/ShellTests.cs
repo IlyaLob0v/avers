@@ -695,4 +695,25 @@ public class ShellTests
         using var book = new ClosedXML.Excel.XLWorkbook(opened!);
         Assert.Equal(screen.Debtors.Count, book.Worksheet(1).RowsUsed().Count() - 2);
     }
+
+    [AvaloniaFact]
+    public void Map_OnLocalDemoBase_ExplainsItNeedsServer()
+    {
+        using var app = new DesktopApp("sokolova");
+        var opened = new List<string>();
+        app.Vm.OpenFile = opened.Add;
+
+        app.Vm.OpenMapCommand.Execute(null);
+
+        Assert.Empty(opened);
+        Assert.Equal("Карта работает, когда программа подключена к серверу Аверса.", app.Vm.Status);
+    }
+
+    [AvaloniaFact]
+    public void Map_IsHiddenForLawyer()
+    {
+        using var app = new DesktopApp("lawyer");
+
+        Assert.False(app.Vm.CanOpenMap);
+    }
 }
