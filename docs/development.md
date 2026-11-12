@@ -26,6 +26,12 @@ docker compose -f db/docker-compose.yml up -d
 AVERS_TEST_POSTGRES="Host=localhost;Username=avers;Password=<пароль из .env>" dotnet test tests/Avers.Server.Tests
 ```
 
+Тесты переноса из старого Аверса (`JackTransferTests`) работают только на PostgreSQL. Без `AVERS_TEST_POSTGRES`
+они отмечены пропущенными (атрибут `[PostgresFact]`), в CI их прогоняет задача `server-postgres`.
+
+Работу рабочего места через сервер проверяет `ServerModeTests`: настоящий сервер в памяти процесса и
+`ServerStore`. Новый запрос в `ServerStore` сопровождается тестом там же.
+
 ## Запуск
 
 | Что | Команда |
