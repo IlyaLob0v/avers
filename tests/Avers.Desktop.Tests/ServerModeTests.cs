@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Avers.Contracts;
 using Avers.Data;
 using Avers.Desktop.Data;
 using Avers.Desktop.ViewModels;
@@ -140,6 +142,139 @@ public sealed class ServerModeTests : IAsyncDisposable
         Assert.Equal(UserRole.Reader, vm.User!.Role);
         Assert.Null(vm.SelectedSubscriber);
         Assert.Empty(vm.LegalScreen.Debtors);
+    }
+
+    [Fact]
+    public async Task Payment_RecordedAndCancelledThroughServer()
+    {
+        var (store, user) = await Connect("admin");
+        const int subscriberId = 1;
+
+        var paid = await store.RecordPaymentAsync(subscriberId, Year, null, user);
+        var saved = _server.WithDb(db => db.Payments.AsNoTracking().Single(p => p.Id == paid.Id));
+        Assert.True(paid.IsPaid);
+        Assert.Equal((paid.Month, paid.Tariff, "Касса"), (saved.Month, saved.Amount!.Value, saved.Source!));
+
+        await store.CancelPaymentAsync(subscriberId, paid.Id);
+
+        Assert.Null(_server.WithDb(db => db.Payments.AsNoTracking().Single(p => p.Id == paid.Id).Amount));
+    }
+
+    [Fact]
+    public async Task CancelUnpaidMonth_ShowsServerReason()
+    {
+        var (store, user) = await Connect("admin");
+        var paid = await store.RecordPaymentAsync(1, Year, null, user);
+        await store.CancelPaymentAsync(1, paid.Id);
+
+        var error = await Assert.ThrowsAsync<StoreException>(() => store.CancelPaymentAsync(1, paid.Id));
+
+        Assert.Equal($"Месяц {paid.Month:00}.{Year} не оплачен.", error.Message);
+    }
+
+    [Fact]
+    public async Task Debts_SameAsInDatabase()
+    {
+        var (store, _) = await Connect("admin");
+
+        var debts = await store.LoadDebtsAsync();
+        var expected = _server.WithDb(db => Debts.Load(db, store.Today));
+
+        Assert.NotEmpty(debts.Debtors);
+        Assert.Equal(Serialize(expected.Debtors), Serialize(debts.Debtors));
+        Assert.Equal(expected.ByHouse, debts.ByHouse);
+    }
+
+    [Fact]
+    public async Task AccountingReport_SameAsInDatabase()
+    {
+        var (store, _) = await Connect("admin");
+        var (year, month) = (DemoSeeder.WorkDate.Year, DemoSeeder.WorkDate.Month);
+
+        var report = await store.LoadAccountingAsync(year, month);
+        var expected = _server.WithDb(db => AccountingReport.Load(db, year, month));
+
+        Assert.NotEmpty(report.Shipment);
+        Assert.Equal(Serialize(expected), Serialize(report));
+    }
+
+    [Fact]
+    public async Task TariffChange_ThroughServer_ChangesUnpaidMonths()
+    {
+        var (store, _) = await Connect("admin");
+        var unpaid = _server.WithDb(db => db.Payments.Count(p => p.SubscriberId == 1 && p.Year == Year && p.Month >= 9 && p.Amount == null));
+
+        var months = await store.ChangeTariffAsync(new TariffChangeRequest(Year, 9, 777m, null, 1));
+
+        Assert.True(unpaid > 0);
+        Assert.Equal(unpaid, months);
+        Assert.Equal(unpaid, _server.WithDb(db => db.Payments.Count(p => p.SubscriberId == 1 && p.Tariff == 777m)));
+    }
+
+    [Fact]
+    public async Task ContractAndCourtCase_SavedThroughServer()
+    {
+        var (store, _) = await Connect("admin");
+        var contract = new UpdateContractRequest("Д-77", new DateOnly(2026, 3, 1), null, "ООО «Ромашка»", "Проверка",
+            LegalEntity: new LegalEntityRequest("5501234567", "550101001", null, "Омск, ул. Ленина, 1", "Иванов И.И."));
+        var draft = new CourtCase { OrderNumber = "2-15/2026", OrderDate = new DateOnly(2026, 4, 10), Court = "Участок № 5", Amount = 1500m, StateDuty = 200m };
+
+        await store.SaveContractAsync(1, contract);
+        await store.SaveCourtCaseAsync(1, draft);
+
+        var s = _server.WithDb(db => db.Subscribers.AsNoTracking().Single(x => x.Id == 1));
+        Assert.Equal(("Д-77", true, "5501234567", "Омск, ул. Ленина, 1"), (s.ContractNumber, s.IsLegalEntity, s.Inn, s.LegalAddress));
+        var saved = _server.WithDb(db => db.CourtCases.AsNoTracking().OrderBy(c => c.Id).Last(c => c.SubscriberId == 1));
+        Assert.Equal(("2-15/2026", 1500m, 200m), (saved.OrderNumber, saved.Amount, saved.StateDuty));
+    }
+
+    [Fact]
+    public async Task OekFile_ImportedThroughServer()
+    {
+        var (store, _) = await Connect("admin");
+        var (account, tariff) = _server.WithDb(db => db.Payments.Where(p => p.Year == Year && p.Month == 8 && p.Amount == null)
+            .Select(p => new { p.Subscriber.Account, p.Tariff }).AsEnumerable().Select(x => (x.Account, x.Tariff)).First());
+        var file = new OekImportRequest(Year, 8,
+        [
+            new OekRow("83000000001", account, "", "", tariff, tariff, new DateOnly(Year, 8, 14)),
+            new OekRow("83000000002", "нет-такого", "", "", 100m, 100m, new DateOnly(Year, 8, 14))
+        ]);
+
+        var result = await store.ImportOekAsync(file);
+
+        Assert.Equal((2, 1, 1, tariff), (result.Rows, result.Matched, result.Payments, result.PaidTotal));
+        Assert.Contains(result.Mismatches, m => m.Account == "нет-такого");
+        Assert.Equal("ОЭК", _server.WithDb(db => db.Payments.Single(p => p.Subscriber.Account == account && p.Year == Year && p.Month == 8).Source));
+    }
+
+    [Fact]
+    public async Task Reader_PaymentRefused_ShowsNoRights()
+    {
+        var (store, user) = await Connect("novikov");
+
+        var error = await Assert.ThrowsAsync<StoreException>(() => store.RecordPaymentAsync(1, Year, null, user));
+
+        Assert.Equal("Нет прав на это действие.", error.Message);
+    }
+
+    [Fact]
+    public async Task ServerUnreachable_ShowsNoConnection()
+    {
+        var store = new ServerStore(new HttpClient { BaseAddress = new Uri("http://127.0.0.1:9/") });
+
+        var error = await Assert.ThrowsAsync<StoreException>(() => store.SignInAsync("admin", "avers"));
+
+        Assert.StartsWith("Нет связи с сервером", error.Message);
+    }
+
+    private static int Year => DemoSeeder.WorkDate.Year;
+
+    private static string Serialize<T>(T value) => JsonSerializer.Serialize(value);
+
+    private async Task<(ServerStore Store, AppUser User)> Connect(string login)
+    {
+        var store = new ServerStore(_server.CreateClient());
+        return (store, await store.SignInAsync(login, "avers"));
     }
 
     private async Task<MainViewModel> SignIn(string login)

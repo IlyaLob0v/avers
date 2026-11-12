@@ -8,7 +8,7 @@ namespace Avers.Server.Tests;
 /// <summary>
 /// Перенос JACK → Аверс (db/migration/transfer) на учебной копии JACK: база Аверса создаётся миграциями,
 /// затем выполняются те же скрипты, что на стенде и в день переезда. Только на PostgreSQL (AVERS_TEST_POSTGRES),
-/// без него тесты ничего не проверяют.
+/// без него тесты показываются пропущенными.
 /// </summary>
 public sealed class JackTransferTests : IAsyncLifetime
 {
@@ -20,8 +20,6 @@ public sealed class JackTransferTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        if (Postgres is null)
-            return;
         await using var db = Context();
         await db.Database.MigrateAsync();
         await RunAsync("test/legacy-sample.sql");
@@ -30,20 +28,15 @@ public sealed class JackTransferTests : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (Postgres is null)
-            return;
         await using var connection = new NpgsqlConnection($"{Postgres};Database=postgres;Pooling=False");
         await connection.OpenAsync();
         await using var drop = new NpgsqlCommand($"DROP DATABASE IF EXISTS {_database} WITH (FORCE)", connection);
         await drop.ExecuteNonQueryAsync();
     }
 
-    [Fact]
+    [PostgresFact]
     public async Task Check_AllMatches()
     {
-        if (Postgres is null)
-            return;
-
         await RunAsync("check.sql");
 
         await using var connection = await OpenAsync();
@@ -60,11 +53,9 @@ public sealed class JackTransferTests : IAsyncLifetime
         Assert.Equal(1m, rows["Оплаты до 1998 года, неденоминированные (не переносятся), штук"].Jack);
     }
 
-    [Fact]
+    [PostgresFact]
     public async Task Check_FailsWhenPaymentDiffers()
     {
-        if (Postgres is null)
-            return;
         await ExecuteAsync("""UPDATE "Payments" SET "Amount" = "Amount" + 0.01 WHERE "SubscriberId" = 1001 AND "Year" = 2026 AND "Month" = 1""");
 
         var error = await Assert.ThrowsAsync<PostgresException>(() => RunAsync("check.sql"));
@@ -72,22 +63,17 @@ public sealed class JackTransferTests : IAsyncLifetime
         Assert.Contains("есть расхождения", error.MessageText);
     }
 
-    [Fact]
+    [PostgresFact]
     public async Task Transfer_RefusesNonEmptyDatabase()
     {
-        if (Postgres is null)
-            return;
-
         var error = await Assert.ThrowsAsync<PostgresException>(() => RunAsync("transfer.sql"));
 
         Assert.Contains("только в пустую базу", error.MessageText);
     }
 
-    [Fact]
+    [PostgresFact]
     public async Task Subscribers_KeepJackFields()
     {
-        if (Postgres is null)
-            return;
         await using var db = Context();
 
         var ivanova = await db.Subscribers.SingleAsync(s => s.Id == 1001);
@@ -106,11 +92,9 @@ public sealed class JackTransferTests : IAsyncLifetime
         Assert.Equal(["Ленина пр.", "Ленина ул.", "Учебная"], await db.Streets.OrderBy(s => s.Name).Select(s => s.Name).ToListAsync());
     }
 
-    [Fact]
+    [PostgresFact]
     public async Task Payments_OneRowPerMonth()
     {
-        if (Postgres is null)
-            return;
         await using var db = Context();
 
         var ivanova = await db.Payments.Where(p => p.SubscriberId == 1001).OrderBy(p => p.Month).ToListAsync();
@@ -127,11 +111,9 @@ public sealed class JackTransferTests : IAsyncLifetime
         Assert.Equal((1001, 150m, 150m, "А-17"), (receipt.SubscriberId, receipt.Paid, receipt.Amount, receipt.InnerCode));
     }
 
-    [Fact]
+    [PostgresFact]
     public async Task Debts_SameAsJack()
     {
-        if (Postgres is null)
-            return;
         await using var db = Context();
 
         var debts = Debts.Load(db, new DateOnly(2027, 1, 15));
@@ -140,11 +122,9 @@ public sealed class JackTransferTests : IAsyncLifetime
         Assert.Equal(1705m, debts.ByHouse.Values.Sum());
     }
 
-    [Fact]
+    [PostgresFact]
     public async Task Tickets_StatusKindAndMechanic()
     {
-        if (Postgres is null)
-            return;
         await using var db = Context();
 
         var tickets = await db.Tickets.OrderBy(t => t.Id).ToListAsync();
@@ -158,11 +138,9 @@ public sealed class JackTransferTests : IAsyncLifetime
         Assert.Equal(((int?)null, 101, ""), (tickets[3].SubscriberId, tickets[3].HouseId, tickets[3].Apartment));
     }
 
-    [Fact]
+    [PostgresFact]
     public async Task NewRecords_GetKeysAfterJack()
     {
-        if (Postgres is null)
-            return;
         await using var db = Context();
 
         db.Streets.Add(new Street { Name = "Новая" });
