@@ -20,7 +20,7 @@
 | Объёмы таблиц | `db/legacy/01-inventory.sql` (num_rows, сегменты); точные числа — `04-row-counts.sql` |
 | DDL всей схемы | `db/legacy/03-ddl.sql` (dbms_metadata) и `expdp parfile=db/legacy/expdp-metadata.par` |
 | Код PL/SQL | `db/legacy/02-plsql-source.sql` (dba_source) |
-| Полная копия данных | `expdp ... SCHEMAS=JACK` в нерабочее время |
+| Полная копия данных | `expdp ... SCHEMAS=JACK` в нерабочее время, пошагово — [11-jack-export.md](11-jack-export.md) |
 
 Всё, кроме полной копии, запускается одной командой `@00-run-all.sql`; инструкция для администратора —
 `db/legacy/README.md`.
