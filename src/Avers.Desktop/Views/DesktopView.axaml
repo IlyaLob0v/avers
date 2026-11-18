@@ -3,25 +3,23 @@
              xmlns:vm="using:Avers.Desktop.ViewModels"
              x:Class="Avers.Desktop.Views.DesktopView"
              x:DataType="vm:MainViewModel">
-  <!-- Рабочий стол: приветствие и плитки модулей, доступных роли -->
+  <!-- Рабочий стол: плитки модулей, доступных роли -->
   <ScrollViewer>
     <StackPanel Margin="32,24,20,24">
-      <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding User.DisplayName, StringFormat='Добрый день, {0}'}" />
-      <TextBlock Classes="crumb" Margin="0,2,0,0" Text="Выберите модуль. Видны только модули, доступные вашей роли." />
-      <TextBlock Classes="section" Margin="0,20,0,10" Text="МОДУЛИ" />
+      <TextBlock FontSize="24" FontWeight="SemiBold" Margin="0,0,0,18" Text="Рабочий стол" />
       <ItemsControl ItemsSource="{Binding Navigation}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate><UniformGrid Columns="4" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:NavItem">
-            <Button Classes="tile" ToolTip.Tip="{Binding Hint}" Command="{Binding Go}" CommandParameter="{Binding Module}">
+            <Button Classes="tile" AutomationProperties.Name="{Binding Title}" ToolTip.Tip="{Binding Hint}" Command="{Binding Go}" CommandParameter="{Binding Module}">
               <DockPanel>
                 <Border DockPanel.Dock="Left" Classes="tileglyph" Margin="0,0,12,0">
-                  <TextBlock Text="{Binding Glyph}" />
+                  <Path Data="{Binding Icon}" Stretch="Uniform" />
                 </Border>
                 <StackPanel>
-                  <TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextWrapping="Wrap" />
                   <TextBlock Classes="hint" Margin="0,2,0,0" Text="{Binding Summary}" TextWrapping="Wrap" />
                 </StackPanel>
               </DockPanel>
