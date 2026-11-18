@@ -32,6 +32,9 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     public MainViewModel Shell => shell;
 
     public ObservableCollection<WorkTicket> Tickets { get; } = [];
+    public ObservableCollection<WorkTicket> RepeatCallTickets { get; } = [];
+    [ObservableProperty] private string _repeatCallStatus = "";
+
     public ObservableCollection<int> TicketYears { get; } = [];
     public ObservableCollection<TicketMonthRow> TicketMonths { get; } = [];
 
@@ -124,7 +127,22 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         _holdTicketRefresh = false;
     }
 
-    partial void OnSelectedTicketChanged(WorkTicket? value) => BindTicket();
+    // Открытая из поиска заявка может отсутствовать в текущем отборе журнала.
+    public WorkTicket? JournalSelectedTicket
+    {
+        get => SelectedTicket is { } ticket ? Tickets.FirstOrDefault(t => t.Id == ticket.Id) : null;
+        set
+        {
+            if (value is not null)
+                SelectedTicket = value;
+        }
+    }
+
+    partial void OnSelectedTicketChanged(WorkTicket? value)
+    {
+        OnPropertyChanged(nameof(JournalSelectedTicket));
+        BindTicket();
+    }
     partial void OnScopeFilterChanged(TicketOption<TicketScope> value) => RefreshTickets();
     partial void OnKindFilterChanged(TicketOption<TicketKind> value) => RefreshTickets();
     partial void OnStatusFilterChanged(TicketOption<TicketStatus> value) => RefreshTickets();
@@ -340,6 +358,7 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
             shell.Status = $"Показаны последние {TicketQueries.MaxResults} заявок. Сузьте отбор, чтобы увидеть остальные.";
         if (keep is not null)
             SelectedTicket = Tickets.FirstOrDefault(t => t.Id == keep) ?? SelectedTicket;
+        OnPropertyChanged(nameof(JournalSelectedTicket));
 
         ShowTicketMonths(months);
         OnPropertyChanged(nameof(TicketCountText));
@@ -379,6 +398,53 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         if (version != _apartmentVersion) return;
         _ticketApartment = apartment;
         NotifyTicketSubscriber();
+    }
+
+    private int _repeatCallVersion;
+
+    internal void ClearRepeatCallTickets()
+    {
+        _repeatCallVersion++;
+        RepeatCallTickets.Clear();
+        RepeatCallStatus = "";
+    }
+
+    [RelayCommand]
+    private async Task CheckRepeatCall()
+    {
+        if (!CanAcceptTickets || shell.SelectedHouse is not { } house) return;
+        var apartment = ScopeApartment.Trim();
+
+        ClearRepeatCallTickets();
+        var version = _repeatCallVersion;
+        RepeatCallStatus = "Проверяем открытые заявки…";
+        try
+        {
+            var houseTickets = await shell.Store.LoadTicketsAsync(new TicketFilter { HouseId = house.Id, OnlyOpen = true });
+            var apartmentTickets = apartment.Length == 0 ? [] :
+                await shell.Store.LoadTicketsAsync(new TicketFilter { HouseId = house.Id, Apartment = apartment, OnlyOpen = true });
+            if (version != _repeatCallVersion) return;
+
+            var results = apartmentTickets.Concat(houseTickets).DistinctBy(t => t.Id).ToList();
+            shell.LinkTickets(results);
+            foreach (var ticket in results)
+                RepeatCallTickets.Add(ticket);
+            RepeatCallStatus = results.Count == 0 ? "По этому дому открытых заявок нет."
+                : apartment.Length == 0 ? "Открытые заявки по дому."
+                : "Открытые заявки по дому. Заявки выбранной квартиры показаны первыми.";
+        }
+        catch (StoreException e)
+        {
+            if (version == _repeatCallVersion) RepeatCallStatus = e.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenRepeatCallTicket(WorkTicket? ticket)
+    {
+        if (!CanAcceptTickets || ticket is null || !RepeatCallTickets.Contains(ticket)) return;
+        shell.GoCommand.Execute(AppModule.Ticket);
+        SelectedTicket = ticket;
     }
 
     internal void NotifyTicketPanel()
@@ -582,6 +648,7 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         {
             var number = await shell.Store.AcceptTicketAsync(request, shell.User);
             await shell.ReloadTicketsAsync();
+            ClearRepeatCallTickets();
             NewTicketFault = "";
             NewTicketPhone = "";
             SelectedTicket = Tickets.FirstOrDefault(t => t.Number == number);
