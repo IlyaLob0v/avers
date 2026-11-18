@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
 using Avers.Data;
 using Avers.Desktop.Data;
@@ -14,7 +15,12 @@ namespace Avers.Desktop;
 
 public partial class App : Application
 {
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+        if (Environment.GetEnvironmentVariable("AVERS_REDUCE_MOTION") != "1")
+            Styles.Add(new StyleInclude((Uri?)null) { Source = new Uri("avares://Avers/Styles/ButtonMotion.axaml") });
+    }
 
     public override void OnFrameworkInitializationCompleted()
     {

@@ -1,0 +1,10 @@
+<Styles xmlns="https://github.com/avaloniaui">
+  <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.09" />
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.09" />
+      </Transitions>
+    </Setter>
+  </Style>
+</Styles>

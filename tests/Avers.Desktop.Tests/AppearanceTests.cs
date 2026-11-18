@@ -34,6 +34,23 @@ public class AppearanceTests
         Assert.StartsWith("IBM Plex Sans", face.FamilyName);
     }
 
+    [AvaloniaFact]
+    public void DesktopTile_HasColorTransitionsUnlessMotionIsReduced()
+    {
+        using var app = new DesktopApp();
+        app.Go(AppModule.Desktop);
+
+        var tile = app.Window.GetVisualDescendants().OfType<Button>()
+            .First(b => b.Classes.Contains("tile") && b.IsEffectivelyVisible);
+        var presenter = tile.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.ContentPresenter>()
+            .First(p => p.Name == "PART_ContentPresenter");
+        var transitions = presenter.Transitions?.OfType<Avalonia.Animation.BrushTransition>().ToArray() ?? [];
+        if (Environment.GetEnvironmentVariable("AVERS_REDUCE_MOTION") == "1")
+            Assert.Empty(transitions);
+        else
+            Assert.Equal(2, transitions.Length);
+    }
+
     [Fact]
     public void Catalog_EveryModuleHasTileSummary()
     {
