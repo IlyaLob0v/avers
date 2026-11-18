@@ -58,6 +58,12 @@ async function createMap() {
     center: header ? [header.centerLon, header.centerLat] : Omsk,
     zoom: header ? Math.max(header.centerZoom, 11) : 11,
     attributionControl: { compact: true },
+    locale: {
+      "NavigationControl.ZoomIn": "Приблизить",
+      "NavigationControl.ZoomOut": "Отдалить",
+      "ScaleControl.Meters": "м",
+      "ScaleControl.Kilometers": "км"
+    },
     style: {
       version: 8,
       glyphs: location.origin + "/m/map/fonts/{fontstack}/{range}.pbf",
@@ -66,6 +72,7 @@ async function createMap() {
     }
   });
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }));
+  map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
   await new Promise(resolve => map.once("load", resolve));
 
   map.addSource("houses", { type: "geojson", data: { type: "FeatureCollection", features: [] } });

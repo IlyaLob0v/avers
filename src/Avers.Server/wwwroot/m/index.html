@@ -39,6 +39,11 @@
   #map { position: fixed; left: 0; right: 0; bottom: 0; top: var(--top, 48px); }
   #map-canvas { position: absolute; inset: 0; }
   .map-bar { position: absolute; top: 8px; left: 8px; right: 52px; max-width: 420px; z-index: 2; }
+  .map-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 4px; padding: 6px 8px;
+    border: 1px solid var(--line); border-radius: 4px; background: #fff; font-size: 13px; }
+  .map-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .map-legend i { width: 9px; height: 9px; border-radius: 50%; background: #2b5cb0; }
+  .map-legend .fault { background: #c62828; }
   .map-bar input { box-shadow: 0 1px 4px rgba(0,0,0,.3); }
   .map-bar ul { list-style: none; margin: 4px 0 0; padding: 4px; background: #fff; border: 1px solid var(--line); border-radius: 3px; max-height: 50vh; overflow: auto; }
   .map-bar li button { width: 100%; text-align: left; padding: 8px; font: inherit; font-size: 15px; background: none; border: 0; border-bottom: 1px solid var(--face); }
@@ -80,10 +85,14 @@
 <div id="map" hidden>
   <div id="map-canvas"></div>
   <div class="map-bar">
-    <input id="map-search" placeholder="Улица и дом, например «волоч 19»" autocomplete="off">
+    <input id="map-search" type="search" aria-label="Поиск дома на карте" placeholder="Улица и дом, например «волоч 19»" autocomplete="off">
     <ul id="map-results" hidden></ul>
     <button id="map-missing" hidden></button>
-    <div id="map-note"></div>
+    <div class="map-legend" aria-label="Обозначения на карте">
+      <span><i aria-hidden="true"></i> Дом Аверса</span>
+      <span><i class="fault" aria-hidden="true"></i> Неисправность</span>
+    </div>
+    <div id="map-note" role="status"></div>
   </div>
 </div>
 <div id="viewer" hidden><canvas id="viewer-canvas"></canvas><button id="viewer-close">Закрыть</button></div>
