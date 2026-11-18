@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Avers.Data;
 using Avers.Desktop.Data;
 using Avers.Desktop.ViewModels;
@@ -25,19 +26,53 @@ public partial class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            desktop.MainWindow = CreateMainWindow(desktop.Args ?? []);
+        {
+            var loading = new StartupWindow();
+            var mode = ServerAddress.Choose(desktop.Args ?? []);
+            loading.Opened += async (_, _) => await OpenWorkspaceAsync(desktop, loading, mode);
+            desktop.MainWindow = loading;
+        }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static async Task OpenWorkspaceAsync(
+        IClassicDesktopStyleApplicationLifetime desktop, Window loading, StartupMode mode)
+    {
+        await Dispatcher.Yield(DispatcherPriority.Background);
+        if (!loading.IsVisible) return;
+
+        Window workspace;
+        try
+        {
+            var demo = mode.Demo
+                ? await Task.Run(() => OpenDemoDatabase(null, DateOnly.FromDateTime(DateTime.Now)))
+                : null;
+            if (!loading.IsVisible) return;
+            workspace = CreateMainWindow(mode, demo);
+        }
+        catch (Exception exception)
+        {
+            if (!loading.IsVisible) return;
+            System.Diagnostics.Trace.TraceError(exception.ToString());
+            workspace = ProblemWindow("Не удалось открыть Аверс. Перезапустите приложение. Если ошибка повторится, обратитесь к администратору.");
+        }
+
+        desktop.MainWindow = workspace;
+        workspace.Show();
+        loading.Close();
     }
 
     /// <summary>
     /// С адресом сервера — общая база, с ключом --demo — учебная, иначе окно с сообщением (см. <see cref="ServerAddress"/>).
     /// </summary>
-    public static Window CreateMainWindow(string[] args, string? directory = null)
+    public static Window CreateMainWindow(string[] args, string? directory = null) =>
+        CreateMainWindow(ServerAddress.Choose(args, directory));
+
+    private static Window CreateMainWindow(StartupMode mode, LocalStore? demo = null)
     {
-        var mode = ServerAddress.Choose(args, directory);
         if (mode.Demo)
-            return new MainWindow { DataContext = CreateMainViewModel() };
+            return new MainWindow { DataContext = demo is null ? CreateMainViewModel() : CreateMainViewModel(demo) };
         if (mode.Server is not { } server)
             return ProblemWindow(mode.Problem!);
 

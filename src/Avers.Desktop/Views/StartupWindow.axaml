@@ -1,0 +1,18 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Avers.Desktop.Views.StartupWindow"
+        Title="Аверс" Icon="/Assets/avers.ico"
+        Width="320" Height="146" CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Panel}">
+  <StackPanel Margin="24" Spacing="14" VerticalAlignment="Center">
+    <StackPanel Orientation="Horizontal" Spacing="12">
+      <Image Source="/Assets/logo-avers-servis.png" Width="42" Height="42" />
+      <StackPanel VerticalAlignment="Center" Spacing="2">
+        <TextBlock Text="Аверс" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource Caption}" />
+        <TextBlock Text="Запуск приложения…" Foreground="{StaticResource Muted}" />
+      </StackPanel>
+    </StackPanel>
+    <ProgressBar Height="4" IsIndeterminate="True" AutomationProperties.Name="Запуск Аверса" />
+  </StackPanel>
+</Window>
