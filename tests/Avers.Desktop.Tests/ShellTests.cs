@@ -1,7 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Headless;
-using Avalonia.LogicalTree;
 using Avalonia.Headless.XUnit;
+using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
 using Avers.Data;
 using Avers.Desktop.Controls;

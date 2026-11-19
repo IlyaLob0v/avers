@@ -509,7 +509,7 @@ public sealed partial class MainViewModel : ObservableObject
         catch (StoreException e)
         {
             TicketsScreen.ClearRepeatCallTickets();
-        _store.SignOut();
+            _store.SignOut();
             LoginError = e.Message;
             return;
         }
