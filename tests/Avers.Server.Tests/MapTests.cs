@@ -11,6 +11,30 @@ namespace Avers.Server.Tests;
 public class MapTests
 {
     [Fact]
+    public async Task BuildingAddresses_AreServedOnlyToStaffWithHouseAccess()
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"avers-buildings-{Guid.NewGuid():N}.geojson");
+        await File.WriteAllTextAsync(file, """{"type":"FeatureCollection","features":[]}""");
+        try
+        {
+            await using var app = new AversApp();
+            using var configured = app.WithWebHostBuilder(b => b.UseSetting("Avers:MapBuildingsFile", file));
+            using var anonymous = configured.CreateClient();
+            Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/mobile/map/buildings")).StatusCode);
+            var reader = await LoginAsync(configured, "novikov");
+            var response = await reader.GetAsync("/api/mobile/map/buildings");
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("application/geo+json", response.Content.Headers.ContentType?.MediaType);
+            var lawyer = await LoginAsync(configured, "lawyer");
+            Assert.Equal(HttpStatusCode.Forbidden, (await lawyer.GetAsync("/api/mobile/map/buildings")).StatusCode);
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    [Fact]
     public async Task Dispatcher_SeesHousesWithPointsAndFaults()
     {
         await using var app = new AversApp();

@@ -22,6 +22,7 @@ public static class MapEndpoints
 
         api.MapGet("/tiles", Tiles);
         api.MapGet("/houses", Houses);
+        api.MapGet("/buildings", Buildings);
         api.MapPut("/houses/{id:int}", Place).RequireAuthorization(Policies.HousesEdit);
     }
 
@@ -30,6 +31,14 @@ public static class MapEndpoints
         var path = Path.Combine(env.ContentRootPath, config["Avers:MapFile"] ?? DefaultMapFile);
         return File.Exists(path)
             ? TypedResults.PhysicalFile(path, "application/octet-stream", enableRangeProcessing: true)
+            : TypedResults.NotFound();
+    }
+
+    private static Results<PhysicalFileHttpResult, NotFound> Buildings(IConfiguration config, IWebHostEnvironment env)
+    {
+        var path = Path.Combine(env.ContentRootPath, config["Avers:MapBuildingsFile"] ?? "map/buildings.geojson");
+        return File.Exists(path)
+            ? TypedResults.PhysicalFile(path, "application/geo+json")
             : TypedResults.NotFound();
     }
 

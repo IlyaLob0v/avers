@@ -117,6 +117,22 @@ async function createMap(session) {
     layout: { "text-field": ["get", "address"], "text-font": ["Medium"], "text-size": 12, "text-offset": [0, 1.1], "text-anchor": "top" },
     paint: { "text-color": "#0a2f5c", "text-halo-color": "#fff", "text-halo-width": 1.5 }
   });
+  try {
+    const response = await fetch("/api/mobile/map/buildings", { headers: { Authorization: "Bearer " + token } });
+    if (response.ok) {
+      const buildings = await response.json();
+      if (session !== mapSession) return;
+      map.addSource("address-buildings", { type: "geojson", data: buildings });
+      map.addLayer({
+        id: "address-buildings", type: "fill", source: "address-buildings", minzoom: 13,
+        paint: { "fill-color": "#2b5cb0", "fill-opacity": 0.04 }
+      }, "houses");
+      map.on("mouseenter", "address-buildings", () => map.getCanvas().style.cursor = "pointer");
+      map.on("mouseleave", "address-buildings", () => map.getCanvas().style.cursor = "");
+    }
+  } catch { /* Контуры и номера базовой карты остаются доступны. */ }
+  if (session !== mapSession) return;
+
   map.on("click", onMapClick);
   map.on("click", "houses", e => placing || showPopup(mapHouses.find(h => h.id === e.features[0].properties.id)));
   map.on("mouseenter", "houses", () => map.getCanvas().style.cursor = "pointer");
@@ -221,8 +237,27 @@ function stopPlacing() {
 document.addEventListener("keydown", e => { if (e.key === "Escape" && placing) { stopPlacing(); $("map-note").textContent = ""; } });
 $("map-search").addEventListener("focus", () => { if (placing) { stopPlacing(); $("map-note").textContent = ""; } });
 
+function showBuildingAddress(e) {
+  if (map.queryRenderedFeatures(e.point, { layers: ["houses"] }).length) return;
+  const addressed = map.getLayer("address-buildings")
+    ? map.queryRenderedFeatures(e.point, { layers: ["address-buildings"] })[0] : null;
+  const building = addressed ?? map.queryRenderedFeatures(e.point).find(f => f.sourceLayer === "buildings");
+  if (!building) return;
+  const box = document.createElement("div");
+  const address = addressed?.properties.address;
+  const number = building.properties?.addr_housenumber;
+  box.append(Object.assign(document.createElement("b"), {
+    textContent: address || (number ? "Дом № " + number : "Здание")
+  }));
+  box.append(Object.assign(document.createElement("div"), {
+    textContent: address ? "Адрес из OpenStreetMap" : "Полный адрес отсутствует в загруженных данных."
+  }));
+  popup?.remove();
+  popup = new maplibregl.Popup({ maxWidth: "280px" }).setLngLat(e.lngLat).setDOMContent(box).addTo(map);
+}
+
 function onMapClick(e) {
-  if (!placing) return;
+  if (!placing) { showBuildingAddress(e); return; }
   const h = placing;
   const session = mapSession;
   stopPlacing();
