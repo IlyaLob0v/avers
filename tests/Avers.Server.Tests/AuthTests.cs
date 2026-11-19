@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Avers.Contracts;
+using Avers.Domain;
 using Avers.Server.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
@@ -114,6 +115,34 @@ public class AuthTests
 
         Assert.Equal(HttpStatusCode.Unauthorized, await LoginFromInternet(client, "admin", "avers"));
         Assert.Equal(HttpStatusCode.OK, await LoginFromInternet(client, "novikov", "avers"));
+    }
+
+    [Fact]
+    public async Task InternetToken_CannotOpenDesktopOrFollowLaterRoleChange()
+    {
+        await using var app = new AversApp();
+        var client = app.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login")
+        {
+            Content = JsonContent.Create(new LoginRequest("novikov", "avers"))
+        };
+        request.Headers.Add(AuthEndpoints.InternetHeader, "1");
+        using var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        var token = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("accessToken").GetString();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Add(DesktopClient.Header, DesktopClient.Version.ToString());
+
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/mobile/houses?street=В")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync("/api/desktop/snapshot")).StatusCode);
+
+        await app.WithDbAsync(async db =>
+        {
+            var user = db.Users.Single(x => x.Login == "novikov");
+            user.Role = UserRole.Administrator;
+            return await db.SaveChangesAsync();
+        });
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync("/api/mobile/houses?street=В")).StatusCode);
     }
 
     [Fact]

@@ -11,6 +11,7 @@ public sealed class YearPayment
     public string? Source { get; set; }
     public decimal? Amount { get; set; }
     public DateOnly? PaidAt { get; set; }
+    public bool ImportedFromJack { get; set; }
 
     /// <summary>Сотрудник, который внёс оплату в программу.</summary>
     public string? RecordedBy { get; set; }

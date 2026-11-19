@@ -69,12 +69,12 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public async Task<List<Subscriber>> LoadHouseAsync(House house) =>
         (await Read<HouseSubscribers>(() => http.GetAsync($"api/houses/{house.Id}/subscribers"))).Link(house);
 
-    public async Task<(int Id, int HouseId)?> FindSubscriberAsync(SearchMode mode, string query, string street, string house, string apartment)
+    public async Task<List<SubscriberMatch>> FindSubscribersAsync(SearchMode mode, string query, string street, string house, string apartment, string section)
     {
         var url = $"api/subscribers?mode={mode}&q={Uri.EscapeDataString(query)}&street={Uri.EscapeDataString(street)}" +
-                  $"&house={Uri.EscapeDataString(house)}&apartment={Uri.EscapeDataString(apartment)}";
+                  $"&house={Uri.EscapeDataString(house)}&apartment={Uri.EscapeDataString(apartment)}&section={Uri.EscapeDataString(section)}";
         var found = await Read<List<SubscriberListItem>>(() => http.GetAsync(url));
-        return found.FirstOrDefault() is { } s ? (s.Id, s.HouseId) : null;
+        return found.Select(s => new SubscriberMatch(s.Id, s.HouseId, s.Account, s.FullName, s.Address, s.Apartment, s.Section)).ToList();
     }
 
     public Task<Debts> LoadDebtsAsync() => Read<Debts>(() => http.GetAsync("api/debts"));
@@ -82,8 +82,18 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public Task<AccountingReport> LoadAccountingAsync(int year, int month) =>
         Read<AccountingReport>(() => http.GetAsync($"api/reports/accounting?year={year}&month={month}"));
 
-    public Task<PaymentDto> RecordPaymentAsync(int subscriberId, int year, decimal? amount, AppUser user) =>
-        Read<PaymentDto>(() => http.PostAsJsonAsync($"api/subscribers/{subscriberId}/payments", new RecordPaymentRequest(year, Amount: amount), Json));
+    public async Task<PaymentDto> RecordPaymentAsync(int subscriberId, RecordPaymentRequest request, AppUser user)
+    {
+        try
+        {
+            return await Read<PaymentDto>(() => http.PostAsJsonAsync($"api/subscribers/{subscriberId}/payments", request, Json))
+                ?? throw new StoreException("Подтверждение оплаты от сервера не получено.", outcomeUnknown: true);
+        }
+        catch (Exception e) when (e is HttpRequestException or IOException or TaskCanceledException or JsonException or NotSupportedException)
+        {
+            throw new StoreException("Подтверждение оплаты от сервера не получено.", outcomeUnknown: true);
+        }
+    }
 
     public Task SaveCourtCaseAsync(int subscriberId, CourtCase draft)
     {
@@ -384,7 +394,7 @@ public sealed class ServerStore(HttpClient http) : IAversStore
         }
         catch (Exception e) when (e is HttpRequestException or TaskCanceledException)
         {
-            throw new StoreException($"Нет связи с сервером {http.BaseAddress}. Проверьте сеть или спросите администратора.");
+            throw new StoreException($"Нет связи с сервером {http.BaseAddress}. Проверьте сеть или спросите администратора.", outcomeUnknown: true);
         }
     }
 
@@ -411,7 +421,7 @@ public sealed class ServerStore(HttpClient http) : IAversStore
         }
         var message = problem?.Errors?.Values.SelectMany(x => x).FirstOrDefault()
                       ?? problem?.Detail ?? problem?.Title ?? $"Сервер ответил {(int)response.StatusCode}.";
-        throw new StoreException(message);
+        throw new StoreException(message, outcomeUnknown: (int)response.StatusCode >= 500);
     }
 
     private sealed record TokenResponse(string AccessToken);

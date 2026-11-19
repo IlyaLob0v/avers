@@ -15,6 +15,8 @@ public sealed class AversDbContext : DbContext
     public DbSet<PprEntry> PprEntries => Set<PprEntry>();
     public DbSet<Subscriber> Subscribers => Set<Subscriber>();
     public DbSet<YearPayment> Payments => Set<YearPayment>();
+    public DbSet<PaymentOperation> PaymentOperations => Set<PaymentOperation>();
+    public DbSet<JackPayment> JackPayments => Set<JackPayment>();
     public DbSet<WorkTicket> Tickets => Set<WorkTicket>();
     public DbSet<CourtCase> CourtCases => Set<CourtCase>();
     public DbSet<SubscriberDocument> SubscriberDocuments => Set<SubscriberDocument>();
@@ -98,7 +100,25 @@ public sealed class AversDbContext : DbContext
             e.Property(x => x.Source).HasMaxLength(40);
             e.Property(x => x.RecordedBy).HasMaxLength(120);
             e.Property(x => x.PayerName).HasMaxLength(250);
+            e.Property(x => x.ImportedFromJack).HasDefaultValue(false);
             e.HasIndex(x => new { x.SubscriberId, x.Year, x.Month }).IsUnique();
+        });
+
+        model.Entity<JackPayment>(e =>
+        {
+            e.ToTable("payment_history", "jack_archive");
+            e.Property(x => x.Id).HasColumnName("payid").ValueGeneratedNever();
+            e.Property(x => x.SubscriberId).HasColumnName("subscriber_id");
+            e.Property(x => x.Period).HasColumnName("period").HasColumnType("timestamp without time zone");
+            e.Property(x => x.PaidAt).HasColumnName("paid_at").HasColumnType("timestamp without time zone");
+            e.Property(x => x.Amount).HasColumnName("amount");
+            e.Property(x => x.PayTypeId).HasColumnName("pay_type_id");
+            e.Property(x => x.ConnectionTypeId).HasColumnName("connection_type_id");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasColumnType("timestamp without time zone");
+            e.Property(x => x.Source).HasColumnName("source");
+            e.Property(x => x.RecordedBy).HasColumnName("recorded_by");
+            e.HasIndex(x => new { x.SubscriberId, x.Period });
+            e.HasIndex(x => x.PaidAt);
         });
 
         model.Entity<WorkTicket>(e =>

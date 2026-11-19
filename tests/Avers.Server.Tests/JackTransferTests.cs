@@ -51,12 +51,23 @@ public sealed class JackTransferTests : IAsyncLifetime
         Assert.Equal(1m, rows["Пустые абоненты для заявок на дом (не переносятся)"].Jack);
         Assert.Equal(1m, rows["Проверки подключения без заявки (не переносятся)"].Jack);
         Assert.Equal(1m, rows["Оплаты до 1998 года, неденоминированные (не переносятся), штук"].Jack);
+        Assert.Equal(0m, rows["Расхождения в исходных операциях по PAYID"].Avers);
     }
 
     [PostgresFact]
     public async Task Check_FailsWhenPaymentDiffers()
     {
         await ExecuteAsync("""UPDATE "Payments" SET "Amount" = "Amount" + 0.01 WHERE "SubscriberId" = 1001 AND "Year" = 2026 AND "Month" = 1""");
+
+        var error = await Assert.ThrowsAsync<PostgresException>(() => RunAsync("check.sql"));
+
+        Assert.Contains("есть расхождения", error.MessageText);
+    }
+
+    [PostgresFact]
+    public async Task Check_FailsWhenArchiveSourceDiffersEvenWithSameTotals()
+    {
+        await ExecuteAsync("UPDATE jack_archive.payment_history SET source = 'другой источник' WHERE payid = (SELECT min(payid) FROM jack_archive.payment_history)");
 
         var error = await Assert.ThrowsAsync<PostgresException>(() => RunAsync("check.sql"));
 
@@ -109,6 +120,18 @@ public sealed class JackTransferTests : IAsyncLifetime
         Assert.Null(ivanova[3].Amount);
         Assert.Equal(105m, petrovJanuary.Tariff);
         Assert.Equal((1001, 150m, 150m, "А-17"), (receipt.SubscriberId, receipt.Paid, receipt.Amount, receipt.InnerCode));
+    }
+
+    [PostgresFact]
+    public async Task Accounting_UsesActualPaymentDateAndSource()
+    {
+        await using var db = Context();
+        var january = AccountingReport.Load(db, 2026, 1);
+        var march = AccountingReport.Load(db, 2026, 3);
+
+        Assert.Equal(new AccountingMonth.ReceiptLine("Касса", 2, 205m), january.Receipts.Single(x => x.Source == "Касса"));
+        Assert.Equal(new AccountingMonth.ReceiptLine("Почта", 1, 50m), january.Receipts.Single(x => x.Source == "Почта"));
+        Assert.Equal(new AccountingMonth.ReceiptLine("Касса", 2, 20m), march.Receipts.Single());
     }
 
     [PostgresFact]

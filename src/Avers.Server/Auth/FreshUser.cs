@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Avers.Data;
+using Avers.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace Avers.Server.Auth;
@@ -22,7 +23,15 @@ public static class FreshUser
                 http.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 return;
             }
-            http.User = new ClaimsPrincipal(new ClaimsIdentity(AversClaims.For(user), http.User.Identity!.AuthenticationType));
+            var internetMobile = http.User.FindFirstValue(AversClaims.InternetMobile) == "true";
+            var fromInternet = http.Request.Headers.ContainsKey(AuthEndpoints.InternetHeader);
+            if ((fromInternet && !internetMobile) || (internetMobile &&
+                (user.Role != UserRole.Reader || !http.Request.Path.StartsWithSegments("/api/mobile") || !HttpMethods.IsGet(http.Request.Method))))
+            {
+                http.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return;
+            }
+            http.User = new ClaimsPrincipal(new ClaimsIdentity(AversClaims.For(user, internetMobile), http.User.Identity!.AuthenticationType));
         }
         await next(http);
     });

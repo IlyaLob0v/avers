@@ -32,15 +32,30 @@ public interface IAversStore
     /// <summary>Абоненты дома с оплатами, делами и квитанциями, связанные с этим домом.</summary>
     Task<List<Subscriber>> LoadHouseAsync(House house);
 
-    /// <summary>Первый найденный абонент; null — не найден. Неверный запрос — <see cref="StoreException"/>.</summary>
-    Task<(int Id, int HouseId)?> FindSubscriberAsync(SearchMode mode, string query, string street, string house, string apartment);
+    Task<List<SubscriberMatch>> FindSubscribersAsync(SearchMode mode, string query, string street, string house, string apartment, string section);
+
+    /// <summary>Единственный найденный абонент или точное совпадение лицевого счёта.</summary>
+    async Task<(int Id, int HouseId)?> FindSubscriberAsync(SearchMode mode, string query, string street, string house, string apartment)
+    {
+        var matches = await FindSubscribersAsync(mode, query, street, house, apartment, "");
+        var exactAccount = mode == SearchMode.Account
+            ? matches.FirstOrDefault(s => s.Account.Equals(query.Trim(), StringComparison.OrdinalIgnoreCase)) : null;
+        if (exactAccount is { } exact)
+            return (exact.Id, exact.HouseId);
+        return matches.Count switch
+        {
+            0 => null,
+            1 => (matches[0].Id, matches[0].HouseId),
+            _ => throw new StoreException("Найдено несколько абонентов. Уточните поиск или введите полный лицевой счёт.")
+        };
+    }
 
     Task<Debts> LoadDebtsAsync();
 
     Task<AccountingReport> LoadAccountingAsync(int year, int month);
 
     /// <summary>Оплата первого неоплаченного месяца года; сумма null — по тарифу месяца.</summary>
-    Task<PaymentDto> RecordPaymentAsync(int subscriberId, int year, decimal? amount, AppUser user);
+    Task<PaymentDto> RecordPaymentAsync(int subscriberId, RecordPaymentRequest request, AppUser user);
 
     Task SaveContractAsync(int subscriberId, UpdateContractRequest request);
 
@@ -159,4 +174,12 @@ public interface IAversStore
     Task<IReadOnlyList<AccessLogEntry>> LoadAccessLogAsync();
 }
 
-public sealed class StoreException(string message) : Exception(message);
+public sealed class StoreException(string message, bool outcomeUnknown = false) : Exception(message)
+{
+    public bool OutcomeUnknown { get; } = outcomeUnknown;
+}
+
+public sealed record SubscriberMatch(int Id, int HouseId, string Account, string FullName, string Address, string Apartment, string Section)
+{
+    public string Label => $"{FullName} · {Address}{(Section.Length == 0 ? "" : $", секц. {Section}")}, кв. {Apartment} · л/с {Account}";
+}

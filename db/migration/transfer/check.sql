@@ -15,6 +15,7 @@ create table recon.transfer_check (
     status  text not null
 );
 
+drop table if exists pg_temp.subscriber_ids;
 create temp table subscriber_ids as select "Id" as id from "Subscribers";
 
 insert into recon.transfer_check (title, jack, avers, status)
@@ -26,7 +27,7 @@ select title, jack, avers, case when jack = avers then 'совпадает' else
         (select count(*) from legacy.physpers) - (select count(*) from legacy.avers_empty_client),
         (select count(*) from "Subscribers")),
     ('Заявки (без проверок подключения)',
-        (select count(*) from legacy.demands where not (checkconnect = 1 and demandcode in (0, 524288))),
+        (select count(*) from legacy.demands where (checkconnect = 1 and demandcode in (0, 524288)) is not true),
         (select count(*) from "Tickets")),
     ('ППР', (select count(*) from legacy.ppr_table), (select count(*) from "PprEntries")),
     ('Квитанции ПЖРЭУ с 1998 года, штук',
@@ -43,6 +44,43 @@ select title, jack, avers, case when jack = avers then 'совпадает' else
                                            group by a.physicalpersonid, date_trunc('month', a.month)) x),
         (select coalesce(sum("Tariff"), 0) from "Payments"))
   ) v(title, jack, avers);
+
+-- Сравниваем исходные операции по PAYID, включая даты, источник и сумму.
+with jack as (
+    select p.payid, p.physicalpersonid, p.payfordate, p.paydate, p.summpay, p.paytypeid, p.conntypeid, p.dateoflastupdate,
+           case when exists (select from legacy.post_pay_attr a where a.payid = p.payid)
+                then 'ПЖРЭУ' else trim(t.paytype) end, p.username
+      from legacy.abn_pay p
+      left join legacy.pay_type t on t.paytypeid = p.paytypeid
+), archive as (
+    select payid, subscriber_id, period, paid_at, amount, pay_type_id, connection_type_id, updated_at, source, recorded_by
+      from jack_archive.payment_history
+), differences as (
+    (select * from jack except select * from archive)
+    union all
+    (select * from archive except select * from jack)
+)
+insert into recon.transfer_check (title, jack, avers, status)
+select 'Расхождения в исходных операциях по PAYID', 0, count(*),
+       case when count(*) = 0 then 'совпадает' else 'РАСХОЖДЕНИЕ' end
+  from differences;
+
+-- Сверяем оплату каждого абонента за каждый месяц, включая различие между нулём и отсутствием оплаты.
+with jack as (
+    select p.physicalpersonid as id, date_trunc('month', p.payfordate)::date as period, sum(p.summpay) as amount
+      from legacy.abn_pay p join subscriber_ids s on s.id = p.physicalpersonid
+     where p.payfordate >= date '1998-01-01'
+     group by 1, 2
+), avers as (
+    select "SubscriberId" as id, make_date("Year", "Month", 1) as period, "Amount" as amount, "ImportedFromJack" as imported
+      from "Payments"
+     where "Amount" is not null
+)
+insert into recon.transfer_check (title, jack, avers, status)
+select 'Лицевые счета и месяцы с расхождением по оплате', 0, count(*),
+       case when count(*) = 0 then 'совпадает' else 'РАСХОЖДЕНИЕ' end
+  from jack j full join avers a using (id, period)
+ where j.amount is distinct from a.amount or a.imported is false;
 
 -- Помесячно: оплаты и начисления по каждому месяцу. Число месяцев, где не сошлось, должно быть 0.
 with jack as (

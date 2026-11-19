@@ -106,7 +106,9 @@ $sites {
     # Только из локальной сети: если роутер пробросил 443 для страницы механиков, из интернета сюда не попасть.
     @outside not remote_ip 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 127.0.0.0/8 ::1/128 fc00::/7
     respond @outside 403
-    reverse_proxy 127.0.0.1:5115
+    reverse_proxy 127.0.0.1:5115 {
+        header_up -X-Avers-Internet
+    }
 }
 CADDY
 systemctl enable caddy

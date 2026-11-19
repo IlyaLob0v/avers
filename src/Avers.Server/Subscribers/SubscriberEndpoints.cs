@@ -27,11 +27,11 @@ public static class SubscriberEndpoints
         api.MapGet("/reports/accounting", Accounting).RequireAuthorization(Policies.ReportsAccounting);
         api.MapGet("/subscribers/{id:int}", Card).LogsView("Карточка абонента", AccessLogFilter.Subscriber("id"));
         api.MapGet("/subscribers/{id:int}/payments", Payments).LogsView("Оплаты абонента", AccessLogFilter.Subscriber("id"));
-        api.MapPost("/subscribers/{id:int}/payments", PaymentEndpoints.Record).RequireAuthorization(Policies.PaymentsCreate);
+        api.MapPost("/subscribers/{id:int}/payments", PaymentEndpoints.Record).RequireAuthorization(Policies.PaymentsCreate).AllowPilotWrite();
         api.MapPost("/subscribers/{id:int}/court-cases", (int id, CourtCaseRequest r, ClaimsPrincipal u, AversDbContext db, TimeProvider t) =>
             ApartmentEndpoints.SaveCourtCase(id, 0, r, u, db, t)).RequireAuthorization(Policies.CourtCasesEdit);
         api.MapPut("/subscribers/{id:int}/court-cases/{caseId:int}", ApartmentEndpoints.SaveCourtCase).RequireAuthorization(Policies.CourtCasesEdit);
-        api.MapDelete("/subscribers/{id:int}/payments/{paymentId:int}", PaymentEndpoints.Cancel).RequireAuthorization(Policies.PaymentsCancel);
+        api.MapDelete("/subscribers/{id:int}/payments/{paymentId:int}", PaymentEndpoints.Cancel).RequireAuthorization(Policies.PaymentsCancel).AllowPilotWrite();
         api.MapPost("/oek/import", PaymentEndpoints.ImportOek).RequireAuthorization(Policies.PaymentsImport);
         api.MapPost("/subscribers", ApartmentEndpoints.Add).RequireAuthorization(Policies.SubscribersEdit);
         api.MapPut("/subscribers/{id:int}/contract", ApartmentEndpoints.UpdateContract).RequireAuthorization(Policies.SubscribersEdit);
@@ -62,16 +62,18 @@ public static class SubscriberEndpoints
     private static async Task<Results<Ok<List<SubscriberListItem>>, ValidationProblem>> Search(
         AversDbContext db, TimeProvider time, CancellationToken ct,
         SearchMode mode = SearchMode.Address, string? q = null,
-        string? street = null, string? house = null, string? apartment = null)
+        string? street = null, string? house = null, string? apartment = null, string? section = null)
     {
-        var (query, field, error) = SubscriberSearch.Where(db.Subscribers.AsNoTracking(), mode, q, street, house, apartment);
+        var (query, field, error) = SubscriberSearch.Where(db.Subscribers.AsNoTracking(), mode, q, street, house, apartment, section);
         if (query is null)
             return TypedResults.ValidationProblem(new Dictionary<string, string[]> { [field] = [error] });
 
         var today = time.Today();
         var dueMonth = Billing.LastDueMonth(today);
+        var account = mode == SearchMode.Account ? (q ?? "").Trim().ToLower() : "";
         var found = await query
-            .OrderBy(s => s.LastName).ThenBy(s => s.Id)
+            .OrderByDescending(s => account != "" && s.Account.ToLower() == account)
+            .ThenBy(s => s.LastName).ThenBy(s => s.Id)
             .Take(MaxResults)
             .Select(s => new
             {
@@ -88,7 +90,7 @@ public static class SubscriberEndpoints
             x.House.Street = x.Street;
         return TypedResults.Ok(found.Select(x => new SubscriberListItem(
             x.Subscriber.Id, x.Subscriber.Account, x.Subscriber.InnerCode, x.Subscriber.FullName, x.Subscriber.HouseId,
-            x.House.AddressLine, x.Subscriber.Apartment, Math.Max(0, x.Charged - x.Paid))).ToList());
+            x.House.AddressLine, x.Subscriber.Apartment, Math.Max(0, x.Charged - x.Paid), x.Subscriber.Section)).ToList());
     }
 
     private static Results<Ok<AccountingReport>, ValidationProblem> Accounting(AversDbContext db, int year, int month) =>

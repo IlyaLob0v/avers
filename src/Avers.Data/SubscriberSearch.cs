@@ -13,7 +13,7 @@ public static class SubscriberSearch
 
     /// <summary>Отбор абонентов; <c>Error</c> — что не так с запросом (поле и текст для сотрудника), тогда отбора нет.</summary>
     public static (IQueryable<Subscriber>? Query, string Field, string Error) Where(
-        IQueryable<Subscriber> query, SearchMode mode, string? q, string? street, string? house, string? apartment)
+        IQueryable<Subscriber> query, SearchMode mode, string? q, string? street, string? house, string? apartment, string? section = null)
     {
         var text = (q ?? "").Trim().ToLower();
         switch (mode)
@@ -24,6 +24,11 @@ public static class SubscriberSearch
                 if (streetName.Length == 0 || houseNumber.Length == 0)
                     return (null, "street", "Для поиска по адресу нужны улица и дом.");
                 query = query.Where(s => s.House.Street.Name.ToLower().StartsWith(streetName) && s.House.Number.ToLower() == houseNumber);
+                if (!string.IsNullOrWhiteSpace(section))
+                {
+                    var sectionNumber = section.Trim();
+                    query = query.Where(s => s.Section == sectionNumber);
+                }
                 if (!string.IsNullOrWhiteSpace(apartment))
                 {
                     var apt = apartment.Trim();

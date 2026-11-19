@@ -107,10 +107,10 @@ public partial class App : Application
     private static LocalStore OpenDemoDatabase(string? databasePath, DateOnly today)
     {
         var services = new ServiceCollection();
-        services.AddAversData(databasePath);
+        var databaseFile = databasePath ?? Path.Combine(AversPaths.DataDirectory, "Demo", "avers.db");
+        services.AddAversData(databaseFile);
         var factory = services.BuildServiceProvider().GetRequiredService<IDbContextFactory<AversDbContext>>();
 
-        var databaseFile = databasePath ?? AversPaths.DatabaseFile;
         using (DemoDatabase.Lock(databaseFile))
         using (var db = factory.CreateDbContext())
         {

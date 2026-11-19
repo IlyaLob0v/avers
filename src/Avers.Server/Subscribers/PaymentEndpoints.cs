@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Avers.Contracts;
 using Avers.Data;
 using Avers.Domain;
@@ -23,6 +24,10 @@ public static class PaymentEndpoints
             errors["year"] = ["Год вне допустимого диапазона."];
         if (request.Month is < 1 or > 12)
             errors["month"] = ["Месяц — от 1 до 12."];
+        if (request.OperationId is not null && request.Month is null)
+            errors["month"] = ["Для повторяемой операции укажите месяц оплаты."];
+        if (request.OperationId == Guid.Empty)
+            errors["operationId"] = ["Укажите идентификатор операции."];
         if (request.Amount is < 0)
             errors["amount"] = ["Сумма не может быть отрицательной."];
         if (request.Amount is not null && decimal.Round(request.Amount.Value, 2) != request.Amount.Value)
@@ -36,6 +41,19 @@ public static class PaymentEndpoints
         if (errors.Count > 0)
             return TypedResults.ValidationProblem(errors);
 
+        var userId = user.AppUserId();
+        var requestJson = JsonSerializer.Serialize(request);
+        async Task<PaymentOperation?> FindOperation() => request.OperationId is { } operationId
+            ? await db.PaymentOperations.AsNoTracking().SingleOrDefaultAsync(x => x.Id == operationId, ct)
+            : null;
+        Results<Ok<PaymentDto>, NotFound, ValidationProblem, ProblemHttpResult> Replay(PaymentOperation operation) =>
+            operation.UserId == userId && operation.SubscriberId == id && operation.Request == requestJson
+                ? TypedResults.Ok(JsonSerializer.Deserialize<PaymentDto>(operation.Receipt)!)
+                : Conflict("Этот идентификатор уже использован для другой операции.");
+
+        if (await FindOperation() is { } previous)
+            return Replay(previous);
+
         var subscriber = await db.Subscribers.FirstOrDefaultAsync(s => s.Id == id, ct);
         if (subscriber is null)
             return TypedResults.NotFound();
@@ -43,11 +61,29 @@ public static class PaymentEndpoints
         var login = user.Identity?.Name;
         var recordedBy = await db.Users.AsNoTracking().Where(u => u.Login == login)
             .Select(u => u.DisplayName).FirstOrDefaultAsync(ct) ?? login ?? "";
-        var (target, error) = Payments.Record(db, subscriber, request.Year, request.Month, request.Amount,
-            request.PaidAt ?? time.Today(), request.Source, request.PayerName, recordedBy, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
-        if (target is null)
-            return Conflict(error!);
-        return TypedResults.Ok(ToDto(target));
+        try
+        {
+            var (target, error) = Payments.Record(db, subscriber, request.Year, request.Month, request.Amount,
+                request.PaidAt ?? time.Today(), request.Source, request.PayerName, recordedBy, ChangeLog.Who(db, userId), time.GetUtcNow(),
+                request.OperationId is { } operationId ? payment => db.PaymentOperations.Add(new PaymentOperation
+                {
+                    Id = operationId,
+                    UserId = userId,
+                    SubscriberId = id,
+                    Request = requestJson,
+                    Receipt = JsonSerializer.Serialize(ToDto(payment))
+                }) : null);
+            if (target is not null)
+                return TypedResults.Ok(ToDto(target));
+            return await FindOperation() is { } concurrent ? Replay(concurrent) : Conflict(error!);
+        }
+        catch (DbUpdateException) when (request.OperationId is not null)
+        {
+            // При повторе с изменённым месяцем уникальный ключ откатывает всю вторую транзакцию.
+            if (await FindOperation() is { } concurrent)
+                return Replay(concurrent);
+            throw;
+        }
     }
 
     private static ProblemHttpResult Conflict(string detail) =>

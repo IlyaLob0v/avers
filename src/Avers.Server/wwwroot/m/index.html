@@ -101,6 +101,7 @@ const $ = id => document.getElementById(id);
 let token = sessionStorage.getItem("avers-token");
 
 function show(id) {
+  if (id !== "map" && !$("map").hidden) window.closeMap?.();
   for (const s of ["login", "search", "house", "map"]) $(s).hidden = s !== id;
   $("logout").hidden = id === "login";
   $("map-open").hidden = id === "login" || id === "map";
@@ -129,7 +130,6 @@ async function api(path) {
 function logout() {
   token = null;
   sessionStorage.removeItem("avers-token");
-  window.closeMap?.();
   $("viewer").hidden = true;
   show("login");
 }

@@ -36,7 +36,7 @@ if ! runuser -u postgres -- pg_restore --no-owner --no-privileges --exit-on-erro
 fi
 
 failed=0
-for table in Users Streets Houses Subscribers Payments Tickets IntercomTickets SubscriberDocuments HouseSchemeFiles ChangeLog; do
+for table in Users Streets Houses Subscribers Payments PaymentOperations Tickets IntercomTickets SubscriberDocuments HouseSchemeFiles ChangeLog; do
     live=$(sql -d avers -c "SELECT count(*) FROM \"$table\"")
     copy=$(sql -d "$check_db" -c "SELECT count(*) FROM \"$table\"")
     diff=$(( live > copy ? live - copy : copy - live ))
@@ -48,6 +48,16 @@ for table in Users Streets Houses Subscribers Payments Tickets IntercomTickets S
         echo "$table: в рабочей базе $live, в копии $copy"
     fi
 done
+
+# Архив после переноса неизменяемый, поэтому для него допустимо только точное совпадение числа операций.
+if [[ "$(sql -d avers -c "SELECT to_regclass('jack_archive.payment_history') IS NOT NULL")" == t ]]; then
+    live=$(sql -d avers -c 'SELECT count(*) FROM jack_archive.payment_history')
+    if [[ "$(sql -d "$check_db" -c "SELECT to_regclass('jack_archive.payment_history') IS NOT NULL")" != t ]] ||
+       [[ "$(sql -d "$check_db" -c 'SELECT count(*) FROM jack_archive.payment_history')" != "$live" ]]; then
+        echo "ОШИБКА: архив платежей JACK отсутствует или неполон в копии"
+        failed=1
+    fi
+fi
 
 if [ "$failed" -ne 0 ]; then
     echo "ОШИБКА: копия $latest не совпадает с рабочей базой"

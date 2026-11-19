@@ -7,6 +7,29 @@ namespace Avers.Server.Tests;
 public class PaymentTests
 {
     [Fact]
+    public async Task Record_ReplaysCommittedOperationWithoutPayingAnotherMonth()
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("admin");
+        const string url = "/api/subscribers/1/payments";
+        var before = (await client.GetFromJsonAsync<List<PaymentDto>>(url + "?year=2026"))!;
+        var months = before.Where(p => !p.IsPaid).Take(2).ToArray();
+        var request = new RecordPaymentRequest(2026, months[0].Month, months[0].Tariff, OperationId: Guid.NewGuid());
+
+        var first = await client.PostAsJsonAsync(url, request);
+        var retry = await client.PostAsJsonAsync(url, request);
+        var changed = await client.PostAsJsonAsync(url, request with { Month = months[1].Month });
+
+        first.EnsureSuccessStatusCode();
+        retry.EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.Conflict, changed.StatusCode);
+        Assert.Equal(await first.Content.ReadFromJsonAsync<PaymentDto>(), await retry.Content.ReadFromJsonAsync<PaymentDto>());
+        var after = (await client.GetFromJsonAsync<List<PaymentDto>>(url + "?year=2026"))!;
+        Assert.Equal(before.Count(p => p.IsPaid) + 1, after.Count(p => p.IsPaid));
+        Assert.False(after.Single(p => p.Month == months[1].Month).IsPaid);
+    }
+
+    [Fact]
     public async Task Record_Defaults_PaysFirstUnpaidMonthByTariff()
     {
         await using var app = new AversApp();

@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Avers.Desktop.ViewModels"
              xmlns:d="using:Avers.Domain"
+             xmlns:data="using:Avers.Desktop.Data"
              xmlns:ctl="using:Avers.Desktop.Controls"
              x:Class="Avers.Desktop.Views.AbonView"
              x:DataType="vm:MainViewModel">
@@ -64,6 +65,9 @@
             </HeaderedContentControl>
             <HeaderedContentControl Classes="group" Header="Поиск">
               <StackPanel>
+                <StackPanel.KeyBindings>
+                  <KeyBinding Gesture="Enter" Command="{Binding FindCommand}" />
+                </StackPanel.KeyBindings>
                 <Grid ColumnDefinitions="*,64,48,48">
                   <TextBox Classes="cell" Margin="0,0,4,0" Text="{Binding FindStreet}" PlaceholderText="Улица" />
                   <TextBox Grid.Column="1" Classes="cell" Margin="0,0,4,0" Text="{Binding FindHouse}" PlaceholderText="Дом" />
@@ -75,6 +79,18 @@
                   <Button Classes="primary" Content="Найти" Command="{Binding FindCommand}" />
                   <TextBlock Classes="hint" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="200"
                              Text="Улица · Дом · Секция · Кв. · Фамилия" />
+                </StackPanel>
+                <StackPanel IsVisible="{Binding HasSearchMatches}" Spacing="4" Margin="0,6,0,0">
+                  <ComboBox ItemsSource="{Binding SearchMatches}" SelectedItem="{Binding SelectedSearchMatch}"
+                            PlaceholderText="Выберите абонента" HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="data:SubscriberMatch">
+                        <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <Button Content="Открыть карточку" Command="{Binding OpenSearchMatchCommand}"
+                          CommandParameter="{Binding SelectedSearchMatch}" />
                 </StackPanel>
               </StackPanel>
             </HeaderedContentControl>
@@ -127,12 +143,15 @@
                   </StackPanel>
                 </Grid>
                 <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                  <Button Classes="primary" Content="Внести оплату" Command="{Binding RecordPaymentCommand}" />
+                  <Button Classes="primary" Content="Внести оплату" Command="{Binding RecordPaymentCommand}"
+                          IsEnabled="{Binding !HasSearchMatches}" />
                   <Button Content="Печать лицевого счёта" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Print}" />
                   <Button Content="Квитанция" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Print}" />
                   <TextBlock Classes="hint" VerticalAlignment="Center" Margin="8,0,0,0" TextWrapping="Wrap"
                              Text="{Binding PaymentConfirmHint, StringFormat='{}{0} ФИО на печати полностью.'}" />
                 </StackPanel>
+                <TextBlock Text="{Binding PaymentStatus}" Margin="0,6,0,0" TextWrapping="Wrap"
+                           AutomationProperties.LiveSetting="Polite" />
               </StackPanel>
             </HeaderedContentControl>
           </StackPanel>

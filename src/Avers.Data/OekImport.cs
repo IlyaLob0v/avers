@@ -72,6 +72,7 @@ public static class OekImport
                 .ExecuteUpdate(u => u
                     .SetProperty(p => p.Amount, row.Paid)
                     .SetProperty(p => p.PaidAt, paidAt)
+                    .SetProperty(p => p.ImportedFromJack, false)
                     .SetProperty(p => p.Source, Source)
                     .SetProperty(p => p.RecordedBy, "Файл ОЭК"));
             if (updated == 0)
@@ -100,6 +101,7 @@ public static class OekImport
         {
             month.Amount = row.Paid;
             month.PaidAt = paidAt;
+            month.ImportedFromJack = false;
             month.Source = Source;
             month.RecordedBy = "Файл ОЭК";
             if (s.LastPaymentDate is null || s.LastPaymentDate < paidAt)

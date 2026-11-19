@@ -34,6 +34,33 @@ public sealed class ServerModeTests : IAsyncDisposable
         Assert.Contains(seen.Payments, p => p.RecordedBy == "Орлов С.А.");
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Payment_WhenServerReplyOrRefreshFails_RecordsOnlyTheChosenMonth(bool loseReply)
+    {
+        using var client = new HttpClient(new PaymentConnectionFault(_server.Server.CreateHandler(), loseReply))
+        {
+            BaseAddress = new Uri("http://localhost/")
+        };
+        var vm = await SignIn("orlov", client);
+        var id = vm.SelectedSubscriber!.Id;
+        var before = _server.WithDb(db => db.Payments.Count(p => p.SubscriberId == id && p.Amount != null));
+
+        await vm.RecordPaymentCommand.ExecuteAsync(null);
+        if (loseReply)
+        {
+            Assert.Contains("повторит ту же операцию", vm.PaymentStatus);
+            await vm.RecordPaymentCommand.ExecuteAsync(null);
+        }
+        else
+            Assert.Contains("Карточку обновить не удалось", vm.PaymentStatus);
+
+        Assert.StartsWith("Внесена оплата", vm.PaymentStatus);
+        Assert.Equal(before + 1, _server.WithDb(db => db.Payments.Count(p => p.SubscriberId == id && p.Amount != null)));
+        Assert.Equal(1, _server.WithDb(db => db.PaymentOperations.Count()));
+    }
+
     [Fact]
     public async Task Map_OpensServerPageOnSelectedHouse()
     {
@@ -91,6 +118,27 @@ public sealed class ServerModeTests : IAsyncDisposable
 
         Assert.Equal("Введите фамилию.", vm.Status);
         Assert.Equal(before, vm.SelectedSubscriber!.Id);
+    }
+
+    [Fact]
+    public async Task Find_SeveralApartments_WaitsForChoice()
+    {
+        var vm = await SignIn("orlov");
+        vm.SearchMode = SearchMode.Address;
+        vm.FindStreet = DemoSeeder.StartStreet;
+        vm.FindHouse = DemoSeeder.StartHouse;
+        vm.FindApartment = "";
+        vm.FindSection = "";
+
+        await vm.FindCommand.ExecuteAsync(null);
+        Assert.True(vm.SearchMatches.Count > 1);
+        Assert.Null(vm.SelectedSubscriber);
+        var chosen = vm.SearchMatches.Last();
+
+        await vm.OpenSearchMatchCommand.ExecuteAsync(chosen);
+
+        Assert.Equal(chosen.Id, vm.SelectedSubscriber!.Id);
+        Assert.Empty(vm.SearchMatches);
     }
 
     [Fact]
@@ -163,7 +211,7 @@ public sealed class ServerModeTests : IAsyncDisposable
         var (store, user) = await Connect("admin");
         const int subscriberId = 1;
 
-        var paid = await store.RecordPaymentAsync(subscriberId, Year, null, user);
+        var paid = await store.RecordPaymentAsync(subscriberId, new RecordPaymentRequest(Year), user);
         var saved = _server.WithDb(db => db.Payments.AsNoTracking().Single(p => p.Id == paid.Id));
         Assert.True(paid.IsPaid);
         Assert.Equal((paid.Month, paid.Tariff, "Касса"), (saved.Month, saved.Amount!.Value, saved.Source!));
@@ -177,7 +225,7 @@ public sealed class ServerModeTests : IAsyncDisposable
     public async Task CancelUnpaidMonth_ShowsServerReason()
     {
         var (store, user) = await Connect("admin");
-        var paid = await store.RecordPaymentAsync(1, Year, null, user);
+        var paid = await store.RecordPaymentAsync(1, new RecordPaymentRequest(Year), user);
         await store.CancelPaymentAsync(1, paid.Id);
 
         var error = await Assert.ThrowsAsync<StoreException>(() => store.CancelPaymentAsync(1, paid.Id));
@@ -265,7 +313,7 @@ public sealed class ServerModeTests : IAsyncDisposable
     {
         var (store, user) = await Connect("novikov");
 
-        var error = await Assert.ThrowsAsync<StoreException>(() => store.RecordPaymentAsync(1, Year, null, user));
+        var error = await Assert.ThrowsAsync<StoreException>(() => store.RecordPaymentAsync(1, new RecordPaymentRequest(Year), user));
 
         Assert.Equal("Нет прав на это действие.", error.Message);
     }
@@ -290,9 +338,9 @@ public sealed class ServerModeTests : IAsyncDisposable
         return (store, await store.SignInAsync(login, "avers"));
     }
 
-    private async Task<MainViewModel> SignIn(string login)
+    private async Task<MainViewModel> SignIn(string login, HttpClient? client = null)
     {
-        var vm = App.CreateMainViewModel(new ServerStore(_server.CreateClient()));
+        var vm = App.CreateMainViewModel(new ServerStore(client ?? _server.CreateClient()));
         vm.LoginName = login;
         vm.Password = "avers";
         await vm.LoginCommand.ExecuteAsync(null);
@@ -301,6 +349,27 @@ public sealed class ServerModeTests : IAsyncDisposable
     }
 
     public async ValueTask DisposeAsync() => await _server.DisposeAsync();
+
+    private sealed class PaymentConnectionFault(HttpMessageHandler inner, bool loseReply) : DelegatingHandler(inner)
+    {
+        private bool _recorded;
+        private bool _failed;
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var response = await base.SendAsync(request, cancellationToken);
+            var path = request.RequestUri!.AbsolutePath;
+            var recording = request.Method == HttpMethod.Post && path.EndsWith("/payments", StringComparison.Ordinal);
+            _recorded |= recording && response.IsSuccessStatusCode;
+            if (_recorded && !_failed && (loseReply ? recording : path == "/api/desktop/snapshot"))
+            {
+                _failed = true;
+                response.Dispose();
+                throw new HttpRequestException("Проверка обрыва соединения.");
+            }
+            return response;
+        }
+    }
 
     private sealed class SharedServer : WebApplicationFactory<Program>
     {

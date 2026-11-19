@@ -56,7 +56,7 @@ public static class AuthEndpoints
             await db.SaveChangesAsync(ct);
         }
 
-        var identity = new ClaimsIdentity(AversClaims.For(user), BearerTokenDefaults.AuthenticationScheme);
+        var identity = new ClaimsIdentity(AversClaims.For(user, fromInternet), BearerTokenDefaults.AuthenticationScheme);
 
         return TypedResults.SignIn(new ClaimsPrincipal(identity), authenticationScheme: BearerTokenDefaults.AuthenticationScheme);
     }

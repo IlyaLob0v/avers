@@ -63,6 +63,7 @@ app.UseFreshUser();
 app.UseAuthorization();
 app.UseDesktopVersionCheck();
 app.UseRateLimiter();
+app.UseWriteMode();
 
 if (app.Environment.IsDevelopment())
     app.MapOpenApi().AllowAnonymous();

@@ -40,7 +40,8 @@ public sealed partial class MainViewModel
     [ObservableProperty] private string _paymentAmount = "";
 
     /// <summary>Оплата, которую ждут подтвердить повторным нажатием: квартира и сумма.</summary>
-    private (int SubscriberId, decimal Amount)? _paymentToConfirm;
+    private (int SubscriberId, int Year, int Month, decimal Amount)? _paymentToConfirm;
+    private readonly Dictionary<(int UserId, int SubscriberId), RecordPaymentRequest> _paymentsAwaitingConfirmation = new();
     [ObservableProperty] private string _editContractNumber = "";
     [ObservableProperty] private string _editContractDate = "";
     [ObservableProperty] private string _editContractTerminated = "";
