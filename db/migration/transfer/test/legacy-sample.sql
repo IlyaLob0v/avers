@@ -32,7 +32,7 @@ create table legacy.connlist (physicalpersonid integer not null, checkdate times
 create table legacy.pay_type (paytypeid smallint primary key, paytype varchar(25));
 create table legacy.abn_pay (payid bigint primary key, paytypeid smallint not null, physicalpersonid integer not null,
     payfordate timestamp(0) not null, paydate timestamp(0) not null, summpay numeric(8, 2) not null,
-    username varchar(30), conntypeid smallint not null);
+    username varchar(30), conntypeid smallint not null, dateoflastupdate timestamp(0));
 create table legacy.post_pay_attr (physicalpersonid integer not null, pgru_index smallint not null, pgru_score integer not null,
     period varchar(4) not null, summpay numeric(8, 2) not null, paydate timestamp(0) not null, importdate timestamp(0) not null,
     n_os bigint not null, n_kass bigint not null, n_oper bigint not null, n_kvit bigint not null, payid bigint not null);
@@ -88,7 +88,7 @@ insert into legacy.avers_accrual values
     (1003, '2025-12-01', 1, 150);
 
 insert into legacy.pay_type values (1, 'Касса'), (2, 'Почта');
-insert into legacy.abn_pay values
+insert into legacy.abn_pay (payid, paytypeid, physicalpersonid, payfordate, paydate, summpay, username, conntypeid) values
     (1, 1, 1001, '2026-01-01', '2026-01-05', 100.00, 'KASSIR1', 1),
     (2, 2, 1001, '2026-01-01', '2026-01-20', 50.00, 'KASSIR2', 1),   -- второй платёж за тот же месяц
     (3, 1, 1001, '2026-02-01', '2026-02-10', 150.00, 'KASSIR1', 1),  -- через ПЖРЭУ (есть строка в post_pay_attr)
@@ -96,6 +96,7 @@ insert into legacy.abn_pay values
     (5, 1, 1001, '1997-06-01', '1997-06-10', 15000.00, 'KASSIR1', 1),-- до деноминации, не переносится
     (6, 1, 1002, '2026-01-01', '2026-01-15', 105.00, 'KASSIR1', 1),
     (7, 1, 1003, '2026-04-01', '2026-03-28', 20.00, 'KASSIR1', 1);   -- оплата вперёд, начисления за месяц нет
+update legacy.abn_pay set dateoflastupdate = '2026-01-20 12:34:56' where payid = 2;
 insert into legacy.post_pay_attr values (1001, 12, 2222, '0226', 150.00, '2026-02-10', '2026-02-12', 3, 4, 5, 6, 3);
 
 insert into legacy.wrktypes values (1, 'Антенна'), (2, 'Кабель'), (3, 'Прочее');

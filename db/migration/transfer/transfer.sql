@@ -9,7 +9,8 @@ begin;
 
 do $$
 begin
-    if exists (select from "Subscribers") or exists (select from "Houses") or exists (select from "Payments") then
+    if exists (select from "Subscribers") or exists (select from "Houses") or exists (select from "Payments")
+        or exists (select from jack_archive.payment_history) then
         raise exception 'В базе Аверса уже есть дома, абоненты или оплаты. Перенос делается только в пустую базу.';
     end if;
 end $$;
@@ -98,29 +99,36 @@ select p.physicalpersonid, p.buildingid, coalesce(trim(p.inventno), ''), p.physi
                       order by r.dateofupdate desc nulls last limit 1) bn on true
  where p.physicalpersonid not in (select physicalpersonid from legacy.avers_empty_client);
 
+-- Архив исходных операций остаётся после удаления промежуточной схемы legacy и попадает в резервную копию.
+-- Операции до 1998 года храним для сверки, но в рабочие суммы не включаем.
+insert into jack_archive.payment_history
+    (payid, subscriber_id, period, paid_at, amount, pay_type_id, connection_type_id, updated_at, source, recorded_by)
+select p.payid, p.physicalpersonid, p.payfordate, p.paydate, p.summpay, p.paytypeid,
+       p.conntypeid, p.dateoflastupdate, case when pp.payid is not null then 'ПЖРЭУ' else trim(t.paytype) end, p.username
+  from legacy.abn_pay p
+  left join legacy.pay_type t on t.paytypeid = p.paytypeid
+  left join (select distinct payid from legacy.post_pay_attr) pp on pp.payid = p.payid;
+
 -- Оплаты: в Аверсе одна строка на абонента и месяц. Начисление — из legacy.avers_accrual (функция JACK, см.
 -- db/stand/oracle/accruals.sql), платежи за месяц (ABN_PAY.PAYFORDATE) складываются, дата и кто внёс — у последнего платежа.
 -- Источник — тип оплаты JACK, для оплат через ПЖРЭУ (есть строка в POST_PAY_ATTR) — «ПЖРЭУ».
 -- Месяц без платежей остаётся неоплаченным (сумма пустая); платёж в 0 рублей переносится как есть.
-insert into "Payments" ("SubscriberId", "Year", "Month", "Tariff", "Amount", "PaidAt", "RecordedBy", "Source")
+insert into "Payments" ("SubscriberId", "Year", "Month", "Tariff", "Amount", "PaidAt", "RecordedBy", "Source", "ImportedFromJack")
 with accrual as (
     select physicalpersonid as id, date_trunc('month', month)::date as month, round(sum(amount), 2) as tariff
       from legacy.avers_accrual
      group by 1, 2
 ), pay as (
-    select p.physicalpersonid as id, date_trunc('month', p.payfordate)::date as month, sum(p.summpay) as amount,
-           max(p.paydate)::date as paid_at,
-           (array_agg(p.username order by p.paydate desc, p.payid desc))[1] as recorded_by,
-           (array_agg(case when pp.payid is not null then 'ПЖРЭУ' else trim(t.paytype) end
-                      order by p.paydate desc, p.payid desc))[1] as source
-      from legacy.abn_pay p
-      left join legacy.pay_type t on t.paytypeid = p.paytypeid
-      left join (select distinct payid from legacy.post_pay_attr) pp on pp.payid = p.payid
-     where p.payfordate >= date '1998-01-01'
+    select p.subscriber_id as id, date_trunc('month', p.period)::date as month, sum(p.amount) as amount,
+           max(p.paid_at)::date as paid_at,
+           (array_agg(p.recorded_by order by p.paid_at desc, p.payid desc))[1] as recorded_by,
+           (array_agg(p.source order by p.paid_at desc, p.payid desc))[1] as source
+      from jack_archive.payment_history p
+     where p.period >= date '1998-01-01'
      group by 1, 2
 )
 select coalesce(a.id, p.id), extract(year from coalesce(a.month, p.month)), extract(month from coalesce(a.month, p.month)),
-       coalesce(a.tariff, 0), p.amount, p.paid_at, p.recorded_by, p.source
+       coalesce(a.tariff, 0), p.amount, p.paid_at, p.recorded_by, p.source, p.amount is not null
   from accrual a
   full join pay p on p.id = a.id and p.month = a.month
  where coalesce(a.id, p.id) in (select "Id" from "Subscribers");
@@ -174,7 +182,7 @@ select d.demandid, d.demandid, d.receivingdate::date, d.receivingdate::time, s."
                from legacy.servarea a
                join legacy.workman wm on wm.workmanid = a.responsibleperformerid
                join legacy.personnel_department pd on pd.persid = wm.persid) m on m.servareaid = b.servareaid
- where not (d.checkconnect = 1 and d.demandcode in (0, 524288));
+ where (d.checkconnect = 1 and d.demandcode in (0, 524288)) is not true;
 
 -- ППР: выполнено — есть фактическая дата; нет даты и месяц прошёл — просрочено; иначе запланировано.
 insert into "PprEntries" ("HouseId", "Year", "Month", "Status")

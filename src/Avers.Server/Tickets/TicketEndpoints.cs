@@ -21,15 +21,15 @@ public static class TicketEndpoints
     {
         var api = app.MapGroup("/api").WithTags("Заявки").RequireAuthorization(Policies.TicketsView);
 
-        api.MapGet("/tickets", List);
-        api.MapGet("/tickets/by-month", ByMonth);
-        api.MapGet("/tickets/by-house", ByHouse);
+        api.MapGet("/tickets", List).LogsView("Журнал заявок", AccessLogFilter.Query);
+        api.MapGet("/tickets/by-month", ByMonth).LogsView("Заявки за месяц", AccessLogFilter.Query);
+        api.MapGet("/tickets/by-house", ByHouse).LogsView("Журнал заявок по дому", AccessLogFilter.Query);
         api.MapGet("/tickets/years", (AversDbContext db, TimeProvider time) => TypedResults.Ok(TicketQueries.Years(db, time.Today())));
-        api.MapGet("/tickets/{id:int}", Get);
+        api.MapGet("/tickets/{id:int}", Get).LogsView("Карточка заявки", AccessLogFilter.TicketSubscriber("id"));
         api.MapGet("/tickets/{id:int}/apartment", Apartment).RequireAuthorization(Policies.SubscribersView).LogsView("Квартира заявки", AccessLogFilter.TicketSubscriber("id"));
-        api.MapPost("/tickets", Create).RequireAuthorization(Policies.TicketsCreate);
-        api.MapPut("/tickets/{id:int}", Update).RequireAuthorization(Policies.TicketsCreate);
-        api.MapGet("/houses/{houseId:int}/tickets", ForHouse);
+        api.MapPost("/tickets", Create).RequireAuthorization(Policies.TicketsCreate).AllowPilotWrite();
+        api.MapPut("/tickets/{id:int}", Update).RequireAuthorization(Policies.TicketsCreate).AllowPilotWrite();
+        api.MapGet("/houses/{houseId:int}/tickets", ForHouse).LogsView("Заявки дома", AccessLogFilter.House("houseId"));
         api.MapGet("/houses/{houseId:int}/service-info", ServiceInfo);
         api.MapGet("/subscribers/{subscriberId:int}/tickets", ForSubscriber).LogsView("Заявки абонента", AccessLogFilter.Subscriber("subscriberId"));
     }

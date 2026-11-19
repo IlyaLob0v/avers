@@ -22,6 +22,82 @@ namespace Avers.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Avers.Data.JackPayment", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("payid");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric")
+                        .HasColumnName("amount");
+
+                    b.Property<int>("ConnectionTypeId")
+                        .HasColumnType("integer")
+                        .HasColumnName("connection_type_id");
+
+                    b.Property<DateTime>("PaidAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("paid_at");
+
+                    b.Property<int>("PayTypeId")
+                        .HasColumnType("integer")
+                        .HasColumnName("pay_type_id");
+
+                    b.Property<DateTime>("Period")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("period");
+
+                    b.Property<string>("RecordedBy")
+                        .HasColumnType("text")
+                        .HasColumnName("recorded_by");
+
+                    b.Property<string>("Source")
+                        .HasColumnType("text")
+                        .HasColumnName("source");
+
+                    b.Property<int>("SubscriberId")
+                        .HasColumnType("integer")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PaidAt");
+
+                    b.HasIndex("SubscriberId", "Period");
+
+                    b.ToTable("payment_history", "jack_archive");
+                });
+
+            modelBuilder.Entity("Avers.Data.PaymentOperation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Receipt")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Request")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("SubscriberId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PaymentOperations");
+                });
+
             modelBuilder.Entity("Avers.Domain.AccessLogEntry", b =>
                 {
                     b.Property<int>("Id")
@@ -919,6 +995,11 @@ namespace Avers.Data.Migrations
                     b.Property<decimal?>("Amount")
                         .HasPrecision(12, 2)
                         .HasColumnType("numeric(12,2)");
+
+                    b.Property<bool>("ImportedFromJack")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<int>("Month")
                         .HasColumnType("integer");

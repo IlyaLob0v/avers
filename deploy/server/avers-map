@@ -10,21 +10,27 @@ set -euo pipefail
 bbox_lonlat="73.05,54.80,73.65,55.15"
 bbox_latlon="54.80,73.05,55.15,73.65"
 pmtiles_version="1.31.2"
+# SHA-256 опубликован GitHub для артефакта релиза v1.31.2.
+pmtiles_sha256="3ed7dbf4ec2e6dfe5e25b6f70d1ffc932729f93c86db353bf514dd71010a312f"
 dir=/var/lib/avers-server/map
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
 echo "1/3. Программа для вырезки карты (pmtiles $pmtiles_version)…"
 curl -fsSL "https://github.com/protomaps/go-pmtiles/releases/download/v$pmtiles_version/go-pmtiles_${pmtiles_version}_Linux_x86_64.tar.gz" \
-    | tar -xz -C "$work" pmtiles
+    -o "$work/pmtiles.tar.gz"
+printf '%s  %s\n' "$pmtiles_sha256" "$work/pmtiles.tar.gz" | sha256sum --check --status
+tar -xz --no-same-owner -C "$work" -f "$work/pmtiles.tar.gz" pmtiles
+chmod 711 "$work"
+install -d -m 700 -o avers -g avers "$work/generated"
 
 echo "2/3. Карта Омска из свежей сборки Protomaps (несколько минут)…"
 for days in 1 2 3 4 5; do
     build="https://build.protomaps.com/$(date -u -d "-$days day" +%Y%m%d).pmtiles"
-    "$work/pmtiles" extract "$build" "$work/city.pmtiles" --bbox="$bbox_lonlat" && break
-    rm -f "$work/city.pmtiles"
+    runuser -u avers -- "$work/pmtiles" extract "$build" "$work/generated/city.pmtiles" --bbox="$bbox_lonlat" && break
+    runuser -u avers -- rm -f "$work/generated/city.pmtiles"
 done
-[ -s "$work/city.pmtiles" ] || { echo "Не удалось скачать карту. Проверьте интернет на сервере и повторите позже."; exit 1; }
+runuser -u avers -- test -s "$work/generated/city.pmtiles" || { echo "Не удалось скачать карту. Проверьте интернет на сервере и повторите позже."; exit 1; }
 
 echo "3/3. Адреса домов из OpenStreetMap…"
 curl -fsS --retry 3 --max-time 600 https://overpass-api.de/api/interpreter \
@@ -32,7 +38,7 @@ curl -fsS --retry 3 --max-time 600 https://overpass-api.de/api/interpreter \
     -o "$work/addresses.json"
 
 install -d -m 755 -o avers -g avers "$dir"
-install -m 644 -o avers -g avers "$work/city.pmtiles" "$dir/city.pmtiles"
+runuser -u avers -- install -m 644 "$work/generated/city.pmtiles" "$dir/city.pmtiles"
 install -m 644 -o avers -g avers "$work/addresses.json" "$dir/addresses.json"
 
 connection=$(sed -n 's/^ConnectionStrings__Avers=//p' /etc/avers-server.env)

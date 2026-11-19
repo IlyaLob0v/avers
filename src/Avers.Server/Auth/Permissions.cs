@@ -11,14 +11,16 @@ public static class AversClaims
     public const string UserId = "avers:uid";
     public const string CanEditAccount = "avers:can_edit_account";
     public const string PasswordStamp = "avers:pwd";
+    public const string InternetMobile = "avers:internet_mobile";
 
-    public static Claim[] For(AppUser user) =>
+    public static Claim[] For(AppUser user, bool internetMobile = false) =>
     [
         new(ClaimTypes.Name, user.Login),
         new(ClaimTypes.Role, user.Role.ToString()),
         new(UserId, user.Id.ToString(System.Globalization.CultureInfo.InvariantCulture)),
         new(CanEditAccount, user.CanEditAccount ? "true" : "false"),
-        new(PasswordStamp, Stamp(user))
+        new(PasswordStamp, Stamp(user)),
+        new(InternetMobile, internetMobile ? "true" : "false")
     ];
 
     /// <summary>Отпечаток хеша пароля: после смены пароля старые входы перестают действовать (<see cref="FreshUser"/>).</summary>

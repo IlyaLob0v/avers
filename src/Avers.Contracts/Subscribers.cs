@@ -13,7 +13,8 @@ public sealed record SubscriberListItem(
     int HouseId,
     string Address,
     string Apartment,
-    decimal Debt);
+    decimal Debt,
+    string Section = "");
 
 /// <summary>
 /// Карточка квартиры: абонент, договор (номер, с кем заключён), обслуживающая дом организация
@@ -73,6 +74,7 @@ public sealed record PaymentDto(
 /// Внести оплату. Всё, кроме года, можно не заполнять: месяц — первый неоплаченный,
 /// сумма — тариф месяца, дата — сегодня, источник — «Касса». <c>PayerName</c> — кто оплатил, если не сам абонент.
 /// Кто внёс оплату в программу, сервер записывает сам по вошедшему пользователю.
+/// Для безопасного повтора рабочее место передаёт месяц и тот же <c>OperationId</c>.
 /// </summary>
 public sealed record RecordPaymentRequest(
     int Year,
@@ -80,4 +82,5 @@ public sealed record RecordPaymentRequest(
     decimal? Amount = null,
     DateOnly? PaidAt = null,
     string? Source = null,
-    string? PayerName = null);
+    string? PayerName = null,
+    Guid? OperationId = null);

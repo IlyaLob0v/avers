@@ -3,22 +3,42 @@
 "use strict";
 
 const Omsk = [73.37, 54.99];
-let map = null, mapHouses = [], canPlace = false;
+let map = null, mapHouses = [], canPlace = false, mapSession = 0;
+let mapLibraries;
 
 async function openMap(houseId) {
+  const session = ++mapSession;
   show("map");
   $("map-note").textContent = "";
   try {
-    if (!map) await createMap();
-    await loadHouses();
+    await loadHouses(session);
+    if (session !== mapSession) return;
+    if (!map) await createMap(session);
+    if (session !== mapSession) return;
+    updateHousePoints();
     if (houseId) focusHouse(houseId);
-  } catch (err) { $("map-note").textContent = err.message; }
-  map?.resize();
+    map?.resize();
+  } catch (err) {
+    if (session !== mapSession) return;
+    $("map-note").textContent = mapHouses.length
+      ? "Карта недоступна на этом устройстве. Сведения о доме можно открыть через поиск по адресу."
+      : err.message;
+    if (houseId && mapHouses.length) focusHouse(houseId);
+  }
 }
 
 function closeMap() {
+  mapSession++;
+  stopPlacing();
+  popup?.remove();
+  popup = null;
   map?.remove();
   map = null;
+  mapHouses = [];
+  canPlace = false;
+  $("map-search").value = "";
+  $("map-missing").hidden = true;
+  listHouses([]);
 }
 
 function loadScript(src) {
@@ -31,11 +51,14 @@ function loadScript(src) {
   });
 }
 
-async function createMap() {
-  if (!window.maplibregl) {
+async function createMap(session) {
+  if (!mapLibraries) {
     document.head.append(Object.assign(document.createElement("link"), { rel: "stylesheet", href: "map/maplibre-gl.css" }));
-    await Promise.all(["map/maplibre-gl.js", "map/pmtiles.js", "map/basemaps.js"].map(loadScript));
+    mapLibraries = Promise.all(["map/maplibre-gl.js", "map/pmtiles.js", "map/basemaps.js"].map(loadScript))
+      .catch(err => { mapLibraries = null; throw err; });
   }
+  await mapLibraries;
+  if (session !== mapSession) return;
   // Новый вход — новый токен: архив карты подключается заново с ним.
   const protocol = new pmtiles.Protocol();
   maplibregl.removeProtocol("pmtiles");
@@ -45,6 +68,7 @@ async function createMap() {
 
   let header = null;
   try { header = await archive.getHeader(); } catch { /* файла карты нет — показываем только точки домов */ }
+  if (session !== mapSession) return;
   if (!header)
     $("map-note").textContent = "Карта города ещё не загружена на сервер, видны только точки домов. Как загрузить — в инструкции администратора (avers-map).";
 
@@ -66,7 +90,11 @@ async function createMap() {
     }
   });
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }));
-  await new Promise(resolve => map.once("load", resolve));
+  await new Promise(resolve => {
+    map.once("load", resolve);
+    map.once("remove", resolve);
+  });
+  if (session !== mapSession) return;
 
   map.addSource("houses", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
   map.addLayer({
@@ -88,11 +116,19 @@ async function createMap() {
   map.on("mouseleave", "houses", () => map.getCanvas().style.cursor = "");
 }
 
-async function loadHouses() {
+async function loadHouses(session) {
   const data = await api("/api/mobile/map/houses");
+  if (session !== mapSession) return;
   mapHouses = data.houses;
   canPlace = data.canPlace;
-  map.getSource("houses").setData({
+  const missing = mapHouses.filter(h => h.latitude == null).length;
+  $("map-missing").hidden = !canPlace || missing === 0;
+  $("map-missing").textContent = `Дома без точки: ${missing}`;
+  $("map-search").oninput();
+}
+
+function updateHousePoints() {
+  map?.getSource("houses")?.setData({
     type: "FeatureCollection",
     features: mapHouses.filter(h => h.latitude != null).map(h => ({
       type: "Feature",
@@ -100,9 +136,6 @@ async function loadHouses() {
       properties: { id: h.id, address: h.address.replace(/^ул\. /, "").replace(", д. ", " "), fault: h.hasOpenFault }
     }))
   });
-  const missing = mapHouses.filter(h => h.latitude == null).length;
-  $("map-missing").hidden = !canPlace || missing === 0;
-  $("map-missing").textContent = `Дома без точки: ${missing}`;
 }
 
 const simple = s => s.toLowerCase().replaceAll("ё", "е").replace(/[.,]/g, " ").replace(/\s+/g, " ").trim();
@@ -135,6 +168,10 @@ $("map-missing").onclick = () => listHouses(mapHouses.filter(h => h.latitude == 
 function focusHouse(id) {
   const h = mapHouses.find(x => x.id === id);
   if (!h) return;
+  if (!map?.getSource("houses")) {
+    openHouse(id, true);
+    return;
+  }
   if (h.latitude == null) {
     if (canPlace) startPlacing(h);
     else $("map-note").textContent = `Дом «${h.address}» ещё не отмечен на карте. Отметить его может главный инженер или администратор.`;
@@ -171,7 +208,7 @@ function startPlacing(h) {
 
 function stopPlacing() {
   placing = null;
-  map.getCanvas().style.cursor = "";
+  if (map) map.getCanvas().style.cursor = "";
 }
 
 document.addEventListener("keydown", e => { if (e.key === "Escape" && placing) { stopPlacing(); $("map-note").textContent = ""; } });
@@ -180,6 +217,7 @@ $("map-search").addEventListener("focus", () => { if (placing) { stopPlacing(); 
 function onMapClick(e) {
   if (!placing) return;
   const h = placing;
+  const session = mapSession;
   stopPlacing();
   if (!confirm(`Поставить дом «${h.address}» в это место?`)) { $("map-note").textContent = ""; return; }
   fetch(`/api/mobile/map/houses/${h.id}`, {
@@ -187,11 +225,14 @@ function onMapClick(e) {
     headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
     body: JSON.stringify({ latitude: e.lngLat.lat, longitude: e.lngLat.lng })
   }).then(async r => {
+    if (session !== mapSession) return;
     if (r.status === 401) { logout(); return; }
     if (r.status === 403) throw new Error("Ставить дома на карту может главный инженер или администратор.");
     if (!r.ok) throw new Error("Ошибка сервера: " + r.status);
-    await loadHouses();
+    await loadHouses(session);
+    if (session !== mapSession) return;
+    updateHousePoints();
     $("map-note").textContent = `Дом «${h.address}» отмечен на карте.`;
     showPopup(mapHouses.find(x => x.id === h.id));
-  }).catch(err => $("map-note").textContent = err.message);
+  }).catch(err => { if (session === mapSession) $("map-note").textContent = err.message; });
 }

@@ -50,14 +50,18 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
         return Task.FromResult(HouseSubscribers.Load(ctx, house.Id).Link(house));
     }
 
-    public Task<(int Id, int HouseId)?> FindSubscriberAsync(SearchMode mode, string query, string street, string house, string apartment)
+    public Task<List<SubscriberMatch>> FindSubscribersAsync(SearchMode mode, string query, string street, string house, string apartment, string section)
     {
         using var ctx = db.CreateDbContext();
-        var (found, _, error) = SubscriberSearch.Where(ctx.Subscribers.AsNoTracking(), mode, query, street, house, apartment);
+        var (found, _, error) = SubscriberSearch.Where(ctx.Subscribers.AsNoTracking(), mode, query, street, house, apartment, section);
         if (found is null)
             throw new StoreException(error);
-        var hit = found.OrderBy(s => s.LastName).ThenBy(s => s.Id).Select(s => new { s.Id, s.HouseId }).FirstOrDefault();
-        return Task.FromResult(hit is null ? ((int, int)?)null : (hit.Id, hit.HouseId));
+        var account = mode == SearchMode.Account ? query.Trim().ToLowerInvariant() : "";
+        var matches = found.Include(s => s.House).ThenInclude(h => h.Street)
+            .OrderByDescending(s => account != "" && s.Account.ToLower() == account)
+            .ThenBy(s => s.LastName).ThenBy(s => s.Id).Take(50).AsEnumerable()
+            .Select(s => new SubscriberMatch(s.Id, s.HouseId, s.Account, s.FullName, s.House.AddressLine, s.Apartment, s.Section)).ToList();
+        return Task.FromResult(matches);
     }
 
     public Task<Debts> LoadDebtsAsync()
@@ -72,11 +76,11 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
         return Task.FromResult(AccountingReport.Load(ctx, year, month));
     }
 
-    public Task<PaymentDto> RecordPaymentAsync(int subscriberId, int year, decimal? amount, AppUser user)
+    public Task<PaymentDto> RecordPaymentAsync(int subscriberId, RecordPaymentRequest request, AppUser user)
     {
         using var ctx = db.CreateDbContext();
         var subscriber = ctx.Subscribers.First(s => s.Id == subscriberId);
-        var (p, error) = Payments.Record(ctx, subscriber, year, null, amount, Today, null, null, user.DisplayName,
+        var (p, error) = Payments.Record(ctx, subscriber, request.Year, request.Month, request.Amount, Today, null, null, user.DisplayName,
             ChangeLog.Who(ctx, user.Id), DateTimeOffset.UtcNow);
         return p is null
             ? throw new StoreException(error!)

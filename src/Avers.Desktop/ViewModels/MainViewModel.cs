@@ -90,7 +90,12 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _findSection = DemoSeeder.StartSection;
     [ObservableProperty] private string _findApartment = DemoSeeder.StartApartment;
     [ObservableProperty] private string _findQuery = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasSearchMatches))]
+    private IReadOnlyList<SubscriberMatch> _searchMatches = [];
+    [ObservableProperty] private SubscriberMatch? _selectedSearchMatch;
+    [ObservableProperty] private string _paymentStatus = "";
     [ObservableProperty] private string _status = "Готово.";
+    public bool HasSearchMatches => SearchMatches.Count > 0;
 
     public string LoginRoleTitle => LoginUser is null ? "" : RoleCatalog.Title(LoginUser.Role);
     public bool ShowLogin => User is null;
@@ -304,8 +309,9 @@ public sealed partial class MainViewModel : ObservableObject
 
         _subscribers = list;
         _holdRefresh = true;
-        SelectedSubscriber = list.FirstOrDefault(s => s.Id == subscriberId)
-                             ?? list.FirstOrDefault(s => s.Account == DemoSeeder.StartAccount) ?? list.FirstOrDefault();
+        SelectedSubscriber = subscriberId is { } id
+            ? list.FirstOrDefault(s => s.Id == id)
+            : list.FirstOrDefault(s => s.Account == DemoSeeder.StartAccount) ?? list.FirstOrDefault();
         _holdRefresh = false;
         RefreshDerived();
     }
@@ -313,7 +319,13 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Переходит к дому абонента и выбирает его квартиру.</summary>
     internal async Task ShowSubscriberAsync(int subscriberId, int houseId)
     {
-        var house = _houses.First(h => h.Id == houseId);
+        var house = _houses.FirstOrDefault(h => h.Id == houseId);
+        if (house is null)
+        {
+            SelectedSubscriber = null;
+            Status = "Дом отсутствует в справочнике. Обновите данные и повторите поиск.";
+            return;
+        }
         _holdRefresh = true;
         SelectedStreet = Streets.First(s => s.Id == house.StreetId);
         SelectedHouse = house;
@@ -404,6 +416,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         PrintWithPayDate = value?.PrintAccountWithPayDate ?? true;
         PaymentAmount = "";
+        PaymentStatus = "";
         RefreshDerived();
     }
 
@@ -511,6 +524,8 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Logout()
     {
+        SearchMatches = [];
+        SelectedSearchMatch = null;
         _store.SignOut();
         User = null;
         LegalScreen.Debtors.Clear();
@@ -561,56 +576,107 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task Find()
     {
+        SearchMatches = [];
+        SelectedSearchMatch = null;
         try
         {
-            var hit = await _store.FindSubscriberAsync(SearchMode, FindQuery, FindStreet, FindHouse, FindApartment);
-            if (hit is null) { Status = "Абонент не найден."; return; }
-            await ShowSubscriberAsync(hit.Value.Id, hit.Value.HouseId);
+            var matches = await _store.FindSubscribersAsync(SearchMode, FindQuery, FindStreet, FindHouse, FindApartment, FindSection);
+            if (matches.Count == 0) { Status = "Абонент не найден."; return; }
+            var exact = SearchMode == SearchMode.Account
+                ? matches.FirstOrDefault(s => s.Account.Equals(FindQuery.Trim(), StringComparison.OrdinalIgnoreCase)) : null;
+            if (exact is null && matches.Count > 1)
+            {
+                SelectedSubscriber = null;
+                SearchMatches = matches;
+                Status = "Найдено несколько абонентов. Сверьте адрес и лицевой счёт.";
+                return;
+            }
+            await OpenSearchMatch(exact ?? matches[0]);
         }
         catch (StoreException e)
         {
             Status = e.Message;
             return;
         }
-        if (SelectedSubscriber is { } found)
-            Status = $"Найден {found.FullName}, кв. {found.Apartment}.";
+    }
+
+    [RelayCommand]
+    private async Task OpenSearchMatch(SubscriberMatch? match)
+    {
+        if (match is null) return;
+        await ShowSubscriberAsync(match.Id, match.HouseId);
+        if (SelectedSubscriber?.Id == match.Id)
+        {
+            SearchMatches = [];
+            SelectedSearchMatch = null;
+            Status = $"Найден {match.Label}.";
+        }
     }
 
     [RelayCommand]
     private async Task RecordPayment()
     {
-        if (SelectedSubscriber is null || User is null) return;
-        if (User is { CanEditAccount: false, Role: not UserRole.AdsHead and not UserRole.Administrator })
+        if (HasSearchMatches) return;
+        if (SelectedSubscriber is not { } subscriber || User is not { } user) return;
+        if (user is { CanEditAccount: false, Role: not UserRole.AdsHead and not UserRole.Administrator })
         {
-            Status = "Нет права вносить оплату.";
+            PaymentStatus = Status = "Нет права вносить оплату.";
             return;
         }
-        decimal? amount = null;
-        if (!string.IsNullOrWhiteSpace(PaymentAmount))
+        var key = (user.Id, subscriber.Id);
+        if (!_paymentsAwaitingConfirmation.TryGetValue(key, out var request))
         {
-            if (!decimal.TryParse(PaymentAmount.Trim(), NumberStyles.Number, Ru, out var typed) || typed < 0)
+            var target = subscriber.Payments.Where(p => p.Year == _today.Year && p.Amount is null)
+                .OrderBy(p => p.Month).FirstOrDefault();
+            if (target is null)
             {
-                Status = "Сумма оплаты — число, например 150 или 150,50.";
+                PaymentStatus = Status = $"За {_today.Year} нет неоплаченных начислений.";
                 return;
             }
-            amount = typed;
+            var sum = target.Tariff;
+            if (!string.IsNullOrWhiteSpace(PaymentAmount) &&
+                (!decimal.TryParse(PaymentAmount.Trim(), NumberStyles.Number, Ru, out sum) || sum < 0 || decimal.Round(sum, 2) != sum))
+            {
+                PaymentStatus = Status = "Сумма оплаты — число с точностью до копеек, например 150 или 150,50.";
+                return;
+            }
+            var pending = (subscriber.Id, target.Year, target.Month, sum);
+            if (sum >= PaymentConfirmFrom && _paymentToConfirm != pending)
+            {
+                _paymentToConfirm = pending;
+                PaymentStatus = Status = $"Внести {Money(sum)} за {target.Month:00}.{target.Year}, л/с {subscriber.Account}? Нажмите «Внести оплату» ещё раз.";
+                return;
+            }
+            _paymentToConfirm = null;
+            request = new RecordPaymentRequest(target.Year, target.Month, sum, OperationId: Guid.NewGuid());
         }
-        var sum = amount ?? SelectedSubscriber.Payments.Where(p => p.Year == _today.Year && p.Amount is null)
-            .OrderBy(p => p.Month).FirstOrDefault()?.Tariff ?? 0;
-        var pending = (SelectedSubscriber.Id, sum);
-        if (sum >= PaymentConfirmFrom && _paymentToConfirm != pending)
+
+        PaymentDto paid;
+        try
         {
-            _paymentToConfirm = pending;
-            Status = $"Внести {Money(sum)}? Нажмите «Внести оплату» ещё раз.";
+            paid = await _store.RecordPaymentAsync(subscriber.Id, request, user);
+        }
+        catch (StoreException e)
+        {
+            if (e.OutcomeUnknown)
+                _paymentsAwaitingConfirmation[key] = request;
+            PaymentStatus = Status = _paymentsAwaitingConfirmation.ContainsKey(key)
+                ? $"Подтверждение оплаты за {request.Month:00}.{request.Year}, л/с {subscriber.Account}, не получено. «Внести оплату» повторит ту же операцию. {e.Message}"
+                : e.Message;
             return;
         }
-        _paymentToConfirm = null;
-        await Save(async () =>
+        _paymentsAwaitingConfirmation.Remove(key);
+        var result = $"Внесена оплата {paid.Amount:N2} ₽ за {Months[paid.Month - 1]} {paid.Year}.";
+        PaymentStatus = Status = result;
+        try
         {
-            var paid = await _store.RecordPaymentAsync(SelectedSubscriber.Id, _today.Year, amount, User);
             await ReloadAsync();
-            Status = $"Внесена оплата {paid.Amount:N2} ₽ за {Months[paid.Month - 1]} {paid.Year}.";
-        });
+            PaymentStatus = Status = result;
+        }
+        catch (StoreException)
+        {
+            PaymentStatus = Status = $"{result} Карточку обновить не удалось. Откройте её заново перед следующей оплатой.";
+        }
     }
 
     [RelayCommand]
