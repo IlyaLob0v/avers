@@ -479,7 +479,7 @@ public sealed partial class MainViewModel : ObservableObject
     private async Task Login()
     {
         LoginError = null;
-        var login = IsShared ? LoginName.Trim() : LoginUser?.Login;
+        var login = ShowDemoAccounts ? SelectedDemoAccount.Login : IsShared ? LoginName.Trim() : LoginUser?.Login;
         if (string.IsNullOrEmpty(login)) { LoginError = IsShared ? "Введите логин." : "Выберите пользователя."; return; }
         try
         {

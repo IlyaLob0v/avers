@@ -26,12 +26,21 @@
           </Border>
           <Grid Margin="24,16" ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto">
             <TextBlock Classes="label" Text="Пользователь" />
-            <TextBox Grid.Column="1" Classes="cell" MinHeight="28" Text="{Binding LoginName}" IsVisible="{Binding IsShared}" />
+            <TextBox Grid.Column="1" Classes="cell" MinHeight="28" Text="{Binding LoginName}" IsVisible="{Binding EnterLoginName}" />
             <ComboBox Grid.Column="1" Classes="cell" MinHeight="28" ItemsSource="{Binding Users}" SelectedItem="{Binding LoginUser}"
                       IsVisible="{Binding !IsShared}">
               <ComboBox.ItemTemplate>
                 <DataTemplate x:DataType="d:AppUser">
                   <TextBlock Text="{Binding Login}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <ComboBox Grid.Column="1" Classes="cell" MinHeight="28" HorizontalAlignment="Stretch"
+                      ItemsSource="{x:Static vm:MainViewModel.DemoAccounts}" SelectedItem="{Binding SelectedDemoAccount}"
+                      IsVisible="{Binding ShowDemoAccounts}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:DemoAccount">
+                  <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
@@ -52,6 +61,15 @@
                          Text="Права задаются при входе. Редактирование лицевого счёта — отдельное право. Режим администратора не через Alt+Backspace." />
             </StackPanel>
           </Border>
+          <Border Classes="inset" Margin="24,0" IsVisible="{Binding ShowDemoAccounts}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{Binding SelectedDemoAccount.Description}" TextWrapping="Wrap" />
+              <TextBlock Classes="hint" Text="Учебный сервер · пароль всех учебных пользователей: avers" TextWrapping="Wrap" />
+              <TextBlock Classes="hint" Text="После входа доступны разделы выбранной роли." TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <TextBlock Classes="hint" Margin="24,0" IsVisible="{Binding EnterLoginName}" TextWrapping="Wrap"
+                     Text="Введите личный логин и пароль, выданные администратором. Доступные разделы определяются вашей должностью." />
           <Border Classes="debt" Margin="24,12,24,0" IsVisible="{Binding LoginError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
             <TextBlock Text="{Binding LoginError}" TextWrapping="Wrap" />
           </Border>

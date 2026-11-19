@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace Avers.Desktop.Data;
 
 /// <summary>С чем открыть программу: общая база на сервере, учебная база (<c>--demo</c>) или сообщение об ошибке настройки.</summary>
-public sealed record StartupMode(Uri? Server, bool Demo, string? Problem);
+public sealed record StartupMode(Uri? Server, bool Demo, string? Problem, bool DemoAccounts = false);
 
 /// <summary>
 /// Адрес сервера Аверса: ключ <c>--server=https://адрес</c> в ярлыке или файл <c>avers.json</c>
@@ -22,7 +22,7 @@ public static class ServerAddress
         try
         {
             return Find(args, directory) is { } server
-                ? new StartupMode(server, false, null)
+                ? new StartupMode(server, false, null, args.Contains("--demo-accounts", StringComparer.OrdinalIgnoreCase))
                 : new StartupMode(null, false,
                     $"Не задан адрес сервера Аверса (файл {FileName} рядом с программой). Обратитесь к администратору.");
         }

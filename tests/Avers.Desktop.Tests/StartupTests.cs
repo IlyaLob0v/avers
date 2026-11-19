@@ -73,6 +73,22 @@ public sealed class StartupTests : IDisposable
         Assert.Equal(insecure, ServerAddress.IsInsecure(new Uri(address)));
 
     [AvaloniaFact]
+    public void DemoServer_LoginOffersAccountsAndExplainsSelectedRole()
+    {
+        var window = App.CreateMainWindow(["--server=http://localhost:5115", "--demo-accounts"]);
+        window.Show();
+        var vm = Assert.IsType<ViewModels.MainViewModel>(window.DataContext);
+        Assert.True(vm.IsShared);
+        Assert.False(vm.EnterLoginName);
+        Assert.Contains(window.GetVisualDescendants().OfType<ComboBox>(),
+            box => box.IsEffectivelyVisible && ReferenceEquals(box.ItemsSource, ViewModels.MainViewModel.DemoAccounts));
+        vm.SelectedDemoAccount = ViewModels.MainViewModel.DemoAccounts.Single(a => a.Login == "engineer");
+        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(),
+            text => text.IsEffectivelyVisible && text.Text == vm.SelectedDemoAccount.Description);
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void NoConfig_ShowsMessageWindow_InsteadOfDemoBase()
     {
         var window = App.CreateMainWindow([], _directory);

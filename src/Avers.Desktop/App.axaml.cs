@@ -77,6 +77,7 @@ public partial class App : Application
             return ProblemWindow(mode.Problem!);
 
         var vm = CreateMainViewModel(new ServerStore(new HttpClient { BaseAddress = server, Timeout = TimeSpan.FromSeconds(30) }));
+        vm.ShowDemoAccounts = mode.DemoAccounts;
         if (ServerAddress.IsInsecure(server))
             vm.ConnectionWarning = "Связь с сервером не защищена: адрес начинается с http://. " +
                 $"Попросите администратора указать в {ServerAddress.FileName} адрес https://.";
