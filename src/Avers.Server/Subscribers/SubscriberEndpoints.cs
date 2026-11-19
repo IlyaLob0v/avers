@@ -20,13 +20,16 @@ public static class SubscriberEndpoints
         api.MapGet("/streets", Streets);
         api.MapGet("/streets/{streetId:int}/houses", Houses);
         api.MapGet("/subscribers", Search).LogsView("Поиск абонентов", AccessLogFilter.Query);
-        api.MapGet("/houses/{houseId:int}/subscribers", (int houseId, AversDbContext db) => TypedResults.Ok(HouseSubscribers.Load(db, houseId)))
+        api.MapGet("/houses/{houseId:int}/subscribers", (int houseId, int? subscriberId, AversDbContext db) => TypedResults.Ok(HouseSubscribers.Load(db, houseId, subscriberId)))
             .LogsView("Абоненты дома", AccessLogFilter.House("houseId"));
-        api.MapGet("/debts", (AversDbContext db, TimeProvider time) => TypedResults.Ok(Debts.Load(db, time.Today())))
+        api.MapGet("/debts", DebtPage)
             .LogsView("Список должников", AccessLogFilter.Everyone);
+        api.MapGet("/reports/debts-by-house", (AversDbContext db, TimeProvider time) => TypedResults.Ok(Debts.LoadHouseTotals(db, time.Today())))
+            .LogsView("Долги по домам", AccessLogFilter.Everyone);
         api.MapGet("/reports/accounting", Accounting).RequireAuthorization(Policies.ReportsAccounting);
         api.MapGet("/subscribers/{id:int}", Card).LogsView("Карточка абонента", AccessLogFilter.Subscriber("id"));
         api.MapGet("/subscribers/{id:int}/payments", Payments).LogsView("Оплаты абонента", AccessLogFilter.Subscriber("id"));
+        api.MapGet("/subscribers/{id:int}/jack-payments", Archive).LogsView("Исходные операции JACK", AccessLogFilter.Subscriber("id"));
         api.MapPost("/subscribers/{id:int}/payments", PaymentEndpoints.Record).RequireAuthorization(Policies.PaymentsCreate).AllowPilotWrite();
         api.MapPost("/subscribers/{id:int}/court-cases", (int id, CourtCaseRequest r, ClaimsPrincipal u, AversDbContext db, TimeProvider t) =>
             ApartmentEndpoints.SaveCourtCase(id, 0, r, u, db, t)).RequireAuthorization(Policies.CourtCasesEdit);
@@ -41,6 +44,28 @@ public static class SubscriberEndpoints
         api.MapPut("/settings/payment-confirm", ApartmentEndpoints.SetPaymentConfirm).RequireAuthorization(Policies.SettingsEdit);
         api.MapPut("/tariff", ApartmentEndpoints.ChangeTariff).RequireAuthorization(Policies.SettingsEdit);
         api.MapPost("/accruals/{year:int}", ApartmentEndpoints.OpenYear).RequireAuthorization(Policies.SettingsEdit);
+    }
+
+    private static async Task<Results<Ok<Debts>, ValidationProblem>> DebtPage(AversDbContext db, TimeProvider time, CancellationToken ct,
+        decimal debtFrom = 0, int unpaidFrom = 0, string address = "", bool? hasCase = null, bool? isLegalEntity = null,
+        int offset = 0, bool all = false)
+    {
+        if (debtFrom < 0 || unpaidFrom < 0 || offset < 0 || address.Length > 200)
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["filter"] = ["Проверьте условия отбора должников."] });
+        await using var transaction = db.Database.IsNpgsql()
+            ? await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead, ct) : null;
+        var page = await Debts.LoadAsync(db, time.Today(), new(debtFrom, unpaidFrom, address, hasCase, isLegalEntity), offset, all, ct);
+        if (transaction is not null) await transaction.CommitAsync(ct);
+        return TypedResults.Ok(page);
+    }
+
+    private static Results<Ok<SubscriberArchive>, ValidationProblem, NotFound> Archive(
+        int id, AversDbContext db, int? year = null, int offset = 0)
+    {
+        if (year is < 1 or > 9998 || offset < 0)
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["year"] = ["Проверьте год и страницу архива."] });
+        if (!db.Subscribers.Any(s => s.Id == id)) return TypedResults.NotFound();
+        return TypedResults.Ok(SubscriberArchive.Load(db, id, year, offset));
     }
 
     private static async Task<Ok<List<StreetDto>>> Streets(AversDbContext db, CancellationToken ct) =>
@@ -67,6 +92,12 @@ public static class SubscriberEndpoints
         var (query, field, error) = SubscriberSearch.Where(db.Subscribers.AsNoTracking(), mode, q, street, house, apartment, section);
         if (query is null)
             return TypedResults.ValidationProblem(new Dictionary<string, string[]> { [field] = [error] });
+
+        if (mode == SearchMode.Account)
+        {
+            var exact = db.Subscribers.AsNoTracking().Where(s => s.Account == (q ?? "").Trim());
+            if (await exact.AnyAsync(ct)) query = exact;
+        }
 
         var today = time.Today();
         var dueMonth = Billing.LastDueMonth(today);

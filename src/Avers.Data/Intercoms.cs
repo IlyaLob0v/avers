@@ -6,6 +6,9 @@ namespace Avers.Data;
 /// <summary>Домофоны: панели подъездов (с записью в журнал изменений) и заявки по домофону. Методы возвращают текст ошибки или null.</summary>
 public static class Intercoms
 {
+    public static List<IntercomTicket> Tickets(AversDbContext db, int houseId) => db.IntercomTickets.AsNoTracking()
+        .Where(t => t.HouseId == houseId).OrderByDescending(t => t.Date).ThenByDescending(t => t.Id).ToList();
+
     /// <summary>Сохраняет панель подъезда; <paramref name="draft"/> с Id = 0 — новая панель дома <paramref name="houseId"/>.</summary>
     public static string? SavePanel(AversDbContext db, int houseId, IntercomPanel draft, string who, DateTimeOffset at)
     {

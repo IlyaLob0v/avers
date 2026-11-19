@@ -5,3 +5,6 @@ public sealed record IntercomPanelRequest(int Entrance, string? PanelType, strin
 
 /// <summary>Новая заявка по домофону.</summary>
 public sealed record IntercomTicketRequest(int Entrance, string? Fault, string? Mechanic);
+
+/// <summary>Строка истории без связанного графа дома.</summary>
+public sealed record IntercomTicketDto(int Id, int HouseId, DateOnly Date, int Entrance, string Fault, string Mechanic, bool Done);

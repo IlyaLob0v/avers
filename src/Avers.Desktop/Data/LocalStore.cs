@@ -44,10 +44,10 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
         return Task.FromResult(AversSnapshot.Load(ctx, user.Role).Link());
     }
 
-    public Task<List<Subscriber>> LoadHouseAsync(House house)
+    public Task<List<Subscriber>> LoadHouseAsync(House house, int? subscriberId = null)
     {
         using var ctx = db.CreateDbContext();
-        return Task.FromResult(HouseSubscribers.Load(ctx, house.Id).Link(house));
+        return Task.FromResult(HouseSubscribers.Load(ctx, house.Id, subscriberId).Link(house));
     }
 
     public Task<List<SubscriberMatch>> FindSubscribersAsync(SearchMode mode, string query, string street, string house, string apartment, string section)
@@ -56,6 +56,11 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
         var (found, _, error) = SubscriberSearch.Where(ctx.Subscribers.AsNoTracking(), mode, query, street, house, apartment, section);
         if (found is null)
             throw new StoreException(error);
+        if (mode == SearchMode.Account)
+        {
+            var exact = ctx.Subscribers.AsNoTracking().Where(s => s.Account == query.Trim());
+            if (exact.Any()) found = exact;
+        }
         var account = mode == SearchMode.Account ? query.Trim().ToLowerInvariant() : "";
         var matches = found.Include(s => s.House).ThenInclude(h => h.Street)
             .OrderByDescending(s => account != "" && s.Account.ToLower() == account)
@@ -64,10 +69,23 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
         return Task.FromResult(matches);
     }
 
-    public Task<Debts> LoadDebtsAsync()
+    public Task<Debts> LoadDebtsAsync(DebtorFilter? filter = null, int offset = 0, bool all = false, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(Debts.Load(ctx, Today, filter, offset, all));
+    }
+
+    public Task<Dictionary<int, decimal>> LoadDebtTotalsAsync()
     {
         using var ctx = db.CreateDbContext();
-        return Task.FromResult(Debts.Load(ctx, Today));
+        return Task.FromResult(Debts.LoadHouseTotals(ctx, Today));
+    }
+
+    public Task<SubscriberArchive> LoadArchiveAsync(int subscriberId, int? year = null, int offset = 0)
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(SubscriberArchive.Load(ctx, subscriberId, year, offset));
     }
 
     public Task<AccountingReport> LoadAccountingAsync(int year, int month)
@@ -85,6 +103,12 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
         return p is null
             ? throw new StoreException(error!)
             : Task.FromResult(new PaymentDto(p.Id, p.Year, p.Month, p.Tariff, p.Amount, p.PaidAt, p.Source, true, p.RecordedBy));
+    }
+
+    public Task<List<IntercomTicket>> LoadIntercomTicketsAsync(int houseId)
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(Intercoms.Tickets(ctx, houseId));
     }
 
     public Task SaveCourtCaseAsync(int subscriberId, CourtCase draft) =>

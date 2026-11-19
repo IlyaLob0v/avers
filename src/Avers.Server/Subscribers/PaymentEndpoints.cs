@@ -103,8 +103,10 @@ public static class PaymentEndpoints
     {
         if (request.Year is < 2000 or > 2100 || request.Month is < 1 or > 12)
             return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["month"] = ["Месяц файла — мм.гггг."] });
-        if (request.Rows.Count == 0)
+        if (request.Rows is not { Count: > 0 })
             return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["rows"] = ["В файле нет строк."] });
+        if (request.Rows.Any(r => r is null))
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["rows"] = ["В файле есть пустая строка."] });
         return TypedResults.Ok(OekImport.Apply(db, request, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow()));
     }
 }

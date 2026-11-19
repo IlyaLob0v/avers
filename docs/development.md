@@ -34,6 +34,11 @@ AVERS_TEST_POSTGRES="Host=localhost;Username=avers;Password=<пароль из .
 
 ## Запуск
 
+Для проверки запросов на миллионах искусственных записей используйте
+[Avers.DataProbe](../tools/Avers.DataProbe/README.md). Нужен отдельный PostgreSQL стенд и
+`AVERS_TEST_POSTGRES`. Проверка создаёт свою базу и удаляет её после завершения.
+
+
 | Что | Команда |
 |---|---|
 | Рабочее место с учебной базой | `dotnet run --project src/Avers.Desktop` |

@@ -7,6 +7,8 @@ set client_min_messages = warning;
 \ir ../02-fingerprint.sql
 \ir ../03-encoding.sql
 \ir ../04-business-checks.sql
+-- Повтор после прерванного теста не должен наследовать контрольные запросы прошлого прогона.
+update recon.business_check set query = null;
 
 drop schema if exists legacy_test cascade;
 create schema legacy_test;

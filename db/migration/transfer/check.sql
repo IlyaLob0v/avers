@@ -2,7 +2,7 @@
 -- кроме таблицы итогов recon.transfer_check. Если хоть одна проверка не сошлась — завершается ошибкой.
 --
 -- Проверки «РАСХОЖДЕНИЕ» останавливают переезд. Строки «справка» — то, что не переносится по правилам
--- (пустые абоненты, проверки подключения, оплаты до 1998 года): их надо прочитать глазами, но они не ошибка.
+-- (пустые абоненты, проверки подключения, ранние оплаты только в архиве): их надо прочитать глазами, но они не ошибка.
 -- Сверка с цифрами бухгалтерии и 50 карточек вручную — отдельно, см. docs/12-cutover-plan.md.
 
 create schema if not exists recon;
@@ -82,6 +82,20 @@ select 'Лицевые счета и месяцы с расхождением п
   from jack j full join avers a using (id, period)
  where j.amount is distinct from a.amount or a.imported is false;
 
+-- Начисление каждого абонента за каждый месяц: общие итоги могут скрыть компенсирующие перестановки.
+with jack as (
+    select a.physicalpersonid as id, date_trunc('month', a.month)::date as period, round(sum(a.amount), 2) as tariff
+      from legacy.avers_accrual a join subscriber_ids s on s.id = a.physicalpersonid
+     group by 1, 2
+), avers as (
+    select "SubscriberId" as id, make_date("Year", "Month", 1) as period, "Tariff" as tariff from "Payments"
+)
+insert into recon.transfer_check (title, jack, avers, status)
+select 'Лицевые счета и месяцы с расхождением по начислению', 0, count(*),
+       case when count(*) = 0 then 'совпадает' else 'РАСХОЖДЕНИЕ' end
+  from jack j full join avers a using (id, period)
+ where coalesce(j.tariff, 0) <> coalesce(a.tariff, 0);
+
 -- Помесячно: оплаты и начисления по каждому месяцу. Число месяцев, где не сошлось, должно быть 0.
 with jack as (
     select date_trunc('month', month)::date as month, round(sum(amount), 2) as charged, 0::numeric as paid
@@ -123,12 +137,28 @@ select title, jack, avers, case when jack = avers then 'совпадает' else
         select 'Абоненты, у которых не сошёлся долг', 0,
                (select count(*) from jack j full join avers a on a.id = j.id where coalesce(j.debt, 0) <> coalesce(a.debt, 0))) v;
 
+-- Производные итоги должны совпадать с исходными рабочими месяцами.
+with monthly as (
+    select "SubscriberId" as id, "Year" as year, sum("Tariff") as charged,
+           sum(coalesce("Amount", 0)) as paid, count(*) filter (where "Amount" is null) as unpaid
+      from "Payments" group by 1, 2
+), yearly as (
+    select "SubscriberId" as id, "Year" as year, "Charged" as charged, "Paid" as paid, "Unpaid" as unpaid
+      from "PaymentYearTotals"
+)
+insert into recon.transfer_check (title, jack, avers, status)
+select 'Годовые итоги с расхождением по рабочим месяцам', 0, count(*),
+       case when count(*) = 0 then 'совпадает' else 'РАСХОЖДЕНИЕ' end
+  from monthly m full join yearly y using (id, year)
+ where coalesce(m.charged, 0) <> coalesce(y.charged, 0) or coalesce(m.paid, 0) <> coalesce(y.paid, 0)
+    or coalesce(m.unpaid, 0) <> coalesce(y.unpaid, 0);
+
 -- Справка: что не переносится по правилам.
 insert into recon.transfer_check (title, jack, avers, status) values
     ('Пустые абоненты для заявок на дом (не переносятся)', (select count(*) from legacy.avers_empty_client), null, 'справка'),
     ('Проверки подключения без заявки (не переносятся)',
         (select count(*) from legacy.demands where checkconnect = 1 and demandcode in (0, 524288)), null, 'справка'),
-    ('Оплаты до 1998 года, неденоминированные (не переносятся), штук',
+    ('Оплаты до 1998 года (сохранены в исходном архиве), штук',
         (select count(*) from legacy.abn_pay where payfordate < date '1998-01-01'), null, 'справка'),
     ('Платежи в 0 рублей (месяц считается оплаченным)',
         (select count(*) from legacy.abn_pay where summpay = 0 and payfordate >= date '1998-01-01'), null, 'справка'),

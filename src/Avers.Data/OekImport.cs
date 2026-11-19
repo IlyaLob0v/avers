@@ -14,17 +14,30 @@ public static class OekImport
 
     public static OekImportResult Apply(AversDbContext db, OekImportRequest request, string who, DateTimeOffset at)
     {
-        var subscribers = db.Subscribers.ToList();
+        var rows = request.Rows.Select(r => r with
+        {
+            Account = (r.Account ?? "").Trim(),
+            OekAccount = (r.OekAccount ?? "").Trim(),
+            Address = r.Address ?? "",
+            Apartment = r.Apartment ?? ""
+        }).ToList();
+        var accounts = rows.Select(r => r.Account).Where(a => a != "").Distinct().ToArray();
+        var oekAccounts = rows.Select(r => r.OekAccount).Where(a => a != "").Distinct().ToArray();
+        var subscribers = db.Subscribers.Where(s => accounts.Contains(s.Account) || oekAccounts.Contains(s.OekAccount)).ToList();
         var byAccount = subscribers.ToDictionary(s => s.Account);
-        var byOek = subscribers.Where(s => s.OekAccount != "").GroupBy(s => s.OekAccount).ToDictionary(g => g.Key, g => g.First());
-        var months = db.Payments.Where(p => p.Year == request.Year && p.Month == request.Month).ToDictionary(p => p.SubscriberId);
+        var oekGroups = subscribers.Where(s => s.OekAccount != "").GroupBy(s => s.OekAccount).ToList();
+        var ambiguousOek = oekGroups.Where(g => g.Skip(1).Any()).Select(g => g.Key).ToHashSet();
+        var byOek = oekGroups.Where(g => !ambiguousOek.Contains(g.Key)).ToDictionary(g => g.Key, g => g.First());
+        var ids = subscribers.Select(s => s.Id).ToArray();
+        var months = db.Payments.Where(p => p.Year == request.Year && p.Month == request.Month && ids.Contains(p.SubscriberId))
+            .ToDictionary(p => p.SubscriberId);
 
         var mismatches = new List<OekMismatch>();
         var toPay = new List<(OekRow Row, Subscriber Subscriber, YearPayment Month, DateOnly PaidAt)>();
         var paid = new List<(OekRow Row, Subscriber Subscriber, YearPayment Month, DateOnly PaidAt)>();
         int matched = 0, payments = 0, already = 0;
         var total = 0m;
-        foreach (var row in request.Rows)
+        foreach (var row in rows)
         {
             var s = row.Account != "" && byAccount.TryGetValue(row.Account, out var a) ? a
                 : byOek.TryGetValue(row.OekAccount, out var o) ? o : null;
@@ -32,7 +45,7 @@ public static class OekImport
                 mismatches.Add(new OekMismatch(row.OekAccount, row.Account, row.Address, row.Apartment, row.Accrued, tariff, row.Paid, problem));
             if (s is null)
             {
-                Mismatch(null, "нет в Аверсе");
+                Mismatch(null, ambiguousOek.Contains(row.OekAccount) ? "счёт ОЭК указан у нескольких абонентов; нужен лицевой счёт Аверса" : "нет в Аверсе");
                 continue;
             }
             matched++;
@@ -47,6 +60,16 @@ public static class OekImport
             }
             if (month.Tariff != row.Accrued)
                 Mismatch(month.Tariff, "начисление расходится");
+            if (row.Paid < 0)
+            {
+                Mismatch(month.Tariff, "отрицательная оплата (возврат) требует разбора бухгалтерией");
+                continue;
+            }
+            if (decimal.Round(row.Paid, 2) != row.Paid || row.Paid > 9_999_999_999.99m)
+            {
+                Mismatch(month.Tariff, "сумма оплаты выходит за допустимый размер или содержит доли копейки");
+                continue;
+            }
             if (row.Paid <= 0)
                 continue;
             if (month.Source == Source)

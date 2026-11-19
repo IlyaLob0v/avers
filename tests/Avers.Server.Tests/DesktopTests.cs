@@ -11,6 +11,20 @@ namespace Avers.Server.Tests;
 
 public class DesktopTests
 {
+    [Fact]
+    public async Task IntercomHistory_IsLoadedOnlyForChosenHouse()
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("sokolova");
+        using var snapshot = JsonDocument.Parse(await client.GetStringAsync("/api/desktop/snapshot"));
+        Assert.False(snapshot.RootElement.TryGetProperty("intercomTickets", out _));
+        var houseId = await app.WithDbAsync(db => db.IntercomTickets.Select(t => t.HouseId).FirstAsync());
+        var rows = (await client.GetFromJsonAsync<List<IntercomTicketDto>>($"/api/houses/{houseId}/intercom-tickets", Json))!;
+        Assert.NotEmpty(rows);
+        Assert.All(rows, t => Assert.Equal(houseId, t.HouseId));
+        Assert.Equal(await app.WithDbAsync(db => db.IntercomTickets.CountAsync(t => t.HouseId == houseId)), rows.Count);
+    }
+
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter() } };
 
     [Theory]
@@ -42,7 +56,6 @@ public class DesktopTests
         Assert.NotEmpty(snapshot.Schemes);
         Assert.Empty(snapshot.Mechanics);
         Assert.Empty(snapshot.Materials);
-        Assert.Empty(snapshot.IntercomTickets);
     }
 
     [Fact]
@@ -62,7 +75,7 @@ public class DesktopTests
     }
 
     [Fact]
-    public async Task HouseSubscribers_ComeWithPaymentsOfThatHouseOnly()
+    public async Task HouseSubscribers_ComeWithHistoryOfChosenAccountOnly()
     {
         await using var app = new AversApp();
         var client = await app.LoginAsync("orlov");
@@ -75,13 +88,23 @@ public class DesktopTests
         var ids = house.Subscribers.Select(s => s.Id).ToHashSet();
         Assert.NotEmpty(house.Payments);
         Assert.All(house.Payments, p => Assert.Contains(p.SubscriberId, ids));
-        var expected = await app.WithDbAsync(db => db.Payments.CountAsync(p => p.Subscriber.HouseId == houseId));
+        var subscriberId = house.Payments[0].SubscriberId;
+        Assert.All(house.Payments, p => Assert.Equal(subscriberId, p.SubscriberId));
+        var expected = await app.WithDbAsync(db => db.Payments.CountAsync(p => p.SubscriberId == subscriberId));
         Assert.Equal(expected, house.Payments.Count);
+        foreach (var otherId in ids)
+        {
+            var other = (await client.GetFromJsonAsync<HouseSubscribers>($"/api/houses/{houseId}/subscribers?subscriberId={otherId}", Json))!;
+            Assert.All(other.Payments, p => Assert.Equal(otherId, p.SubscriberId));
+            Assert.Equal(await app.WithDbAsync(db => db.Payments.CountAsync(p => p.SubscriberId == otherId)), other.Payments.Count);
+        }
     }
 
     [Theory]
     [InlineData("/api/houses/1/subscribers")]
     [InlineData("/api/debts")]
+    [InlineData("/api/reports/debts-by-house")]
+    [InlineData("/api/subscribers/1/jack-payments")]
     [InlineData("/api/reports/accounting?year=2026&month=8")]
     public async Task SubscriberData_IsClosedToReader(string url)
     {
@@ -112,6 +135,7 @@ public class DesktopTests
         var client = await app.LoginAsync("lawyer");
 
         var debts = (await client.GetFromJsonAsync<Debts>("/api/debts", Json))!;
+        var totals = (await client.GetFromJsonAsync<Dictionary<int, decimal>>("/api/reports/debts-by-house", Json))!;
 
         var subscribers = await app.WithDbAsync(db => db.Subscribers.Include(s => s.Payments).ToListAsync());
         var debtOf = subscribers.ToDictionary(s => s.Id, s => Billing.Debt(Billing.Due(s.Payments, AversApp.Today)));
@@ -120,7 +144,7 @@ public class DesktopTests
         Assert.Equal(expected.Select(s => s.Id), debts.Debtors.Select(d => d.SubscriberId));
         Assert.All(debts.Debtors, d => Assert.Equal(debtOf[d.SubscriberId], d.Debt));
         foreach (var house in subscribers.GroupBy(s => s.HouseId))
-            Assert.Equal(house.Sum(s => debtOf[s.Id]), debts.ByHouse[house.Key]);
+            Assert.Equal(house.Sum(s => debtOf[s.Id]), totals[house.Key]);
     }
 
     [Fact]

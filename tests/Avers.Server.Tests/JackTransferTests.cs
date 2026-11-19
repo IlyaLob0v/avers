@@ -1,6 +1,8 @@
 using Avers.Data;
 using Avers.Domain;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql;
 
 namespace Avers.Server.Tests;
@@ -50,7 +52,7 @@ public sealed class JackTransferTests : IAsyncLifetime
         Assert.Equal(1705m, rows["Долг всех абонентов, сумма"].Avers);
         Assert.Equal(1m, rows["Пустые абоненты для заявок на дом (не переносятся)"].Jack);
         Assert.Equal(1m, rows["Проверки подключения без заявки (не переносятся)"].Jack);
-        Assert.Equal(1m, rows["Оплаты до 1998 года, неденоминированные (не переносятся), штук"].Jack);
+        Assert.Equal(1m, rows["Оплаты до 1998 года (сохранены в исходном архиве), штук"].Jack);
         Assert.Equal(0m, rows["Расхождения в исходных операциях по PAYID"].Avers);
     }
 
@@ -61,6 +63,92 @@ public sealed class JackTransferTests : IAsyncLifetime
 
         var error = await Assert.ThrowsAsync<PostgresException>(() => RunAsync("check.sql"));
 
+        Assert.Contains("есть расхождения", error.MessageText);
+    }
+
+    [PostgresFact]
+    public async Task Check_FailsWhenDerivedYearTotalsDiffer()
+    {
+        await ExecuteAsync("""UPDATE "PaymentYearTotals" SET "Paid" = "Paid" + 0.01 WHERE "SubscriberId" = 1001 AND "Year" = 2026""");
+        var error = await Assert.ThrowsAsync<PostgresException>(() => RunAsync("check.sql"));
+        Assert.Contains("есть расхождения", error.MessageText);
+    }
+
+    [PostgresFact]
+    public async Task YearTotals_TrackChangesAndRollbackAtomically()
+    {
+        async Task<(decimal Charged, decimal Paid, int Unpaid)> Totals()
+        {
+            await using var c = await OpenAsync();
+            await using var cmd = new NpgsqlCommand("""SELECT "Charged", "Paid", "Unpaid" FROM "PaymentYearTotals" WHERE "SubscriberId" = 1001 AND "Year" = 2026""", c);
+            await using var reader = await cmd.ExecuteReaderAsync();
+            Assert.True(await reader.ReadAsync());
+            return (reader.GetDecimal(0), reader.GetDecimal(1), reader.GetInt32(2));
+        }
+        Assert.Equal((1800m, 300m, 9), await Totals());
+        await ExecuteAsync("""UPDATE "Payments" SET "Amount" = NULL WHERE "SubscriberId" = 1001 AND "Year" = 2026 AND "Month" = 2""");
+        Assert.Equal((1800m, 150m, 10), await Totals());
+        await ExecuteAsync("""
+            BEGIN;
+            UPDATE "Payments" SET "Tariff" = "Tariff" + 10 WHERE "SubscriberId" = 1001 AND "Year" = 2026;
+            ROLLBACK;
+            """);
+        Assert.Equal((1800m, 150m, 10), await Totals());
+        await ExecuteAsync("""DELETE FROM "Payments" WHERE "SubscriberId" = 1001 AND "Year" = 2026 AND "Month" = 2""");
+        Assert.Equal((1650m, 150m, 9), await Totals());
+    }
+
+    [PostgresFact]
+    public async Task YearTotals_KeepConcurrentChangesOfDifferentMonths()
+    {
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(i => ExecuteAsync($"""
+            UPDATE "Payments" SET "Amount" = "Amount" + 0.01
+            WHERE "SubscriberId" = 1001 AND "Year" = 2026 AND "Month" = {i % 2 + 1}
+            """)));
+        await using var db = Context();
+        Assert.Equal(1499.92m, Debts.Load(db, new DateOnly(2027, 1, 15)).Debtors.Single(d => d.SubscriberId == 1001).Debt);
+    }
+
+    [PostgresFact]
+    public async Task YearTotals_FollowYearMovesCascadeAndTruncate()
+    {
+        await ExecuteAsync("""UPDATE "Payments" SET "Year" = 2025 WHERE "SubscriberId" = 1001 AND "Year" = 2026 AND "Month" = 1""");
+        await using var db = Context();
+        Assert.Equal(150, await db.PaymentYearTotals.Where(t => t.SubscriberId == 1001 && t.Year == 2025).Select(t => t.Charged).SingleAsync());
+        Assert.Equal(1500, Debts.Load(db, new DateOnly(2027, 1, 15)).Debtors.Single(d => d.SubscriberId == 1001).Debt);
+        var fresh = new Subscriber { HouseId = 100, Account = "для удаления" };
+        fresh.Payments.Add(new YearPayment { Year = 2026, Month = 1, Tariff = 150 });
+        db.Subscribers.Add(fresh);
+        await db.SaveChangesAsync();
+        await db.Database.ExecuteSqlAsync($"DELETE FROM \"Subscribers\" WHERE \"Id\" = {fresh.Id}");
+        Assert.False(await db.PaymentYearTotals.AnyAsync(t => t.SubscriberId == fresh.Id));
+        await ExecuteAsync("TRUNCATE \"Payments\"");
+        Assert.Empty(await db.PaymentYearTotals.ToListAsync());
+    }
+
+    [PostgresFact]
+    public async Task YearTotals_MigrationBackfillsExistingMonthsWithoutChangingThem()
+    {
+        await using var db = Context();
+        var migrator = db.GetService<IMigrator>();
+        await migrator.MigrateAsync("20261119085452_PaymentPeriodIndexes");
+        await ExecuteAsync("""UPDATE "Payments" SET "Amount" = 17 WHERE "SubscriberId" = 1001 AND "Year" = 2026 AND "Month" = 1""");
+        await migrator.MigrateAsync();
+        Assert.Equal(167, await db.PaymentYearTotals.Where(t => t.SubscriberId == 1001 && t.Year == 2026).Select(t => t.Paid).SingleAsync());
+        Assert.Equal(17, await db.Payments.Where(p => p.SubscriberId == 1001 && p.Year == 2026 && p.Month == 1).Select(p => p.Amount).SingleAsync());
+    }
+
+    [PostgresFact]
+    public async Task Check_FailsWhenAccrualsAreSwappedWithUnchangedMonthlyAndAccountTotals()
+    {
+        await ExecuteAsync("""
+            UPDATE "Payments" SET "Tariff" = "Tariff" +
+                CASE WHEN ("SubscriberId" = 1001 AND "Month" = 1) OR ("SubscriberId" = 1002 AND "Month" = 2)
+                     THEN 1 ELSE -1 END
+            WHERE "SubscriberId" IN (1001, 1002) AND "Year" = 2026 AND "Month" IN (1, 2)
+            """);
+
+        var error = await Assert.ThrowsAsync<PostgresException>(() => RunAsync("check.sql"));
         Assert.Contains("есть расхождения", error.MessageText);
     }
 
@@ -142,7 +230,7 @@ public sealed class JackTransferTests : IAsyncLifetime
         var debts = Debts.Load(db, new DateOnly(2027, 1, 15));
 
         Assert.Equal(1500m, debts.Debtors.Single(d => d.SubscriberId == 1001).Debt);
-        Assert.Equal(1705m, debts.ByHouse.Values.Sum());
+        Assert.Equal(1705m, Debts.LoadHouseTotals(db, new DateOnly(2027, 1, 15)).Values.Sum());
     }
 
     [PostgresFact]

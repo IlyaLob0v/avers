@@ -6,6 +6,42 @@ namespace Avers.Data.Tests;
 
 public class OekImportTests
 {
+    [Fact]
+    public void MissingIdentifiers_AreAMismatchInsteadOfAnException()
+    {
+        using var database = new SqliteDatabase();
+        using var db = database.CreateContext();
+        var result = OekImport.Apply(db, new(2026, 9, [new(null!, null!, "", "", 150, 150, null)]), "Тест", DateTimeOffset.UtcNow);
+        Assert.Equal(0, result.Payments);
+        Assert.Single(result.Mismatches);
+    }
+
+    [Fact]
+    public void DuplicateOekAccount_IsReportedInsteadOfPayingAnArbitrarySubscriber()
+    {
+        using var database = new SqliteDatabase();
+        using var db = database.CreateContext();
+        var house = new House { Street = new Street { Name = "Учебная" }, Number = "1" };
+        foreach (var account in new[] { "a", "b" })
+        {
+            var s = new Subscriber { House = house, Account = account, OekAccount = "shared" };
+            s.Payments.Add(new YearPayment { Year = 2026, Month = 9, Tariff = 150 });
+            db.Subscribers.Add(s);
+        }
+        db.SaveChanges();
+        var result = OekImport.Apply(db, new(2026, 9, [new("shared", "", "", "", 150, 150, null)]), "Тест", DateTimeOffset.UtcNow);
+        Assert.Equal(0, result.Payments);
+        Assert.Contains("нескольких", Assert.Single(result.Mismatches).Problem);
+        var negative = OekImport.Apply(db, new(2026, 9, [new("shared", "a", "", "", 150, -10, null)]), "Тест", DateTimeOffset.UtcNow);
+        Assert.Equal(0, negative.Payments);
+        Assert.Contains("отрицательная", Assert.Single(negative.Mismatches).Problem);
+        var fractional = OekImport.Apply(db, new(2026, 9, [new("shared", "a", "", "", 150, 150.001m, null)]), "Тест", DateTimeOffset.UtcNow);
+        Assert.Equal(0, fractional.Payments);
+        Assert.Single(fractional.Mismatches);
+        var valid = OekImport.Apply(db, new(2026, 9, [new("shared", "a", "", "", 150, 150, null)]), "Тест", DateTimeOffset.UtcNow);
+        Assert.Equal(1, valid.Payments);
+    }
+
     private static readonly DateTimeOffset At = new(2026, 9, 20, 10, 0, 0, TimeSpan.Zero);
 
     /// <summary>Три квартиры с августом 2026 по 150 ₽; у второй август уже оплачен в кассе.</summary>

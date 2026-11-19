@@ -28,5 +28,6 @@ public sealed class SqliteUnicodeInterceptor : DbConnectionInterceptor
             return;
         sqlite.CreateFunction("lower", (string? s) => s?.ToLowerInvariant(), isDeterministic: true);
         sqlite.CreateFunction("upper", (string? s) => s?.ToUpperInvariant(), isDeterministic: true);
+        sqlite.CreateFunction("avers_phone_digits", (string? s) => SubscriberSearch.PhoneDigits(s), isDeterministic: true);
     }
 }

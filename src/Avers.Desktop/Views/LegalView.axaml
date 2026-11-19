@@ -6,6 +6,12 @@
              x:Class="Avers.Desktop.Views.LegalView"
              x:DataType="vm:LegalViewModel">
   <DockPanel Margin="16,0,16,12">
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,8">
+      <Button Content="Назад" Command="{Binding PreviousPageCommand}" ToolTip.Tip="Предыдущие 100 должников" />
+      <Button Content="Далее" Command="{Binding NextPageCommand}" ToolTip.Tip="Следующие 100 должников" />
+      <Button Content="Обновить" Command="{Binding RefreshCommand}" IsEnabled="{Binding !IsLoadingDebtors}" />
+      <TextBlock Classes="hint" Text="Выгрузка и претензии включают весь выбранный отбор" VerticalAlignment="Center" />
+    </StackPanel>
     <Border DockPanel.Dock="Bottom" Classes="card" Margin="0">
       <WrapPanel Orientation="Horizontal">
         <TextBlock Classes="legend" Margin="0,0,8,0" Text="Калькулятор обратного отсчёта" VerticalAlignment="Center" />
@@ -35,7 +41,7 @@
         </StackPanel>
         <StackPanel Margin="0,0,10,0">
           <TextBlock Classes="hint" Text="Адрес: улица, дом" />
-          <TextBox Classes="cell" Width="220" Text="{Binding AddressFilter}" PlaceholderText="например, Ленина 12" />
+          <TextBox Classes="cell" Width="220" MaxLength="200" Text="{Binding AddressFilter}" PlaceholderText="например, Ленина 12" />
         </StackPanel>
         <StackPanel Margin="0,0,10,0">
           <TextBlock Classes="hint" Text="Судебный приказ" />
@@ -63,7 +69,7 @@
           </WrapPanel>
           <WrapPanel Orientation="Horizontal">
             <TextBlock Text="Должники" VerticalAlignment="Center" />
-            <TextBlock Classes="hint" VerticalAlignment="Center" Text="{Binding DebtorsCountText}" />
+            <TextBlock Classes="hint" Margin="8,0,0,0" VerticalAlignment="Center" Text="{Binding DebtorsCountText}" />
           </WrapPanel>
         </DockPanel>
       </HeaderedContentControl.Header>

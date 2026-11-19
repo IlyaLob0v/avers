@@ -4,8 +4,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Avers.Data;
 
 /// <summary>
-/// Абоненты одного дома со всеми оплатами, судебными делами и едиными квитанциями. Настольная программа
-/// грузит их при выборе дома, а не всю базу сразу. По сети уходят плоско, связываются в <see cref="Link"/>.
+/// Список квартир дома и история только выбранного абонента.
+/// По сети уходят плоско, связываются в <see cref="Link"/>.
 /// </summary>
 public sealed class HouseSubscribers
 {
@@ -14,13 +14,21 @@ public sealed class HouseSubscribers
     public List<CourtCase> CourtCases { get; set; } = [];
     public List<UnifiedReceipt> Receipts { get; set; } = [];
 
-    public static HouseSubscribers Load(AversDbContext db, int houseId) => new()
+    public static HouseSubscribers Load(AversDbContext db, int houseId, int? subscriberId = null)
     {
-        Subscribers = db.Subscribers.AsNoTracking().Where(s => s.HouseId == houseId).ToList(),
-        Payments = db.Payments.AsNoTracking().Where(p => p.Subscriber.HouseId == houseId).ToList(),
-        CourtCases = db.CourtCases.AsNoTracking().Where(c => c.Subscriber.HouseId == houseId).ToList(),
-        Receipts = db.UnifiedReceipts.AsNoTracking().Where(r => r.Subscriber.HouseId == houseId).ToList()
-    };
+        var result = new HouseSubscribers
+        {
+            Subscribers = db.Subscribers.AsNoTracking().Where(s => s.HouseId == houseId).OrderBy(s => s.Id).ToList()
+        };
+        var selected = subscriberId is { } id
+            ? result.Subscribers.FirstOrDefault(s => s.Id == id)
+            : result.Subscribers.FirstOrDefault(s => s.Account == DemoSeeder.StartAccount) ?? result.Subscribers.FirstOrDefault();
+        if (selected is null) return result;
+        result.Payments = db.Payments.AsNoTracking().Where(p => p.SubscriberId == selected.Id).ToList();
+        result.CourtCases = db.CourtCases.AsNoTracking().Where(c => c.SubscriberId == selected.Id).ToList();
+        result.Receipts = db.UnifiedReceipts.AsNoTracking().Where(r => r.SubscriberId == selected.Id).ToList();
+        return result;
+    }
 
     /// <summary>Расставляет связи; дом берётся из уже загруженного снимка.</summary>
     public List<Subscriber> Link(House house)

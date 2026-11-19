@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Avers.Contracts;
+using Avers.Data;
 using Avers.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,72 @@ namespace Avers.Server.Tests;
 
 public class SubscriberTests
 {
+    [PostgresFact]
+    public async Task PhoneSearch_UsesNormalizedPhoneIndex()
+    {
+        await using var app = new AversApp();
+        await app.WithDbAsync(async db =>
+        {
+            var house = await db.Houses.Select(h => h.Id).FirstAsync();
+            for (var i = 1; i <= 10000; i++)
+                db.Subscribers.Add(new Subscriber { HouseId = house, Account = $"PHONE-{i}", LastName = "Тест", Phone = $"8.9{(i * 104729L) % 1_000_000_000:D9}" });
+            await db.SaveChangesAsync();
+            await db.Database.ExecuteSqlRawAsync("VACUUM ANALYZE \"Subscribers\"");
+            await db.Database.OpenConnectionAsync();
+            await using var command = db.Database.GetDbConnection().CreateCommand();
+            command.CommandText = """EXPLAIN (ANALYZE, FORMAT JSON) SELECT "Id" FROM "Subscribers" WHERE avers_phone_digits("Phone") LIKE '%9104729000%'""";
+            var plan = (string)(await command.ExecuteScalarAsync())!;
+            Assert.True(plan.Contains("IX_Subscribers_PhoneDigits", StringComparison.Ordinal), plan);
+            return 0;
+        });
+    }
+
+    [Fact]
+    public async Task PhoneSearch_FindsDottedNumberWithExtension()
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("sokolova");
+        await app.WithDbAsync(async db =>
+        {
+            var s = await db.Subscribers.FirstAsync();
+            s.Phone = "8.900.123.45.67 доб.89";
+            await db.SaveChangesAsync();
+            return 0;
+        });
+        var rows = await client.GetFromJsonAsync<List<SubscriberListItem>>("/api/subscribers?mode=Phone&q=79001234567");
+        Assert.Single(rows!);
+    }
+
+    [Fact]
+    public async Task JackHistory_IsPagedAndPreservesOriginalAmounts()
+    {
+        await using var app = new AversApp();
+        var client = await app.LoginAsync("lawyer");
+        await app.WithDbAsync(async db =>
+        {
+            for (var i = 0; i < 105; i++)
+                db.JackPayments.Add(new JackPayment
+                {
+                    Id = 3_000_000_000L + i,
+                    SubscriberId = 1,
+                    Period = new DateTime(1996, 1, 1),
+                    PaidAt = new DateTime(1996, 2, 1),
+                    Amount = 15000,
+                    Source = "Касса"
+                });
+            await db.SaveChangesAsync();
+            return 0;
+        });
+        var response = await client.GetAsync("/api/subscribers/1/jack-payments?year=1996");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var first = (await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>());
+        Assert.Equal(105, first.GetProperty("totalCount").GetInt32());
+        Assert.Equal(100, first.GetProperty("rows").GetArrayLength());
+        Assert.Equal(15000, first.GetProperty("rows")[0].GetProperty("amount").GetDecimal());
+        var next = await client.GetFromJsonAsync<System.Text.Json.JsonElement>("/api/subscribers/1/jack-payments?year=1996&offset=100");
+        Assert.Equal(5, next.GetProperty("rows").GetArrayLength());
+    }
+
     [Fact]
     public async Task Streets_AndHouses_AreListed()
     {

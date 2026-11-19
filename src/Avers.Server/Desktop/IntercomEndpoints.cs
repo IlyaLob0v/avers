@@ -18,6 +18,10 @@ public static class IntercomEndpoints
     {
         var api = app.MapGroup("/api").WithTags("Домофоны");
 
+        api.MapGet("/houses/{id:int}/intercom-tickets", (int id, AversDbContext db) => TypedResults.Ok(Intercoms.Tickets(db, id)
+            .Select(t => new IntercomTicketDto(t.Id, t.HouseId, t.Date, t.Entrance, t.Fault, t.Mechanic, t.Done)).ToList()))
+            .RequireAuthorization(Policies.TicketsView).LogsView("Заявки по домофону", AccessLogFilter.House("id"));
+
         api.MapPost("/houses/{id:int}/intercoms", (int id, IntercomPanelRequest r, ClaimsPrincipal u, AversDbContext db, TimeProvider t) =>
             SavePanel(id, 0, r, u, db, t)).RequireAuthorization(Policies.HousesEdit);
         api.MapPut("/houses/{id:int}/intercoms/{panelId:int}", SavePanel).RequireAuthorization(Policies.HousesEdit);

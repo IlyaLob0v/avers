@@ -19,7 +19,6 @@ public sealed class AversSnapshot
     public List<HouseScheme> Schemes { get; set; } = [];
     public List<PprEntry> Ppr { get; set; } = [];
     public List<IntercomPanel> Intercoms { get; set; } = [];
-    public List<IntercomTicket> IntercomTickets { get; set; } = [];
     public List<Mechanic> Mechanics { get; set; } = [];
     public List<Material> Materials { get; set; } = [];
 
@@ -42,8 +41,6 @@ public sealed class AversSnapshot
             snapshot.Mechanics = db.Mechanics.AsNoTracking().OrderBy(x => x.FullName).ToList();
             snapshot.Materials = db.Materials.AsNoTracking().ToList();
         }
-        if (RoleCatalog.Can(role, AppModule.Disp, out _))
-            snapshot.IntercomTickets = db.IntercomTickets.AsNoTracking().OrderByDescending(x => x.Date).ToList();
         return snapshot;
     }
 

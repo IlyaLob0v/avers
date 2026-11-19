@@ -66,8 +66,9 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public async Task<AversSnapshot> LoadAsync(AppUser user) =>
         (await Read<AversSnapshot>(() => http.GetAsync("api/desktop/snapshot"))).Link();
 
-    public async Task<List<Subscriber>> LoadHouseAsync(House house) =>
-        (await Read<HouseSubscribers>(() => http.GetAsync($"api/houses/{house.Id}/subscribers"))).Link(house);
+    public async Task<List<Subscriber>> LoadHouseAsync(House house, int? subscriberId = null) =>
+        (await Read<HouseSubscribers>(() => http.GetAsync($"api/houses/{house.Id}/subscribers"
+            + (subscriberId is { } id ? $"?subscriberId={id}" : "")))).Link(house);
 
     public async Task<List<SubscriberMatch>> FindSubscribersAsync(SearchMode mode, string query, string street, string house, string apartment, string section)
     {
@@ -77,7 +78,22 @@ public sealed class ServerStore(HttpClient http) : IAversStore
         return found.Select(s => new SubscriberMatch(s.Id, s.HouseId, s.Account, s.FullName, s.Address, s.Apartment, s.Section)).ToList();
     }
 
-    public Task<Debts> LoadDebtsAsync() => Read<Debts>(() => http.GetAsync("api/debts"));
+    public Task<Debts> LoadDebtsAsync(DebtorFilter? filter = null, int offset = 0, bool all = false, CancellationToken cancellationToken = default)
+    {
+        filter ??= new();
+        var url = $"api/debts?offset={offset}&all={all}&debtFrom={filter.DebtFrom.ToString(System.Globalization.CultureInfo.InvariantCulture)}"
+            + $"&unpaidFrom={filter.UnpaidFrom}&address={Uri.EscapeDataString(filter.Address)}"
+            + (filter.HasCase is { } hasCase ? $"&hasCase={hasCase}" : "")
+            + (filter.IsLegalEntity is { } legal ? $"&isLegalEntity={legal}" : "");
+        return Read<Debts>(() => http.GetAsync(url, cancellationToken));
+    }
+
+    public Task<Dictionary<int, decimal>> LoadDebtTotalsAsync() =>
+        Read<Dictionary<int, decimal>>(() => http.GetAsync("api/reports/debts-by-house"));
+
+    public Task<SubscriberArchive> LoadArchiveAsync(int subscriberId, int? year = null, int offset = 0) =>
+        Read<SubscriberArchive>(() => http.GetAsync($"api/subscribers/{subscriberId}/jack-payments?offset={offset}"
+            + (year is { } y ? $"&year={y}" : "")));
 
     public Task<AccountingReport> LoadAccountingAsync(int year, int month) =>
         Read<AccountingReport>(() => http.GetAsync($"api/reports/accounting?year={year}&month={month}"));
@@ -178,6 +194,19 @@ public sealed class ServerStore(HttpClient http) : IAversStore
             ? http.PostAsJsonAsync($"api/houses/{houseId}/intercoms", request, Json)
             : http.PutAsJsonAsync($"api/houses/{houseId}/intercoms/{draft.Id}", request, Json));
     }
+
+    public async Task<List<IntercomTicket>> LoadIntercomTicketsAsync(int houseId) =>
+        (await Read<List<IntercomTicketDto>>(() => http.GetAsync($"api/houses/{houseId}/intercom-tickets")))
+            .Select(t => new IntercomTicket
+            {
+                Id = t.Id,
+                HouseId = t.HouseId,
+                Date = t.Date,
+                Entrance = t.Entrance,
+                Fault = t.Fault,
+                Mechanic = t.Mechanic,
+                Done = t.Done
+            }).ToList();
 
     public Task AddIntercomTicketAsync(int houseId, IntercomTicket draft) =>
         Write(() => http.PostAsJsonAsync($"api/houses/{houseId}/intercom-tickets",

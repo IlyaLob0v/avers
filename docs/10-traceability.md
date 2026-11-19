@@ -16,6 +16,13 @@
 
 ## Дом и техника
 
+Загрузка исторических данных описана в [ADR-0018](adr/0018-historical-data-loading.md):
+`HouseSubscribersTests.Load_ReadsHistoryOnlyForSelectedAccount`, `DebtsTests.Load_IsBoundedAndPreservesTotalCount`,
+`DebtsTests.FiltersAndHouseTotals_KeepCreditAndCurrentMonthRules`, `SubscriberTests.JackHistory_IsPagedAndPreservesOriginalAmounts`,
+`OekImportTests.DuplicateOekAccount_IsReportedInsteadOfPayingAnArbitrarySubscriber`,
+`JackTransferTests.Check_FailsWhenAccrualsAreSwappedWithUnchangedMonthlyAndAccountTotals`.
+Проверка бухгалтерского допуска — `db/migration/reconcile/test/run-tests.sh`; проверка большого искусственного набора — `tools/Avers.DataProbe`.
+
 | ID | Пр. | Статус | Где в коде | Чем проверено | Примечание |
 |---|---|---|---|---|---|
 | REQ-ENG-01 | M | Сделано | `Desktop/Views/AntenInfoView.axaml`, `AbonView.axaml` (Эт., Под.); `MainViewModel.HouseStats`; правка — `Data/Phonebook.cs`, `Server/Desktop/PhonebookEndpoints.cs`; телефон — `Server/wwwroot/m/index.html` | `PhonebookTests.EditHouse_IsLogged_AndDuplicateNumberRejected` (сервер) — правка; показ отдельным тестом не проверяется | Число антенн не показывается, как и просили |
