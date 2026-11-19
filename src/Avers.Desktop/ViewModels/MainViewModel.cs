@@ -392,8 +392,11 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>План устранения неисправности на паспорте дома, дд.мм.гггг.</summary>
     [ObservableProperty] private string _editFaultFix = "";
 
+    partial void OnFindApartmentChanged(string value) => TicketsScreen.ClearRepeatCallTickets();
+
     partial void OnSelectedHouseChanged(House? value)
     {
+        TicketsScreen.ClearRepeatCallTickets();
         PhonebookScreen.EditHouse = value;
         EditFaultFix = value?.OpenFaultPlannedFix?.ToString("dd.MM.yyyy") ?? "";
         if (!_holdRefresh)
@@ -402,6 +405,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnSelectedSubscriberChanged(Subscriber? value)
     {
+        TicketsScreen.ClearRepeatCallTickets();
         PrintWithPayDate = value?.PrintAccountWithPayDate ?? true;
         PaymentAmount = "";
         RefreshDerived();
@@ -491,7 +495,8 @@ public sealed partial class MainViewModel : ObservableObject
         }
         catch (StoreException e)
         {
-            _store.SignOut();
+            TicketsScreen.ClearRepeatCallTickets();
+        _store.SignOut();
             LoginError = e.Message;
             return;
         }

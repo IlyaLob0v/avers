@@ -11,6 +11,33 @@ public class TicketScreenTests
     private static readonly DateOnly Today = Avers.Data.DemoSeeder.WorkDate;
 
     [AvaloniaFact]
+    public async Task RepeatCall_ShowsOpenHouseTickets_AndOpensExistingTicket()
+    {
+        using var app = new DesktopApp("sokolova");
+        app.Go(AppModule.Disp);
+        var screen = app.Vm.TicketsScreen;
+        var button = app.Window.GetVisualDescendants().OfType<Button>()
+            .Single(b => b.Content as string == "Проверить открытые заявки");
+        Assert.Same(screen.CheckRepeatCallCommand, button.Command);
+
+        await screen.CheckRepeatCallCommand.ExecuteAsync(null);
+
+        Assert.NotEmpty(screen.RepeatCallTickets);
+        Assert.All(screen.RepeatCallTickets, t =>
+        {
+            Assert.Equal(app.Vm.SelectedHouse!.Id, t.HouseId);
+            Assert.NotEqual(TicketStatus.Done, t.Status);
+        });
+        screen.TicketYear = 2025;
+        var existing = screen.RepeatCallTickets[0];
+        screen.OpenRepeatCallTicketCommand.Execute(existing);
+        Assert.Same(existing, screen.SelectedTicket);
+        Assert.Equal(AppModule.Ticket, app.Vm.Module);
+        app.Vm.FindApartment = "999";
+        Assert.Empty(screen.RepeatCallTickets);
+    }
+
+    [AvaloniaFact]
     public void Journal_LoadsTicketsOfYear_ShowsRowsSummaryAndApartment()
     {
         using var app = new DesktopApp("sokolova");
