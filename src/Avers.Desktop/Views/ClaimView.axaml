@@ -5,6 +5,7 @@
              xmlns:pr="using:Avers.Desktop.Printing"
              x:Class="Avers.Desktop.Views.ClaimView"
              x:DataType="vm:LegalViewModel">
+  <ScrollViewer>
   <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" Margin="16,0,16,12" VerticalAlignment="Top">
     <HeaderedContentControl Classes="group" Margin="0,0,5,0" Header="Досудебное уведомление">
       <StackPanel>
@@ -88,4 +89,5 @@
       </StackPanel>
     </HeaderedContentControl>
   </Grid>
+  </ScrollViewer>
 </UserControl>

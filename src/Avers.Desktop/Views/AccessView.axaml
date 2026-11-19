@@ -4,6 +4,7 @@
              xmlns:ctl="using:Avers.Desktop.Controls"
              x:Class="Avers.Desktop.Views.AccessView"
              x:DataType="vm:AccessViewModel">
+  <ScrollViewer>
   <StackPanel Margin="16,0,16,12">
     <Grid ColumnDefinitions="*,320">
       <HeaderedContentControl Classes="group" Margin="0,0,10,0" Header="Сотрудники">
@@ -66,4 +67,5 @@
       </DataGrid.Columns>
     </DataGrid>
   </StackPanel>
+  </ScrollViewer>
 </UserControl>

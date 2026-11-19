@@ -60,6 +60,9 @@ var guide = new StyleGuideWindow { Width = size?.Width ?? 1000, Height = size?.H
 guide.Show();
 Save("99-obraztsy", guide);
 
+window.Close();
+guide.Close();
+Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
 File.Delete(dbPath);
 File.Delete(dbPath + ".schema");
 return;

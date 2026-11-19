@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.LogicalTree;
 using Avalonia.Headless.XUnit;
 using Avalonia.VisualTree;
 using Avers.Data;
@@ -11,6 +12,22 @@ namespace Avers.Desktop.Tests;
 
 public class ShellTests
 {
+    [AvaloniaFact]
+    public void ChangeLog_CanSwitchBackFromViewsToChanges()
+    {
+        using var app = new DesktopApp();
+        app.Go(AppModule.ChangeLog);
+        var radios = app.Window.GetVisualDescendants().OfType<RadioButton>().Where(r => r.IsEffectivelyVisible).ToArray();
+        var views = radios.Single(r => Equals(r.Content, "Просмотры данных абонентов"));
+        var changes = radios.Single(r => Equals(r.Content, "Изменения"));
+        views.IsChecked = true;
+        app.Pump();
+        Assert.True(app.Vm.ChangeLogScreen.ShowViews);
+        changes.IsChecked = true;
+        app.Pump();
+        Assert.False(app.Vm.ChangeLogScreen.ShowViews);
+    }
+
     [AvaloniaTheory]
     [InlineData("admin")]
     [InlineData("engineer")]
@@ -28,6 +45,11 @@ public class ShellTests
             Assert.Equal(module, app.Vm.Module);
             Assert.DoesNotContain("Макет", app.Vm.Status);
             Assert.NotNull(app.Window.CaptureRenderedFrame());
+            var unbound = app.Window.GetLogicalDescendants().OfType<Button>()
+                .Where(button => button.GetType() == typeof(Button) && button.IsEffectivelyVisible && button.Command is null)
+                .Select(button => $"{module}: {button.Content}")
+                .ToArray();
+            Assert.Empty(unbound);
         }
     }
 

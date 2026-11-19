@@ -42,7 +42,8 @@
     </Style>
   </UserControl.Styles>
 
-  <DockPanel>
+  <ScrollViewer>
+  <DockPanel MinHeight="740">
     <!-- Шапка: как в прежнем AversDisp — дата, оператор, действия -->
     <Border DockPanel.Dock="Top" Classes="toolbar">
       <StackPanel Orientation="Horizontal">
@@ -175,15 +176,13 @@
 
         <HeaderedContentControl Classes="group" Padding="0">
           <HeaderedContentControl.Header>
-            <DockPanel>
-              <TextBlock DockPanel.Dock="Right" Classes="hint" VerticalAlignment="Center" Text="{Binding TicketCountText}" />
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <TextBlock Text="Журнал заявок" VerticalAlignment="Center" />
-                <TextBlock Classes="hint" VerticalAlignment="Center" Text="{Binding TicketPeriodText}" />
-              </StackPanel>
-            </DockPanel>
+            <StackPanel Spacing="2">
+              <TextBlock Text="Журнал заявок" />
+              <TextBlock Classes="hint" TextWrapping="Wrap" Text="{Binding TicketPeriodText}" />
+              <TextBlock Classes="hint" TextWrapping="Wrap" Text="{Binding TicketCountText}" />
+            </StackPanel>
           </HeaderedContentControl.Header>
-          <DataGrid MinHeight="110" BorderThickness="0" ctl:GridTone.Enabled="True" ctl:GridTone.Selector="{Binding TicketTone}" ItemsSource="{Binding Tickets}" SelectedItem="{Binding SelectedTicket}" AutoGenerateColumns="False" IsReadOnly="True">
+          <DataGrid MaxHeight="360" MinHeight="180" BorderThickness="0" ctl:GridTone.Enabled="True" ctl:GridTone.Selector="{Binding TicketTone}" ItemsSource="{Binding Tickets}" SelectedItem="{Binding SelectedTicket}" AutoGenerateColumns="False" IsReadOnly="True">
             <DataGrid.Columns>
               <DataGridTextColumn Header="№" Binding="{Binding Number}" Width="60" />
               <DataGridTextColumn Header="Время" Binding="{Binding Time}" Width="64" />
@@ -300,4 +299,5 @@
       </ScrollViewer>
     </Grid>
   </DockPanel>
+  </ScrollViewer>
 </UserControl>

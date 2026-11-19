@@ -12,9 +12,10 @@
       <Setter Property="Padding" Value="8,2" />
     </Style>
   </UserControl.Styles>
-  <DockPanel>
+  <ScrollViewer>
+  <DockPanel MinHeight="740">
     <Border DockPanel.Dock="Top" Classes="toolbar">
-      <StackPanel Orientation="Horizontal">
+      <WrapPanel Orientation="Horizontal">
         <Button Content="Улицы…" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Phonebook}" />
         <Button Content="Данные по дому" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Anten}" />
         <Button Content="Карточка" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Subscriber}" />
@@ -26,7 +27,7 @@
         <RadioButton Content="Вн. коду" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.InnerCode}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.InnerCode}" />
         <RadioButton Content="Фамилии" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.Surname}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Surname}" />
         <RadioButton Content="Телефону" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.Phone}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Phone}" />
-      </StackPanel>
+      </WrapPanel>
     </Border>
     <ScrollViewer>
       <StackPanel Margin="16,0,16,2">
@@ -164,4 +165,5 @@
       </StackPanel>
     </ScrollViewer>
   </DockPanel>
+  </ScrollViewer>
 </UserControl>

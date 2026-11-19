@@ -5,10 +5,11 @@
              xmlns:d="using:Avers.Domain"
              x:Class="Avers.Desktop.Views.ContractView"
              x:DataType="vm:ContractsViewModel">
-  <DockPanel Margin="16,0,16,12">
+  <ScrollViewer>
+  <DockPanel Margin="16,0,16,12" MinHeight="740">
     <Border DockPanel.Dock="Top" Classes="card" Padding="12,6">
       <StackPanel>
-        <StackPanel Orientation="Horizontal">
+        <WrapPanel Orientation="Horizontal">
           <TextBlock Classes="label" Text="Улица" />
           <ComboBox Classes="cell" Width="190" Margin="0,0,12,0" ItemsSource="{Binding Shell.Streets}" SelectedItem="{Binding Shell.SelectedStreet}">
             <ComboBox.ItemTemplate>
@@ -30,8 +31,8 @@
           <CheckBox Margin="0,0,16,0" Content="Только действующие" IsChecked="{Binding OnlyActiveContracts}" />
           <TextBlock Classes="label" Text="Дата" />
           <TextBox Width="100" Text="{Binding Shell.WorkDateText, Mode=OneWay}" IsReadOnly="True" />
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+        </WrapPanel>
+        <WrapPanel Orientation="Horizontal" Margin="0,6,0,0">
           <TextBlock Classes="label" Text="Поиск" />
           <TextBox Classes="cell" Width="260" PlaceholderText="№ договора или фамилия" Text="{Binding ContractQuery}">
             <TextBox.KeyBindings>
@@ -41,8 +42,8 @@
           <Button Classes="primary" Margin="8,0,16,0" Content="Найти" Command="{Binding FindContractCommand}" />
           <Button Content="Реестр в Excel" Command="{Binding ExportContractsCommand}" />
           <Button Margin="8,0,0,0" Content="Новая квартира" IsVisible="{Binding Shell.CanEditCard}" Command="{Binding StartNewApartmentCommand}" />
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" Margin="0,6,0,0" Spacing="6" IsVisible="{Binding IsNewApartmentOpen}">
+        </WrapPanel>
+        <WrapPanel Orientation="Horizontal" Margin="0,6,0,0" IsVisible="{Binding IsNewApartmentOpen}">
           <TextBox Classes="cell" Width="56" PlaceholderText="Секц" Text="{Binding NewSection}" />
           <TextBox Classes="cell" Width="56" PlaceholderText="Кв" Text="{Binding NewApartment}" />
           <TextBox Classes="cell" Width="96" PlaceholderText="Лиц. счёт" Text="{Binding NewAccount}" />
@@ -55,7 +56,7 @@
           <TextBox Classes="cell" Width="80" PlaceholderText="₽ в мес." Text="{Binding NewTariff}" />
           <Button Classes="primary" Content="Добавить" Command="{Binding AddApartmentCommand}" />
           <Button Content="Отмена" Command="{Binding CancelNewApartmentCommand}" />
-        </StackPanel>
+        </WrapPanel>
       </StackPanel>
     </Border>
 
@@ -84,13 +85,13 @@
             <TextBlock Grid.Row="2" Classes="label" Text="Примечание" VerticalAlignment="Center" />
             <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="5" Classes="cell" Text="{Binding Shell.EditNotes}" />
           </Grid>
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
+          <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
             <Button Content="Новый договор" IsVisible="{Binding Shell.CanEditCard}" Command="{Binding Shell.NewContractCommand}" />
             <Button Content="Расторгнуть" IsVisible="{Binding Shell.CanEditCard}" Command="{Binding Shell.TerminateContractCommand}" />
             <Button Content="Бланк договора (Word)" Command="{Binding Shell.PrintContractCommand}" />
             <Button Classes="primary" Content="Сохранить" IsVisible="{Binding Shell.CanEditCard}" Command="{Binding Shell.SaveCardCommand}" />
             <Button Classes="link" Margin="0" Content="Карточка квартиры" Command="{Binding OpenCardCommand}" />
-          </StackPanel>
+          </WrapPanel>
         </StackPanel>
       </Grid>
     </Border>
@@ -98,7 +99,7 @@
     <TextBlock DockPanel.Dock="Bottom" Classes="hint" Margin="0,6,0,8"
                Text="Двойной щелчок по строке — карточка квартиры. Жёлтым — давно не было оплаты." />
 
-    <DataGrid x:Name="Registry" ctl:GridTone.Enabled="True" MinHeight="200" ItemsSource="{Binding ContractRows}" SelectedItem="{Binding SelectedContractRow}"
+    <DataGrid MaxHeight="360" x:Name="Registry" ctl:GridTone.Enabled="True" MinHeight="200" ItemsSource="{Binding ContractRows}" SelectedItem="{Binding SelectedContractRow}"
               AutoGenerateColumns="False" IsReadOnly="True">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Секц" Binding="{Binding Section}" Width="66" />
@@ -115,4 +116,5 @@
       </DataGrid.Columns>
     </DataGrid>
   </DockPanel>
+  </ScrollViewer>
 </UserControl>
