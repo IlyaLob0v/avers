@@ -13,8 +13,27 @@
   <Grid>
     <!-- Вход: белая карточка на тёмно-синем фоне -->
     <Panel IsVisible="{Binding ShowLogin}" Background="{StaticResource TopBar}">
-      <Border Classes="card" Width="420" Padding="0" Margin="0" HorizontalAlignment="Center" VerticalAlignment="Center">
-        <StackPanel>
+      <Border Classes="card" Padding="0" Margin="16" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Grid ColumnDefinitions="Auto,420">
+          <Border Width="270" Padding="16,20" Background="{StaticResource FaceLight}"
+                  BorderBrush="{StaticResource EdgeLight}" BorderThickness="0,0,1,0" IsVisible="{Binding ShowDemoAccounts}">
+            <StackPanel Spacing="12">
+              <TextBlock Text="Учебные рабочие места" FontSize="16" FontWeight="SemiBold" />
+              <ListBox ItemsSource="{x:Static vm:MainViewModel.DemoAccounts}" SelectedItem="{Binding SelectedDemoAccount}"
+                       MaxHeight="420" Background="Transparent" BorderThickness="0"
+                       AutomationProperties.Name="Выбор учебного пользователя">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:DemoAccount">
+                    <StackPanel Margin="4,5" Spacing="2">
+                      <TextBlock Text="{Binding Title}" FontWeight="Medium" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding Login}" FontSize="12" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </StackPanel>
+          </Border>
+        <StackPanel Grid.Column="1">
           <Border Padding="24,20,24,16" BorderBrush="{StaticResource EdgeLight}" BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal" Spacing="16">
               <Image Source="/Assets/logo-avers-servis.png" Height="72" />
@@ -28,29 +47,24 @@
             <TextBlock Classes="label" Text="Пользователь" />
             <TextBox Grid.Column="1" Classes="cell" MinHeight="28" Text="{Binding LoginName}" IsVisible="{Binding EnterLoginName}" />
             <ComboBox Grid.Column="1" Classes="cell" MinHeight="28" ItemsSource="{Binding Users}" SelectedItem="{Binding LoginUser}"
-                      IsVisible="{Binding !IsShared}">
+                      IsVisible="{Binding ShowLocalAccounts}">
               <ComboBox.ItemTemplate>
                 <DataTemplate x:DataType="d:AppUser">
                   <TextBlock Text="{Binding Login}" />
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
-            <ComboBox Grid.Column="1" Classes="cell" MinHeight="28" HorizontalAlignment="Stretch"
-                      ItemsSource="{x:Static vm:MainViewModel.DemoAccounts}" SelectedItem="{Binding SelectedDemoAccount}"
-                      IsVisible="{Binding ShowDemoAccounts}">
-              <ComboBox.ItemTemplate>
-                <DataTemplate x:DataType="vm:DemoAccount">
-                  <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                </DataTemplate>
-              </ComboBox.ItemTemplate>
-            </ComboBox>
+            <StackPanel Grid.Column="1" IsVisible="{Binding ShowDemoAccounts}" Spacing="2">
+              <TextBlock Text="{Binding SelectedDemoAccount.Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock Classes="hint" Text="{Binding SelectedDemoAccount.Login}" />
+            </StackPanel>
             <TextBlock Grid.Row="1" Classes="label" Text="Пароль" Margin="0,8,8,0" />
             <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" MinHeight="28" PasswordChar="•" Text="{Binding Password}" Margin="0,8,0,0" />
-            <TextBlock Grid.Row="2" Classes="label" Text="Подразделение" Margin="0,8,8,0" IsVisible="{Binding !IsShared}" />
-            <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" MinHeight="28" IsReadOnly="True" IsVisible="{Binding !IsShared}"
+            <TextBlock Grid.Row="2" Classes="label" Text="Подразделение" Margin="0,8,8,0" IsVisible="{Binding ShowLocalAccounts}" />
+            <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" MinHeight="28" IsReadOnly="True" IsVisible="{Binding ShowLocalAccounts}"
                      Text="{Binding LoginUser.Department}" Margin="0,8,0,0" />
           </Grid>
-          <Border Classes="inset" Margin="24,0" IsVisible="{Binding !IsShared}">
+          <Border Classes="inset" Margin="24,0" IsVisible="{Binding ShowLocalAccounts}">
             <StackPanel>
               <TextBlock TextWrapping="Wrap">
                 <Run Text="{Binding LoginUser.DisplayName, Mode=OneWay}" FontWeight="SemiBold" />
@@ -58,13 +72,13 @@
                 <Run Text="{Binding LoginRoleTitle, Mode=OneWay}" />
               </TextBlock>
               <TextBlock Classes="hint" Margin="0,4,0,0" TextWrapping="Wrap"
-                         Text="Права задаются при входе. Редактирование лицевого счёта — отдельное право. Режим администратора не через Alt+Backspace." />
+                         Text="Права задаются при входе. Редактирование лицевого счёта — отдельное право. " />
             </StackPanel>
           </Border>
           <Border Classes="inset" Margin="24,0" IsVisible="{Binding ShowDemoAccounts}">
             <StackPanel Spacing="6">
               <TextBlock Text="{Binding SelectedDemoAccount.Description}" TextWrapping="Wrap" />
-              <TextBlock Classes="hint" Text="Учебный сервер · пароль всех учебных пользователей: avers" TextWrapping="Wrap" />
+              <TextBlock Classes="hint" Text="Учебные данные · пароль всех учебных пользователей: avers" TextWrapping="Wrap" />
               <TextBlock Classes="hint" Text="После входа доступны разделы выбранной роли." TextWrapping="Wrap" />
             </StackPanel>
           </Border>
@@ -82,10 +96,12 @@
                     MinHeight="30" MinWidth="96" Padding="16,4" Margin="0" HorizontalContentAlignment="Center" />
           </StackPanel>
         </StackPanel>
+        </Grid>
       </Border>
       <TextBlock HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="16,12" FontSize="12"
                  Foreground="{StaticResource TopBarDim}">
-        <Run Text="{Binding StoreTitle, StringFormat='Аверс 2026 · {0}', Mode=OneWay}" />
+        <Run Text="{Binding ApplicationVersion, Mode=OneWay}" />
+        <Run Text="{Binding StoreTitle, StringFormat='· {0}', Mode=OneWay}" />
         <Run Text="{Binding WorkDateText, StringFormat='· рабочая дата {0}', Mode=OneWay}" />
       </TextBlock>
     </Panel>

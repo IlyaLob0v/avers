@@ -39,6 +39,8 @@ AppBuilder.Configure<App>()
 
 var dbPath = Path.Combine(Path.GetTempPath(), $"avers-shots-{Guid.NewGuid():N}.db");
 var vm = App.CreateMainViewModel(dbPath, DemoSeeder.WorkDate);
+vm.ShowDemoAccounts = true;
+vm.SelectedDemoAccount = MainViewModel.DemoAccounts.Single(a => a.Login == login);
 var window = new MainWindow { DataContext = vm, Width = size?.Width ?? 1280, Height = size?.Height ?? 840 };
 window.Show();
 

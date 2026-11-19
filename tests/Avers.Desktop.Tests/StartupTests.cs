@@ -80,7 +80,7 @@ public sealed class StartupTests : IDisposable
         var vm = Assert.IsType<ViewModels.MainViewModel>(window.DataContext);
         Assert.True(vm.IsShared);
         Assert.False(vm.EnterLoginName);
-        Assert.Contains(window.GetVisualDescendants().OfType<ComboBox>(),
+        Assert.Contains(window.GetVisualDescendants().OfType<ListBox>(),
             box => box.IsEffectivelyVisible && ReferenceEquals(box.ItemsSource, ViewModels.MainViewModel.DemoAccounts));
         vm.SelectedDemoAccount = ViewModels.MainViewModel.DemoAccounts.Single(a => a.Login == "engineer");
         Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(),

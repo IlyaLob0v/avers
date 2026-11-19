@@ -72,7 +72,11 @@ public partial class App : Application
     private static Window CreateMainWindow(StartupMode mode, LocalStore? demo = null)
     {
         if (mode.Demo)
-            return new MainWindow { DataContext = demo is null ? CreateMainViewModel() : CreateMainViewModel(demo) };
+        {
+            var demoVm = demo is null ? CreateMainViewModel() : CreateMainViewModel(demo);
+            demoVm.ShowDemoAccounts = true;
+            return new MainWindow { DataContext = demoVm };
+        }
         if (mode.Server is not { } server)
             return ProblemWindow(mode.Problem!);
 
