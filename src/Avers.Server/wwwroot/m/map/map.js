@@ -3,6 +3,7 @@
 "use strict";
 
 const Omsk = [73.37, 54.99];
+let addressesLoading = false;
 let map = null, mapHouses = [], canPlace = false, mapSession = 0;
 let mapLibraries;
 
@@ -117,6 +118,15 @@ async function createMap(session) {
     layout: { "text-field": ["get", "address"], "text-font": ["Medium"], "text-size": 12, "text-offset": [0, 1.1], "text-anchor": "top" },
     paint: { "text-color": "#0a2f5c", "text-halo-color": "#fff", "text-halo-width": 1.5 }
   });
+  map.on("click", onMapClick);
+  map.on("click", "houses", e => placing || showPopup(mapHouses.find(h => h.id === e.features[0].properties.id)));
+  map.on("mouseenter", "houses", () => map.getCanvas().style.cursor = "pointer");
+  map.on("mouseleave", "houses", () => map.getCanvas().style.cursor = "");
+  void loadBuildingAddresses(session);
+}
+
+async function loadBuildingAddresses(session) {
+  addressesLoading = true;
   try {
     const response = await fetch("/api/mobile/map/buildings", { headers: { Authorization: "Bearer " + token } });
     if (response.ok) {
@@ -131,12 +141,7 @@ async function createMap(session) {
       map.on("mouseleave", "address-buildings", () => map.getCanvas().style.cursor = "");
     }
   } catch { /* Контуры и номера базовой карты остаются доступны. */ }
-  if (session !== mapSession) return;
-
-  map.on("click", onMapClick);
-  map.on("click", "houses", e => placing || showPopup(mapHouses.find(h => h.id === e.features[0].properties.id)));
-  map.on("mouseenter", "houses", () => map.getCanvas().style.cursor = "pointer");
-  map.on("mouseleave", "houses", () => map.getCanvas().style.cursor = "");
+  finally { if (session === mapSession) addressesLoading = false; }
 }
 
 async function loadHouses(session) {
@@ -250,7 +255,8 @@ function showBuildingAddress(e) {
     textContent: address || (number ? "Дом № " + number : "Здание")
   }));
   box.append(Object.assign(document.createElement("div"), {
-    textContent: address ? "Адрес из OpenStreetMap" : "Полный адрес отсутствует в загруженных данных."
+    textContent: address ? "Адрес из OpenStreetMap" : addressesLoading
+      ? "Адреса зданий загружаются… Нажмите ещё раз." : "Полный адрес отсутствует в загруженных данных."
   }));
   popup?.remove();
   popup = new maplibregl.Popup({ maxWidth: "280px" }).setLngLat(e.lngLat).setDOMContent(box).addTo(map);
