@@ -18,13 +18,14 @@ public sealed partial class MainViewModel : ObservableObject
     private List<House> _houses = [];
     /// <summary>Абоненты выбранного дома: грузятся при выборе дома, вся база в память не читается.</summary>
     private List<Subscriber> _subscribers = [];
+    private int _houseSubscribersVersion;
+    [ObservableProperty] private bool _isLoadingSubscriber;
     private bool _seesSubscribers;
     private Dictionary<int, decimal> _debtByHouse = [];
     /// <summary>Видит ли сотрудник заявки (модуль «Заявки»): только тогда программа их запрашивает.</summary>
     private bool _seesTickets;
     private int? _houseTicketsOf;
     private int _houseTicketsVersion;
-    private List<IntercomTicket> _intercomTickets = [];
     private bool _holdRefresh;
     private int? _intercomHouseId;
 
@@ -41,6 +42,7 @@ public sealed partial class MainViewModel : ObservableObject
         ReportsScreen = new ReportsViewModel(this);
         ReceiptsScreen = new ReceiptsViewModel(this);
         LegalScreen = new LegalViewModel(this);
+        ArchiveScreen = new SubscriberArchiveViewModel(this);
         ContractsScreen = new ContractsViewModel(this);
         TicketsScreen = new TicketsViewModel(this);
     }
@@ -49,7 +51,6 @@ public sealed partial class MainViewModel : ObservableObject
     internal DateOnly Today => _today;
     internal IReadOnlyList<House> Houses => _houses;
     internal IReadOnlyList<Subscriber> HouseSubscribers => _subscribers;
-    internal IReadOnlyList<IntercomTicket> AllIntercomTickets => _intercomTickets;
     internal bool SeesTickets => _seesTickets;
     internal IReadOnlyDictionary<int, decimal> DebtByHouse => _debtByHouse;
 
@@ -62,6 +63,7 @@ public sealed partial class MainViewModel : ObservableObject
     public ReportsViewModel ReportsScreen { get; }
     public ReceiptsViewModel ReceiptsScreen { get; }
     public LegalViewModel LegalScreen { get; }
+    public SubscriberArchiveViewModel ArchiveScreen { get; }
     public ContractsViewModel ContractsScreen { get; }
     public TicketsViewModel TicketsScreen { get; }
 
@@ -179,7 +181,6 @@ public sealed partial class MainViewModel : ObservableObject
             Streets.Add(s);
 
         _houses = data.Houses;
-        _intercomTickets = data.IntercomTickets;
         // Заявок в снимке нет: уже загруженные строки только переставляем на новые дома.
         LinkTickets(TicketsScreen.Tickets);
         LinkTickets(HouseTickets);
@@ -291,21 +292,27 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Загружает абонентов выбранного дома и выбирает квартиру: нужную, учебную стартовую или первую.</summary>
     private async Task ShowHouseAsync(int? subscriberId)
     {
+        var version = ++_houseSubscribersVersion;
         var house = SelectedHouse;
+        IsLoadingSubscriber = house is not null && _seesSubscribers;
         List<Subscriber> list = [];
         if (house is not null && _seesSubscribers)
         {
             try
             {
-                list = await _store.LoadHouseAsync(house);
+                list = await _store.LoadHouseAsync(house, subscriberId);
             }
             catch (StoreException e)
             {
-                Status = e.Message;
+                if (version == _houseSubscribersVersion) Status = e.Message;
+            }
+            finally
+            {
+                if (version == _houseSubscribersVersion) IsLoadingSubscriber = false;
             }
         }
         // Пока грузили, сотрудник мог выбрать другой дом.
-        if (SelectedHouse != house) return;
+        if (SelectedHouse != house || version != _houseSubscribersVersion) return;
 
         _subscribers = list;
         _holdRefresh = true;
@@ -333,23 +340,28 @@ public sealed partial class MainViewModel : ObservableObject
         await ShowHouseAsync(subscriberId);
     }
 
-    /// <summary>Должники и долги по домам: сервер считает их по всей базе, когда открывают юристов или отчёты.</summary>
+    /// <summary>Страница должников с текущим отбором.</summary>
     internal async Task LoadDebtsAsync()
     {
         if (!_seesSubscribers) return;
-        Debts debts;
+        await LegalScreen.LoadPageAsync();
+    }
+
+    private async Task LoadDebtTotalsAsync()
+    {
+        if (!_seesSubscribers) return;
+        var user = User;
         try
         {
-            debts = await _store.LoadDebtsAsync();
+            var totals = await _store.LoadDebtTotalsAsync();
+            if (User != user) return;
+            _debtByHouse = totals;
         }
         catch (StoreException e)
         {
             Status = e.Message;
             return;
         }
-        var houses = _houses.ToDictionary(h => h.Id);
-        LegalScreen.ShowDebtors(debts.Debtors.Select(d => new DebtorRow(d, houses[d.HouseId])));
-        _debtByHouse = debts.ByHouse;
         ReportsScreen.RefreshReport();
     }
 
@@ -388,10 +400,15 @@ public sealed partial class MainViewModel : ObservableObject
             _ = ChangeLogScreen.LoadAsync();
         if (value == AppModule.Scheme)
             _ = SchemeScreen.ShowSchemeAsync();
-        if (value is AppModule.Legal or AppModule.Claim or AppModule.Reports)
+        if (value == AppModule.Domofo)
+            _ = IntercomScreen.LoadTicketsAsync();
+        if (value is AppModule.Legal or AppModule.Claim)
             _ = LoadDebtsAsync();
         if (value == AppModule.Reports)
+        {
+            _ = LoadDebtTotalsAsync();
             _ = ReportsScreen.LoadTicketCountsAsync();
+        }
     }
 
     partial void OnSelectedStreetChanged(Street? value)
@@ -421,7 +438,12 @@ public sealed partial class MainViewModel : ObservableObject
         PrintWithPayDate = value?.PrintAccountWithPayDate ?? true;
         PaymentAmount = "";
         PaymentStatus = "";
-        RefreshDerived();
+        if (!_holdRefresh)
+        {
+            if (value is null) RefreshDerived();
+            else if (value.HouseId != SelectedHouse?.Id) _ = ShowSubscriberAsync(value.Id, value.HouseId);
+            else _ = ShowHouseAsync(value.Id);
+        }
     }
 
 
@@ -448,6 +470,7 @@ public sealed partial class MainViewModel : ObservableObject
         TicketsScreen.RefreshTickets();
         _ = LoadHouseTicketsAsync();
         RebuildPayments();
+        ArchiveScreen.SelectSubscriber(SelectedSubscriber?.Id);
         ReceiptsScreen.RebuildReceiptPeriods();
 
         var houseChanged = _intercomHouseId != SelectedHouse?.Id;
@@ -529,11 +552,15 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Logout()
     {
+        ++_houseSubscribersVersion;
+        IsLoadingSubscriber = false;
         SearchMatches = [];
         SelectedSearchMatch = null;
         _store.SignOut();
         User = null;
-        LegalScreen.Debtors.Clear();
+        LegalScreen.Clear();
+        IntercomScreen.ClearTickets();
+        ArchiveScreen.SelectSubscriber(null);
         _debtByHouse = [];
         _history.Clear();
         BackCommand.NotifyCanExecuteChanged();
@@ -621,6 +648,7 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task RecordPayment()
     {
+        if (IsLoadingSubscriber) return;
         if (HasSearchMatches) return;
         if (SelectedSubscriber is not { } subscriber || User is not { } user) return;
         if (user is { CanEditAccount: false, Role: not UserRole.AdsHead and not UserRole.Administrator })

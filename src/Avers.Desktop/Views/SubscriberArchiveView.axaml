@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Avers.Desktop.ViewModels"
+             x:Class="Avers.Desktop.Views.SubscriberArchiveView"
+             x:DataType="vm:SubscriberArchiveViewModel">
+  <Expander Header="Исходные операции JACK" IsExpanded="{Binding IsExpanded}" HorizontalAlignment="Stretch" Margin="0,8">
+    <StackPanel Spacing="8">
+      <TextBlock Classes="hint" TextWrapping="Wrap"
+                 Text="Суммы и даты показаны как в JACK. Суммы за периоды до 1998 года не пересчитываются. Это архив для сверки, он не меняет текущий долг." />
+      <WrapPanel Orientation="Horizontal">
+        <TextBlock Text="Расчётный год" VerticalAlignment="Center" Margin="0,0,8,0" />
+        <TextBox Classes="cell" Width="100" MaxLength="4" Text="{Binding YearText}" PlaceholderText="Все годы" />
+        <Button Content="Показать" Command="{Binding ReloadCommand}" IsEnabled="{Binding !IsLoading}" />
+        <Button Content="Назад" Command="{Binding PreviousCommand}" />
+        <Button Content="Далее" Command="{Binding NextCommand}" />
+      </WrapPanel>
+      <TextBlock Classes="hint" Text="{Binding Status}" TextWrapping="Wrap" />
+      <DataGrid Height="240" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="True">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Операция JACK" Binding="{Binding Id, Mode=OneWay}" Width="140" />
+          <DataGridTextColumn Header="Расчётный период" Binding="{Binding Period, Mode=OneWay, StringFormat='{}{0:MM.yyyy}'}" Width="140" />
+          <DataGridTextColumn Header="Дата поступления" Binding="{Binding PaidAt, Mode=OneWay, StringFormat='{}{0:dd.MM.yyyy HH:mm}'}" Width="170" />
+          <DataGridTextColumn Header="Исходная сумма" Binding="{Binding Amount, Mode=OneWay, StringFormat='{}{0:N2}'}" Width="140" />
+          <DataGridTextColumn Header="Источник" Binding="{Binding Source, Mode=OneWay}" Width="*" />
+          <DataGridTextColumn Header="Кто внёс" Binding="{Binding RecordedBy, Mode=OneWay}" Width="150" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </StackPanel>
+  </Expander>
+</UserControl>

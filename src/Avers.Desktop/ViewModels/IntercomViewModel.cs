@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Avers.Data;
+using Avers.Desktop.Data;
 using Avers.Desktop.Printing;
 using Avers.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -13,6 +14,8 @@ namespace Avers.Desktop.ViewModels;
 /// </summary>
 public sealed partial class IntercomViewModel(MainViewModel shell) : ObservableObject
 {
+    private int _requestVersion;
+    private int? _loadedHouseId;
     /// <summary>Улицы, дома и радиомеханики — общие для всей программы.</summary>
     public MainViewModel Shell => shell;
 
@@ -42,13 +45,46 @@ public sealed partial class IntercomViewModel(MainViewModel shell) : ObservableO
         var house = shell.SelectedHouse;
         if (houseChanged)
         {
-            IntercomTickets.Clear();
-            if (house is not null)
-                foreach (var t in shell.AllIntercomTickets.Where(x => x.HouseId == house.Id))
-                    IntercomTickets.Add(t);
+            ClearTickets();
+            if (shell.Module == AppModule.Domofo) _ = LoadTicketsAsync();
         }
         Intercom = house?.Intercoms.FirstOrDefault(i => i.Entrance == Intercom?.Entrance) ?? house?.Intercoms.FirstOrDefault();
         OnPropertyChanged(nameof(Intercom));
+    }
+
+    internal void ClearTickets()
+    {
+        ++_requestVersion;
+        _loadedHouseId = null;
+        IntercomTickets.Clear();
+        SelectedIntercomTicket = null;
+    }
+
+    internal async Task<bool> LoadTicketsAsync(bool force = false)
+    {
+        if (!shell.SeesTickets || shell.User is null || shell.SelectedHouse is not { } house)
+        {
+            ClearTickets();
+            return true;
+        }
+        if (!force && _loadedHouseId == house.Id) return true;
+        var version = ++_requestVersion;
+        var keep = SelectedIntercomTicket?.Id;
+        try
+        {
+            var rows = await shell.Store.LoadIntercomTicketsAsync(house.Id);
+            if (version != _requestVersion || shell.SelectedHouse?.Id != house.Id) return false;
+            _loadedHouseId = house.Id;
+            IntercomTickets.Clear();
+            foreach (var row in rows) IntercomTickets.Add(row);
+            SelectedIntercomTicket = IntercomTickets.FirstOrDefault(t => t.Id == keep);
+            return true;
+        }
+        catch (StoreException e)
+        {
+            if (version == _requestVersion) shell.Status = e.Message;
+            return false;
+        }
     }
 
     partial void OnIntercomChanged(IntercomPanel? value)
@@ -99,6 +135,7 @@ public sealed partial class IntercomViewModel(MainViewModel shell) : ObservableO
         {
             await shell.Store.AddIntercomTicketAsync(house.Id, ticket);
             await shell.ReloadAsync();
+            await LoadTicketsAsync(force: true);
             IntercomFault = "";
             shell.Status = $"Заявка по домофону принята: подъезд {entrance}.";
         });
@@ -112,14 +149,16 @@ public sealed partial class IntercomViewModel(MainViewModel shell) : ObservableO
         {
             await shell.Store.CloseIntercomTicketAsync(ticket.Id);
             await shell.ReloadAsync();
+            await LoadTicketsAsync(force: true);
             shell.Status = $"Заявка от {ticket.Date:dd.MM.yyyy} выполнена.";
         });
     }
 
     [RelayCommand]
-    private void PrintIntercom()
+    private async Task PrintIntercom()
     {
         if (shell.SelectedHouse is not { } house) return;
+        if (!await LoadTicketsAsync(force: true) || shell.SelectedHouse?.Id != house.Id) return;
         var dir = AversPaths.FilesDirectory;
         Directory.CreateDirectory(dir);
         var path = Path.Combine(dir, $"домофон-{house.Id}.pdf");

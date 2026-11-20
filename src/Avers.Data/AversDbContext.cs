@@ -15,6 +15,7 @@ public sealed class AversDbContext : DbContext
     public DbSet<PprEntry> PprEntries => Set<PprEntry>();
     public DbSet<Subscriber> Subscribers => Set<Subscriber>();
     public DbSet<YearPayment> Payments => Set<YearPayment>();
+    public DbSet<PaymentYearTotal> PaymentYearTotals => Set<PaymentYearTotal>();
     public DbSet<PaymentOperation> PaymentOperations => Set<PaymentOperation>();
     public DbSet<JackPayment> JackPayments => Set<JackPayment>();
     public DbSet<WorkTicket> Tickets => Set<WorkTicket>();
@@ -32,6 +33,8 @@ public sealed class AversDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder model)
     {
+        model.HasDbFunction(typeof(SubscriberSearch).GetMethod(nameof(SubscriberSearch.PhoneDigits))!)
+            .HasName("avers_phone_digits").IsNullable(false);
         model.Entity<Organization>(e =>
         {
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
@@ -102,6 +105,16 @@ public sealed class AversDbContext : DbContext
             e.Property(x => x.PayerName).HasMaxLength(250);
             e.Property(x => x.ImportedFromJack).HasDefaultValue(false);
             e.HasIndex(x => new { x.SubscriberId, x.Year, x.Month }).IsUnique();
+            e.HasIndex(x => new { x.Year, x.Month });
+            e.HasIndex(x => x.PaidAt);
+        });
+
+        model.Entity<PaymentYearTotal>(e =>
+        {
+            e.HasKey(x => new { x.SubscriberId, x.Year });
+            e.Property(x => x.Charged).HasPrecision(18, 2);
+            e.Property(x => x.Paid).HasPrecision(18, 2);
+            e.HasOne<Subscriber>().WithMany().HasForeignKey(x => x.SubscriberId).OnDelete(DeleteBehavior.Cascade);
         });
 
         model.Entity<JackPayment>(e =>

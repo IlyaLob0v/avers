@@ -238,12 +238,12 @@ public sealed class ServerModeTests : IAsyncDisposable
     {
         var (store, _) = await Connect("admin");
 
-        var debts = await store.LoadDebtsAsync();
+        var debts = await store.LoadDebtsAsync(cancellationToken: TestContext.Current.CancellationToken);
         var expected = _server.WithDb(db => Debts.Load(db, store.Today));
 
         Assert.NotEmpty(debts.Debtors);
         Assert.Equal(Serialize(expected.Debtors), Serialize(debts.Debtors));
-        Assert.Equal(expected.ByHouse, debts.ByHouse);
+        Assert.Equal(_server.WithDb(db => Debts.LoadHouseTotals(db, store.Today)), await store.LoadDebtTotalsAsync());
     }
 
     [Fact]
@@ -257,6 +257,59 @@ public sealed class ServerModeTests : IAsyncDisposable
 
         Assert.NotEmpty(report.Shipment);
         Assert.Equal(Serialize(expected), Serialize(report));
+    }
+
+    [Fact]
+    public async Task Debtors_ExportIncludesAllFilteredPages()
+    {
+        var vm = await SignIn("lawyer");
+        _server.WithDb(db =>
+        {
+            var house = db.Houses.First();
+            for (var i = 1; i <= 125; i++)
+                db.Subscribers.Add(new Subscriber { HouseId = house.Id, Account = $"EXPORT-{i}", LastName = "Проверка выгрузки" });
+            db.SaveChanges();
+            return 0;
+        });
+        vm.GoCommand.Execute(AppModule.Legal);
+        var screen = vm.LegalScreen;
+        await screen.RefreshCommand.ExecuteAsync(null);
+        Assert.Equal(Debts.PageSize, screen.Debtors.Count);
+        await screen.NextPageCommand.ExecuteAsync(null);
+        Assert.Contains("101–", screen.DebtorsCountText);
+        string? opened = null;
+        vm.OpenFile = path => opened = path;
+        await screen.ExportDebtorsCommand.ExecuteAsync(null);
+        using var book = new ClosedXML.Excel.XLWorkbook(opened!);
+        var accounts = book.Worksheet(1).Column(3).CellsUsed().Select(c => c.GetString()).ToList();
+        Assert.All(Enumerable.Range(1, 125), i => Assert.Contains($"EXPORT-{i}", accounts));
+    }
+
+    [Fact]
+    public async Task OriginalArchive_IsReadThroughServerAndClearedOnLogout()
+    {
+        var vm = await SignIn("admin");
+        var id = vm.SelectedSubscriber!.Id;
+        _server.WithDb(db =>
+        {
+            db.JackPayments.Add(new JackPayment
+            {
+                Id = 3_000_000_000,
+                SubscriberId = id,
+                Period = new DateTime(1996, 1, 1),
+                PaidAt = new DateTime(1996, 2, 3),
+                Amount = 15000,
+                Source = "Касса"
+            });
+            db.SaveChanges();
+            return 0;
+        });
+        vm.ArchiveScreen.IsExpanded = true;
+        await vm.ArchiveScreen.ReloadCommand.ExecuteAsync(null);
+        Assert.Equal(15000, Assert.Single(vm.ArchiveScreen.Rows).Amount);
+        vm.LogoutCommand.Execute(null);
+        Assert.Empty(vm.ArchiveScreen.Rows);
+        Assert.False(vm.ArchiveScreen.IsExpanded);
     }
 
     [Fact]

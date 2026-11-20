@@ -711,7 +711,7 @@ public class ShellTests
         screen.CaseFilter = "Любые";
         screen.AddressFilter = street.ToLower();
         Assert.All(screen.Debtors, d => Assert.Contains(street, d.Address));
-        Assert.Equal($"Показано {screen.Debtors.Count} из {all.Count}", screen.DebtorsCountText);
+        Assert.Equal($"1–{screen.Debtors.Count} из {screen.Debtors.Count}", screen.DebtorsCountText);
 
         screen.ExportDebtorsCommand.Execute(null);
         using var book = new ClosedXML.Excel.XLWorkbook(opened!);

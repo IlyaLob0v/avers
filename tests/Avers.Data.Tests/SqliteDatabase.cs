@@ -17,6 +17,7 @@ public sealed class SqliteDatabase : IDisposable
     {
         _connection = new SqliteConnection("Data Source=:memory:");
         _connection.Open();
+        SqliteUnicodeInterceptor.Register(_connection);
         _options = new DbContextOptionsBuilder<AversDbContext>().UseSqlite(_connection).Options;
         using var db = CreateContext();
         db.Database.EnsureCreated();

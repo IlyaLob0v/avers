@@ -204,7 +204,7 @@
         </StackPanel>
       </Border>
 
-      <Panel>
+      <Panel IsEnabled="{Binding !IsLoadingSubscriber}">
         <views:DesktopView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Desktop}}" />
         <views:AbonView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Abon}}" />
         <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Disp}}">
@@ -253,5 +253,7 @@
         </Panel>
       </Panel>
     </DockPanel>
+    <ProgressBar IsVisible="{Binding IsLoadingSubscriber}" IsIndeterminate="True" Height="3" VerticalAlignment="Top"
+                 AutomationProperties.Name="Загрузка данных абонента" />
   </Grid>
 </Window>

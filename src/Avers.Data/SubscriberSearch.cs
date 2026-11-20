@@ -1,4 +1,5 @@
 using Avers.Domain;
+using Microsoft.EntityFrameworkCore;
 
 namespace Avers.Data;
 
@@ -10,6 +11,8 @@ public static class SubscriberSearch
 {
     /// <summary>Меньше цифр — слишком много совпадений.</summary>
     public const int MinPhoneDigits = 5;
+
+    public static string PhoneDigits(string? phone) => new((phone ?? "").Where(char.IsAsciiDigit).ToArray());
 
     /// <summary>Отбор абонентов; <c>Error</c> — что не так с запросом (поле и текст для сотрудника), тогда отбора нет.</summary>
     public static (IQueryable<Subscriber>? Query, string Field, string Error) Where(
@@ -50,8 +53,8 @@ public static class SubscriberSearch
                     return (null, "q", $"Введите не меньше {MinPhoneDigits} цифр телефона.");
                 if (digits.Length > 10)
                     digits = digits[^10..];
-                return (query.Where(s => s.Phone.Replace("-", "").Replace(" ", "").Replace("(", "").Replace(")", "").Replace("+", "")
-                    .Contains(digits)), "", "");
+                var pattern = $"%{digits}%";
+                return (query.Where(s => EF.Functions.Like(PhoneDigits(s.Phone), pattern)), "", "");
             default:
                 if (text.Length == 0)
                     return (null, "q", "Введите, что искать.");

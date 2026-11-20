@@ -24,7 +24,8 @@ jobs:
         run: dotnet build Avers.sln -c Release --no-restore
       - name: Test
         if: hashFiles('Avers.sln') != ''
-        run: dotnet test Avers.sln -c Release --no-build
+        # Ограничиваем одновременную нагрузку тестовых процессов; проверяются все проекты.
+        run: dotnet test Avers.sln -c Release --no-build -m:1 --logger "console;verbosity=normal"
       - name: Format check
         if: hashFiles('Avers.sln') != ''
         run: dotnet format Avers.sln --verify-no-changes

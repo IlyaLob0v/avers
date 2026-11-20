@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Avers.Data;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Avers.Desktop;
@@ -39,9 +40,21 @@ public static class DemoDatabase
         var known = File.Exists(marker) ? File.ReadAllText(marker).Trim() : null;
 
         if (File.Exists(databaseFile) && known != schema)
+        {
+            var backup = databaseFile + ".backup-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N") + ".db";
+            using (var source = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = databaseFile, Mode = SqliteOpenMode.ReadOnly, Pooling = false }.ToString()))
+            using (var destination = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = backup, Pooling = false }.ToString()))
+            {
+                source.Open();
+                destination.Open();
+                source.BackupDatabase(destination);
+            }
+            db.Database.CloseConnection();
             db.Database.EnsureDeleted();
+        }
 
         db.Database.EnsureCreated();
-        File.WriteAllText(marker, schema);
+        File.WriteAllText(marker + ".tmp", schema);
+        File.Move(marker + ".tmp", marker, overwrite: true);
     }
 }

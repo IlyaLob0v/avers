@@ -98,6 +98,30 @@ namespace Avers.Data.Migrations
                     b.ToTable("PaymentOperations");
                 });
 
+            modelBuilder.Entity("Avers.Data.PaymentYearTotal", b =>
+                {
+                    b.Property<int>("SubscriberId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Charged")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("Paid")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<int>("Unpaid")
+                        .HasColumnType("integer");
+
+                    b.HasKey("SubscriberId", "Year");
+
+                    b.ToTable("PaymentYearTotals");
+                });
+
             modelBuilder.Entity("Avers.Domain.AccessLogEntry", b =>
                 {
                     b.Property<int>("Id")
@@ -1031,10 +1055,23 @@ namespace Avers.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("PaidAt");
+
+                    b.HasIndex("Year", "Month");
+
                     b.HasIndex("SubscriberId", "Year", "Month")
                         .IsUnique();
 
                     b.ToTable("Payments");
+                });
+
+            modelBuilder.Entity("Avers.Data.PaymentYearTotal", b =>
+                {
+                    b.HasOne("Avers.Domain.Subscriber", null)
+                        .WithMany()
+                        .HasForeignKey("SubscriberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Avers.Domain.CourtCase", b =>

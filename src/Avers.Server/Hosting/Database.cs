@@ -44,7 +44,12 @@ public static class DatabaseSetup
         await using var scope = app.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AversDbContext>();
         if (options.Provider == DatabaseProvider.Postgres && options.Migrate)
-            await db.Database.MigrateAsync();
+        {
+            var timeout = db.Database.GetCommandTimeout();
+            db.Database.SetCommandTimeout(TimeSpan.FromMinutes(30));
+            try { await db.Database.MigrateAsync(); }
+            finally { db.Database.SetCommandTimeout(timeout); }
+        }
         else if (options.EnsureCreated)
             await db.Database.EnsureCreatedAsync();
         if (StartupWarning(options) is { } warning)

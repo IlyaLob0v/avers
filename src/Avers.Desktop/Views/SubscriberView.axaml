@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Avers.Desktop.ViewModels"
              xmlns:d="using:Avers.Domain"
+             xmlns:views="using:Avers.Desktop.Views"
              x:Class="Avers.Desktop.Views.SubscriberView"
              x:DataType="vm:MainViewModel">
   <UserControl.Styles>
@@ -170,6 +171,8 @@
           </DataGrid.Columns>
         </DataGrid>
       </HeaderedContentControl>
+
+      <views:SubscriberArchiveView DataContext="{Binding ArchiveScreen}" />
 
       <!-- Порог подсветки: администратор и начальник АДС -->
       <Border Classes="card" IsVisible="{Binding CanEditSettings}">

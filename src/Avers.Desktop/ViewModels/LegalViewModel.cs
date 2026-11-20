@@ -34,7 +34,11 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
         _ = LoadDocumentsAsync();
     }
 
-    private List<DebtorRow> _allDebtors = [];
+    private int _offset;
+    private int _totalCount;
+    private int _requestVersion;
+    private CancellationTokenSource? _pageCancellation;
+    [ObservableProperty] private bool _isLoadingDebtors;
 
     public IReadOnlyList<string> CaseFilters { get; } = ["Любые", "Есть приказ", "Нет приказа"];
     public IReadOnlyList<string> ClientFilters { get; } = ["Все", "Физлица", "Юрлица"];
@@ -51,33 +55,110 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
     partial void OnCaseFilterChanged(string value) => FilterDebtors();
     partial void OnClientFilterChanged(string value) => FilterDebtors();
 
-    public string DebtorsCountText => Debtors.Count == _allDebtors.Count
-        ? $"Должников: {Debtors.Count}"
-        : $"Показано {Debtors.Count} из {_allDebtors.Count}";
+    public string DebtorsCountText => IsLoadingDebtors ? "Загрузка…" : _totalCount == 0
+        ? "Должников: 0" : $"{_offset + 1}–{_offset + Debtors.Count} из {_totalCount}";
+    private bool CanPreviousPage => !IsLoadingDebtors && _offset > 0;
+    private bool CanNextPage => !IsLoadingDebtors && _offset + Debtors.Count < _totalCount;
 
-    /// <summary>Новый список должников; выбранный остаётся выбранным, если он в списке.</summary>
-    internal void ShowDebtors(IEnumerable<DebtorRow> rows)
+    private DebtorFilter CurrentFilter => new(
+        decimal.TryParse(DebtFrom.Trim(), System.Globalization.NumberStyles.Number, MainViewModel.Ru, out var sum) ? Math.Max(0, sum) : 0,
+        int.TryParse(UnpaidFrom.Trim(), out var months) ? Math.Max(0, months) : 0,
+        AddressFilter.Trim(), CaseFilter switch { "Есть приказ" => true, "Нет приказа" => false, _ => null },
+        ClientFilter switch { "Физлица" => false, "Юрлица" => true, _ => null });
+
+    partial void OnIsLoadingDebtorsChanged(bool value) => NotifyPaging();
+
+    private void NotifyPaging()
     {
-        _allDebtors = rows.ToList();
-        FilterDebtors();
+        OnPropertyChanged(nameof(DebtorsCountText));
+        PreviousPageCommand.NotifyCanExecuteChanged();
+        NextPageCommand.NotifyCanExecuteChanged();
     }
 
-    /// <summary>Отбор юристов: долг от суммы, неоплачено от месяцев, слова адреса, есть ли судебный приказ, физлицо или юрлицо. Пустое поле — не важно.</summary>
-    private void FilterDebtors()
+    private void FilterDebtors() => _ = ReloadFilteredAsync();
+
+    private async Task ReloadFilteredAsync()
     {
-        var debtFrom = decimal.TryParse(DebtFrom.Trim(), System.Globalization.NumberStyles.Number, MainViewModel.Ru, out var sum) ? sum : 0;
-        var unpaidFrom = int.TryParse(UnpaidFrom.Trim(), out var months) ? months : 0;
-        var words = AddressFilter.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var version = ++_requestVersion;
+        _pageCancellation?.Cancel();
+        if (shell.User is null) return;
+        IsLoadingDebtors = true;
+        if (shell.Store.IsShared) await Task.Delay(250);
+        if (version == _requestVersion) await LoadPageAsync();
+    }
+
+    internal async Task LoadPageAsync(int offset = 0)
+    {
+        var version = ++_requestVersion;
+        _pageCancellation?.Cancel();
+        var cancellation = new CancellationTokenSource();
+        _pageCancellation = cancellation;
         var keep = SelectedDebtor?.SubscriberId;
+        IsLoadingDebtors = true;
+        try
+        {
+            var page = await shell.Store.LoadDebtsAsync(CurrentFilter, offset, cancellationToken: cancellation.Token);
+            if (version != _requestVersion) return;
+            var houses = shell.Houses.ToDictionary(h => h.Id);
+            _offset = page.Offset;
+            _totalCount = page.TotalCount;
+            Debtors.Clear();
+            foreach (var d in page.Debtors) Debtors.Add(new DebtorRow(d, houses[d.HouseId]));
+            SelectedDebtor = Debtors.FirstOrDefault(d => d.SubscriberId == keep) ?? Debtors.FirstOrDefault();
+        }
+        catch (StoreException e)
+        {
+            if (version == _requestVersion) shell.Status = e.Message;
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
+        finally
+        {
+            if (version == _requestVersion)
+            {
+                IsLoadingDebtors = false;
+                NotifyPaging();
+            }
+            if (_pageCancellation == cancellation) _pageCancellation = null;
+            cancellation.Dispose();
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanPreviousPage))]
+    private Task PreviousPage() => LoadPageAsync(_offset - Debts.PageSize);
+
+    [RelayCommand(CanExecute = nameof(CanNextPage))]
+    private Task NextPage() => LoadPageAsync(_offset + Debts.PageSize);
+
+    [RelayCommand]
+    private Task Refresh() => LoadPageAsync(_offset);
+
+    internal void Clear()
+    {
+        ++_requestVersion;
+        _pageCancellation?.Cancel();
+        _offset = _totalCount = 0;
         Debtors.Clear();
-        foreach (var d in _allDebtors.Where(d =>
-                     d.Debt >= debtFrom && d.Unpaid >= unpaidFrom &&
-                     words.All(w => d.Address.Contains(w, StringComparison.CurrentCultureIgnoreCase)) &&
-                     CaseFilter switch { "Есть приказ" => d.CourtCase is not null, "Нет приказа" => d.CourtCase is null, _ => true } &&
-                     ClientFilter switch { "Физлица" => !d.IsLegalEntity, "Юрлица" => d.IsLegalEntity, _ => true }))
-            Debtors.Add(d);
-        SelectedDebtor = Debtors.FirstOrDefault(d => d.SubscriberId == keep) ?? Debtors.FirstOrDefault();
-        OnPropertyChanged(nameof(DebtorsCountText));
+        SelectedDebtor = null;
+        IsLoadingDebtors = false;
+        NotifyPaging();
+    }
+
+    private async Task<List<DebtorRow>?> LoadAllDebtorsAsync()
+    {
+        var user = shell.User;
+        if (user is null) return null;
+        try
+        {
+            var result = await shell.Store.LoadDebtsAsync(CurrentFilter, all: true);
+            if (shell.User != user) return null;
+            var houses = shell.Houses.ToDictionary(h => h.Id);
+            return result.Debtors.Select(d => new DebtorRow(d, houses[d.HouseId])).ToList();
+        }
+        catch (StoreException e)
+        {
+            shell.Status = e.Message;
+            return null;
+        }
     }
 
     internal void BuildClaim()
@@ -213,9 +294,10 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
     /// Без тех, по кому уже есть судебный приказ, и без расторгнутых договоров: им текст выбирают по одному.
     /// </summary>
     [RelayCommand]
-    private void PrintAllClaims()
+    private async Task PrintAllClaims()
     {
-        var rows = Debtors.Where(d => d.Unpaid >= Billing.ClaimUnpaidMonths && d.Debt > 0 && d.CourtCase is null && d.ContractTerminated is null).ToList();
+        if (await LoadAllDebtorsAsync() is not { } all) return;
+        var rows = all.Where(d => d.Unpaid >= Billing.ClaimUnpaidMonths && d.Debt > 0 && d.CourtCase is null && d.ContractTerminated is null).ToList();
         if (rows.Count == 0) { shell.Status = $"Нет должников без судебного приказа с долгом от {Billing.ClaimUnpaidMonths} мес."; return; }
         shell.OpenWord(MainViewModel.PrintPath("уведомления", shell.Today.ToString("yyyy-MM-dd"), ".docx"), $"уведомлений: {rows.Count}",
             path => WordForms.Claims(rows.Select(d =>
@@ -270,12 +352,12 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
             path => WordForms.Application(header, heading, body, path));
     }
 
-    /// <summary>Абонент с оплатами: они грузятся вместе с домом.</summary>
+    /// <summary>История только выбранного должника.</summary>
     private async Task<Subscriber?> LoadDebtorAsync(DebtorRow d)
     {
         try
         {
-            return (await shell.Store.LoadHouseAsync(shell.Houses.First(h => h.Id == d.HouseId))).First(x => x.Id == d.SubscriberId);
+            return (await shell.Store.LoadHouseAsync(shell.Houses.First(h => h.Id == d.HouseId), d.SubscriberId)).First(x => x.Id == d.SubscriberId);
         }
         catch (StoreException e)
         {
@@ -285,11 +367,14 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
     }
 
     [RelayCommand]
-    private void ExportDebtors() =>
+    private async Task ExportDebtors()
+    {
+        if (await LoadAllDebtorsAsync() is not { } rows) return;
         shell.Export("должники", "отчёт по должникам", path => XlsxTable.Write(path,
-            $"Должники на {shell.Today:dd.MM.yyyy}" + (Debtors.Count == _allDebtors.Count ? "" : $", отбор: {DebtorsCountText.ToLower()}"),
+            $"Должники на {shell.Today:dd.MM.yyyy}, по выбранным условиям: {rows.Count}",
             ["ФИО", "Адрес", "Лиц. счёт", "Долг, руб.", "Неоплачено мес.", "Последняя оплата", "Судебный приказ"],
-            Debtors.Select(d => new object?[] { d.FullName, d.Address, d.Account, d.Debt, d.Unpaid, d.OldPayer ? d.LastPay + " (≥ 3 лет)" : d.LastPay, d.Case })));
+            rows.Select(d => new object?[] { d.FullName, d.Address, d.Account, d.Debt, d.Unpaid, d.OldPayer ? d.LastPay + " (≥ 3 лет)" : d.LastPay, d.Case })));
+    }
 
     public ObservableCollection<DocumentInfo> Documents { get; } = [];
     public IReadOnlyList<string> DocumentKinds => SubscriberDocuments.Kinds;

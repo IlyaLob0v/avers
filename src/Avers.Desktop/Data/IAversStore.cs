@@ -29,8 +29,8 @@ public interface IAversStore
 
     Task<AversSnapshot> LoadAsync(AppUser user);
 
-    /// <summary>Абоненты дома с оплатами, делами и квитанциями, связанные с этим домом.</summary>
-    Task<List<Subscriber>> LoadHouseAsync(House house);
+    /// <summary>Список квартир; оплаты, дела и квитанции — только выбранного абонента.</summary>
+    Task<List<Subscriber>> LoadHouseAsync(House house, int? subscriberId = null);
 
     Task<List<SubscriberMatch>> FindSubscribersAsync(SearchMode mode, string query, string street, string house, string apartment, string section);
 
@@ -50,7 +50,9 @@ public interface IAversStore
         };
     }
 
-    Task<Debts> LoadDebtsAsync();
+    Task<Debts> LoadDebtsAsync(DebtorFilter? filter = null, int offset = 0, bool all = false, CancellationToken cancellationToken = default);
+    Task<Dictionary<int, decimal>> LoadDebtTotalsAsync();
+    Task<SubscriberArchive> LoadArchiveAsync(int subscriberId, int? year = null, int offset = 0);
 
     Task<AccountingReport> LoadAccountingAsync(int year, int month);
 
@@ -105,6 +107,7 @@ public interface IAversStore
     Task SaveIntercomPanelAsync(int houseId, IntercomPanel draft);
 
     Task AddIntercomTicketAsync(int houseId, IntercomTicket draft);
+    Task<List<IntercomTicket>> LoadIntercomTicketsAsync(int houseId);
 
     Task CloseIntercomTicketAsync(int ticketId);
 

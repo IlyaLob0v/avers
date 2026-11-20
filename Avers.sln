@@ -29,6 +29,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avers.Screenshots", "tools\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avers.Desktop.Tests", "tests\Avers.Desktop.Tests\Avers.Desktop.Tests.csproj", "{6AB7964A-D61E-4B4A-86DD-30B2774448D2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avers.DataProbe", "tools\Avers.DataProbe\Avers.DataProbe.csproj", "{2719273F-94E0-4599-908C-D890DC1C36DF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -159,6 +161,18 @@ Global
 		{6AB7964A-D61E-4B4A-86DD-30B2774448D2}.Release|x64.Build.0 = Release|Any CPU
 		{6AB7964A-D61E-4B4A-86DD-30B2774448D2}.Release|x86.ActiveCfg = Release|Any CPU
 		{6AB7964A-D61E-4B4A-86DD-30B2774448D2}.Release|x86.Build.0 = Release|Any CPU
+		{2719273F-94E0-4599-908C-D890DC1C36DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2719273F-94E0-4599-908C-D890DC1C36DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2719273F-94E0-4599-908C-D890DC1C36DF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2719273F-94E0-4599-908C-D890DC1C36DF}.Debug|x64.Build.0 = Debug|Any CPU
+		{2719273F-94E0-4599-908C-D890DC1C36DF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2719273F-94E0-4599-908C-D890DC1C36DF}.Debug|x86.Build.0 = Debug|Any CPU
+		{2719273F-94E0-4599-908C-D890DC1C36DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2719273F-94E0-4599-908C-D890DC1C36DF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2719273F-94E0-4599-908C-D890DC1C36DF}.Release|x64.ActiveCfg = Release|Any CPU
+		{2719273F-94E0-4599-908C-D890DC1C36DF}.Release|x64.Build.0 = Release|Any CPU
+		{2719273F-94E0-4599-908C-D890DC1C36DF}.Release|x86.ActiveCfg = Release|Any CPU
+		{2719273F-94E0-4599-908C-D890DC1C36DF}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -174,5 +188,6 @@ Global
 		{EC977779-0A07-4B4F-848D-695F9153D06F} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{61B1BFB2-9F65-4B00-AB7D-F846C94C69DF} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 		{6AB7964A-D61E-4B4A-86DD-30B2774448D2} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{2719273F-94E0-4599-908C-D890DC1C36DF} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 	EndGlobalSection
 EndGlobal

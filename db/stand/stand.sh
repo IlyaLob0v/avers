@@ -180,6 +180,11 @@ cmd_data() {
 
 # reconcile — сверка Oracle и PostgreSQL (число строк, суммы, даты, длины строк, кириллица, бухгалтерия)
 cmd_reconcile() {
+  local require_business_checks=${1:-true}
+  case "$require_business_checks" in
+    true|false) ;;
+    *) die "reconcile: ожидается true (полная сверка) или false (техническая диагностика)" ;;
+  esac
   say "Снимаю отпечаток Oracle (только агрегаты)"
   mkdir -p "$OUT_HOST"
   "${COMPOSE[@]}" exec -T -e NLS_LANG=AMERICAN_AMERICA.AL32UTF8 oracle-legacy bash -c \
@@ -190,6 +195,7 @@ cmd_reconcile() {
   report="$OUT_HOST/reconcile-$(date +%Y%m%d-%H%M%S).txt"
   local rc=0
   pg_sql -v schema="$PG_SCHEMA" -v oracle_csv="$OUT/oracle_fingerprint.csv" \
+    -v require_business_checks="$require_business_checks" \
     -f /migration/reconcile/run.sql 2>&1 | tee "$report" || rc=$?
   echo "Отчёт сверки: ${report#"$ROOT/"}"
   return "$rc"
@@ -256,11 +262,11 @@ cmd_selftest() {
   cmd_report
   cmd_schema
   cmd_data
-  cmd_reconcile || die "самопроверка: сверка чистого переноса не прошла"
+  cmd_reconcile false || die "самопроверка: сверка чистого переноса не прошла"
 
   say "Проверяю, что сверка ловит ошибку: меняю одну сумму на 1 копейку"
   pg_sql -c "update $PG_SCHEMA.demo_payment set amount = amount + 0.01 where id = (select min(id) from $PG_SCHEMA.demo_payment)"
-  if cmd_reconcile >/dev/null 2>&1; then die "самопроверка: сверка НЕ заметила испорченную сумму"; fi
+  if cmd_reconcile false >/dev/null 2>&1; then die "самопроверка: сверка НЕ заметила испорченную сумму"; fi
   pg_sql -c "update $PG_SCHEMA.demo_payment set amount = amount - 0.01 where id = (select min(id) from $PG_SCHEMA.demo_payment)"
   echo "Сверка заметила расхождение — так и должно быть."
   say "САМОПРОВЕРКА ПРОЙДЕНА: стенд готов к настоящей выгрузке JACK"
@@ -285,7 +291,7 @@ cmd_help() {
   report              отчёт Ora2Pg о сложности переноса (HTML)
   schema              создать таблицы в PostgreSQL (схема legacy), код Oracle — в файлы для разбора
   data                перенести строки, затем ключи и индексы
-  reconcile           сверка Oracle ↔ PostgreSQL; код выхода не 0 = есть расхождения
+  reconcile [true|false] сверка Oracle ↔ PostgreSQL; false — только техническая диагностика
   transfer            пробный перенос legacy → таблицы Аверса и сверка; код выхода не 0 = есть расхождения
   psql                консоль PostgreSQL
   status | down       состояние | остановить контейнеры (данные сохраняются)
@@ -306,7 +312,7 @@ main() {
     report) cmd_report ;;
     schema) cmd_schema ;;
     data) cmd_data ;;
-    reconcile) cmd_reconcile ;;
+    reconcile) cmd_reconcile "$@" ;;
     accruals) cmd_accruals ;;
     transfer) cmd_transfer ;;
     all) cmd_all "$@" ;;

@@ -74,7 +74,7 @@ public class AppearanceTests
     }
 
     [AvaloniaFact]
-    public void Abon_DebtTotal_IsRedOnlyWhenThereIsDebt()
+    public async Task Abon_DebtTotal_IsRedOnlyWhenThereIsDebt()
     {
         using var app = new DesktopApp("orlov");
         app.Go(AppModule.Abon);
@@ -90,19 +90,71 @@ public class AppearanceTests
             }
         }
 
+        var observed = new List<bool>();
         foreach (var subscriber in subscribers)
         {
-            app.Vm.SelectedSubscriber = subscriber;
-            Assert.Equal(HasDebt(subscriber), app.Vm.HasDebt);
+            app.Vm.SearchMode = SearchMode.Account;
+            app.Vm.FindQuery = subscriber.Account;
+            await app.Vm.FindCommand.ExecuteAsync(null);
+            Assert.Equal(subscriber.Id, app.Vm.SelectedSubscriber!.Id);
+            var expected = HasDebt(app.Vm.SelectedSubscriber);
+            Assert.Equal(expected, app.Vm.HasDebt);
+            observed.Add(expected);
         }
-        Assert.Contains(subscribers, HasDebt);
-        Assert.Contains(subscribers, s => !HasDebt(s));
+        Assert.Contains(true, observed);
+        Assert.Contains(false, observed);
 
         app.Vm.SelectedSubscriber = null;
         Assert.False(app.Vm.HasDebt);
     }
 
     private static bool HasDebt(Subscriber s) => Billing.Debt(Billing.Due(s.Payments, DemoSeeder.WorkDate)) > 0;
+
+    [AvaloniaTheory]
+    [InlineData("ru-RU")]
+    [InlineData("en-US")]
+    public void OriginalArchive_ExpandedTableShowsSourceIdDateAndAmount(string cultureName)
+    {
+        var previousCulture = System.Globalization.CultureInfo.CurrentCulture;
+        var previousUiCulture = System.Globalization.CultureInfo.CurrentUICulture;
+        System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo(cultureName);
+        System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo(cultureName);
+        try
+        {
+            using var app = new DesktopApp();
+            app.Go(AppModule.Subscriber);
+            app.Vm.ArchiveScreen.IsExpanded = true;
+            var row = new JackPayment
+            {
+                Id = 3_000_000_000,
+                SubscriberId = app.Vm.SelectedSubscriber!.Id,
+                Period = new DateTime(1996, 1, 17, 16, 45, 20),
+                PaidAt = new DateTime(1996, 2, 3, 10, 25, 37),
+                Amount = 15000.25m,
+                Source = "Проверка архива"
+            };
+            app.Vm.ArchiveScreen.Rows.Add(row);
+            app.Pump();
+            var grid = app.Window.GetVisualDescendants().OfType<DataGrid>()
+                .Single(g => ReferenceEquals(g.ItemsSource, app.Vm.ArchiveScreen.Rows));
+            grid.BringIntoView();
+            app.Pump();
+            var texts = grid.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
+            Assert.Contains("3000000000", texts);
+            Assert.Contains("01.1996", texts);
+            Assert.Contains("03.02.1996 10:25", texts);
+            Assert.Contains(15000.25m.ToString("N2", System.Globalization.CultureInfo.CurrentCulture), texts);
+            Assert.Equal(3_000_000_000, row.Id);
+            Assert.Equal(new DateTime(1996, 1, 17, 16, 45, 20), row.Period);
+            Assert.Equal(new DateTime(1996, 2, 3, 10, 25, 37), row.PaidAt);
+            Assert.Equal(15000.25m, row.Amount);
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = previousCulture;
+            System.Globalization.CultureInfo.CurrentUICulture = previousUiCulture;
+        }
+    }
 
     [AvaloniaFact]
     public void Shell_ShowsUserAndRoleInHeader()
