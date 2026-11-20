@@ -16,6 +16,10 @@
 
 ## Дом и техника
 
+Поиск по городскому адресному слою и выбор здания на карте проверяются в `tests/map-search.test.cjs`:
+независимость от наличия дома в Аверсе, варианты адреса, переход к координатам, дубли, асинхронная загрузка
+и отсутствие плашки источника в карточке. Данные без адреса не подменяются предположением.
+
 Загрузка исторических данных описана в [ADR-0018](adr/0018-historical-data-loading.md):
 `HouseSubscribersTests.Load_ReadsHistoryOnlyForSelectedAccount`, `DebtsTests.Load_IsBoundedAndPreservesTotalCount`,
 `DebtsTests.FiltersAndHouseTotals_KeepCreditAndCurrentMonthRules`, `SubscriberTests.JackHistory_IsPagedAndPreservesOriginalAmounts`,
