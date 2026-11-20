@@ -218,3 +218,11 @@ test('Не теряет букву Г и разные улицы с одинак
   assert.equal(page.buttons().length, 1);
   assert.equal(page.buttons()[0].textContent, '4-я Путевая улица, 4Я');
 });
+
+test('Находит букву в номере корпуса', async () => {
+  const page = browser([building('Индустриальная улица, 11 к2А')]);
+  await page.load();
+  page.search('Индустриальная 11к2а');
+  assert.equal(page.buttons().length, 1);
+  assert.equal(page.buttons()[0].textContent, 'Индустриальная улица, 11 к2А');
+});

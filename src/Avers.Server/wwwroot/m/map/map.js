@@ -256,7 +256,7 @@ function searchMapAddresses() {
   if (!mapSearchActive) return;
   const text = addressText($("map-search").value);
   if (!text) { listHouses([]); return; }
-  const match = /(?:^|\s)(\d+\s*[а-яa-z]?(?:[/-]\d+\s*[а-яa-z]?)*(?:\s*(?:к|корпус|корп|строение|стр|с)\s*\d+[а-яa-z]?)?)$/.exec(text);
+  const match = /(?:^|\s)(\d+\s*[а-яa-z]?(?:[/-]\d+\s*[а-яa-z]?)*(?:\s*(?:к|корпус|корп|строение|стр|с)\s*\d+\s*[а-яa-z]?)?)$/.exec(text);
   const number = match ? houseNumber(match[1]) : "";
   const words = streetText(match ? text.slice(0, match.index) : text).split(" ").filter(Boolean);
   const matches = entry => words.every(word => /^\d+$/.test(word)
