@@ -85,8 +85,8 @@
 <div id="map" hidden>
   <div id="map-canvas"></div>
   <div class="map-bar">
-    <input id="map-search" type="search" aria-label="Поиск дома на карте" placeholder="Улица и дом, например «волоч 19»" autocomplete="off">
-    <ul id="map-results" hidden></ul>
+    <input id="map-search" type="search" aria-label="Поиск адреса на карте" aria-controls="map-results" aria-expanded="false" placeholder="Адрес в Омске, например «Ленина 12»" autocomplete="off">
+    <ul id="map-results" aria-label="Найденные адреса" hidden></ul>
     <button id="map-missing" hidden></button>
     <div class="map-legend" aria-label="Обозначения на карте">
       <span><i aria-hidden="true"></i> Дом Аверса</span>
@@ -114,7 +114,7 @@ let fromMap = false;
 async function showMap(houseId) {
   fromMap = true;
   if (!window.openMap) await new Promise((resolve, reject) => document.head.append(Object.assign(document.createElement("script"),
-    { src: "map/map.js", onload: resolve, onerror: () => reject(new Error("Не удалось загрузить карту с сервера.")) })));
+    { src: "map/map.js?v=city-addresses", onload: resolve, onerror: () => reject(new Error("Не удалось загрузить карту с сервера.")) })));
   await openMap(houseId);
 }
 const hashHouse = () => (/^#map=(\d+)/.exec(location.hash) || [])[1];

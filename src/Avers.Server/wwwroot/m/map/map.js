@@ -4,6 +4,8 @@
 
 const Omsk = [73.37, 54.99];
 let addressesLoading = false;
+let cityAddresses = [], addressesUnavailable = false, listedAddresses = [], mapSearchTimer, mapSearchActive = false;
+const mapAttribution = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">участники OpenStreetMap</a>';
 let map = null, mapHouses = [], canPlace = false, mapSession = 0;
 let mapLibraries;
 
@@ -36,6 +38,10 @@ function closeMap() {
   map?.remove();
   map = null;
   mapHouses = [];
+  cityAddresses = [];
+  addressesLoading = addressesUnavailable = false;
+  mapSearchActive = false;
+  clearTimeout(mapSearchTimer);
   canPlace = false;
   $("map-search").value = "";
   $("map-missing").hidden = true;
@@ -92,7 +98,7 @@ async function createMap(session) {
     style: {
       version: 8,
       glyphs: location.origin + "/m/map/fonts/{fontstack}/{range}.pbf",
-      sources: header ? { protomaps: { type: "vector", url: "pmtiles:///api/mobile/map/tiles", attribution: "© участники OpenStreetMap" } } : {},
+      sources: header ? { protomaps: { type: "vector", url: "pmtiles:///api/mobile/map/tiles", attribution: mapAttribution } } : {},
       layers: base
     }
   });
@@ -127,21 +133,39 @@ async function createMap(session) {
 
 async function loadBuildingAddresses(session) {
   addressesLoading = true;
+  addressesUnavailable = false;
+  searchMapAddresses();
   try {
-    const response = await fetch("/api/mobile/map/buildings", { headers: { Authorization: "Bearer " + token } });
+    const response = await fetch("/api/mobile/map/buildings", { cache: "no-cache", headers: { Authorization: "Bearer " + token } });
+    if (session !== mapSession) return;
+    if (response.status === 401) { logout(); return; }
     if (response.ok) {
       const buildings = await response.json();
       if (session !== mapSession) return;
-      map.addSource("address-buildings", { type: "geojson", data: buildings });
+      const unique = new Map();
+      for (const feature of buildings.features ?? []) {
+        const address = feature.properties?.address;
+        const center = buildingCenter(feature.geometry?.coordinates);
+        if (typeof address !== "string" || !address || !center) continue;
+        const entry = addressEntry(address, center);
+        if (!unique.has(entry.key)) unique.set(entry.key, entry);
+      }
+      cityAddresses = [...unique.values()];
+      map.addSource("address-buildings", { type: "geojson", data: buildings, attribution: mapAttribution });
       map.addLayer({
         id: "address-buildings", type: "fill", source: "address-buildings", minzoom: 13,
         paint: { "fill-color": "#2b5cb0", "fill-opacity": 0.04 }
       }, "houses");
       map.on("mouseenter", "address-buildings", () => map.getCanvas().style.cursor = "pointer");
       map.on("mouseleave", "address-buildings", () => map.getCanvas().style.cursor = "");
+    } else addressesUnavailable = true;
+  } catch { if (session === mapSession) addressesUnavailable = true; }
+  finally {
+    if (session === mapSession) {
+      addressesLoading = false;
+      searchMapAddresses();
     }
-  } catch { /* Контуры и номера базовой карты остаются доступны. */ }
-  finally { if (session === mapSession) addressesLoading = false; }
+  }
 }
 
 async function loadHouses(session) {
@@ -152,7 +176,7 @@ async function loadHouses(session) {
   const missing = mapHouses.filter(h => h.latitude == null).length;
   $("map-missing").hidden = !canPlace || missing === 0;
   $("map-missing").textContent = `Дома без точки: ${missing}`;
-  $("map-search").oninput();
+  searchMapAddresses();
 }
 
 function updateHousePoints() {
@@ -168,30 +192,124 @@ function updateHousePoints() {
 
 const simple = s => s.toLowerCase().replaceAll("ё", "е").replace(/[.,]/g, " ").replace(/\s+/g, " ").trim();
 
+const streetTypes = {
+  ул: "улица", улица: "улица", проспект: "проспект", просп: "проспект", "пр-т": "проспект", "пр-кт": "проспект",
+  пер: "переулок", переулок: "переулок", бульвар: "бульвар", бул: "бульвар", "б-р": "бульвар",
+  пл: "площадь", площадь: "площадь", мкр: "микрорайон", микрорайон: "микрорайон"
+};
+const addressWords = new Set(["город", "омск", ...Object.keys(streetTypes)]);
+function addressText(text) {
+  return simple(text).replace(/(^|\s)г\s+(?=омск(?:\s|$))/g, "$1").replace(/№/g, " ").replace(/([а-яa-z])(\d)/g, "$1 $2")
+    .replace(/(\d)([а-яa-z])/g, "$1 $2")
+    .replace(/(^|\s)(?:дом|д)\s+(?=\d)/g, "$1")
+    .split(" ").filter(word => word && !addressWords.has(word)).join(" ");
+}
+const streetText = text => addressText(text).replace(/(\d+)\s*-?\s*[яй](?=\s|$)/g, "$1");
+const houseNumber = text => simple(text).replace(/корпус|корп/g, "к").replace(/строение|стр/g, "с").replace(/\s+/g, "");
+
+function addressEntry(address, center, house) {
+  const comma = address.lastIndexOf(",");
+  const streetAddress = comma < 0 ? address : address.slice(0, comma);
+  const street = streetText(streetAddress);
+  const type = simple(streetAddress).split(" ").map(word => streetTypes[word]).find(Boolean) ?? "улица";
+  const number = comma < 0 ? "" : houseNumber(addressText(address.slice(comma + 1)));
+  const compact = street.replaceAll(" ", "");
+  return { address, center, house, street, compact, number, full: addressText(address), key: type + "|" + compact + "|" + number };
+}
+
+function buildingCenter(coordinates) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  function visit(values) {
+    if (!Array.isArray(values)) return;
+    if (typeof values[0] === "number" && typeof values[1] === "number") {
+      const [x, y] = values;
+      if (!Number.isFinite(x) || !Number.isFinite(y) || Math.abs(x) > 180 || Math.abs(y) > 90) return;
+      minX = Math.min(minX, x); minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+    } else for (const child of values) visit(child);
+  }
+  visit(coordinates);
+  return minX === Infinity ? null : [(minX + maxX) / 2, (minY + maxY) / 2];
+}
+
 function listHouses(houses, note) {
+  listedAddresses = houses.slice(0, 30);
   const list = $("map-results");
   list.replaceChildren();
   list.hidden = houses.length === 0 && !note;
   if (note) list.append(Object.assign(document.createElement("li"), { className: "muted", textContent: note }));
-  for (const h of houses.slice(0, 30)) {
+  if (houses.length > 30) list.append(Object.assign(document.createElement("li"), {
+    className: "muted", textContent: `Показаны первые 30 из ${houses.length}. Уточните улицу и номер дома.`
+  }));
+  $("map-search").setAttribute("aria-expanded", String(!list.hidden));
+  for (const h of listedAddresses) {
     const b = document.createElement("button");
-    b.textContent = h.address + (h.latitude == null ? " · нет на карте" : "");
-    b.onclick = () => { list.hidden = true; focusHouse(h.id); };
+    b.textContent = h.address + (h.latitude == null && !h.center ? " · нет на карте" : "");
+    b.onclick = () => selectAddress(h);
     const li = document.createElement("li");
     li.append(b);
     list.append(li);
   }
 }
 
+function searchMapAddresses() {
+  if (!mapSearchActive) return;
+  const text = addressText($("map-search").value);
+  if (!text) { listHouses([]); return; }
+  const match = /(?:^|\s)(\d+\s*[а-яa-z]?(?:[/-]\d+\s*[а-яa-z]?)*(?:\s*(?:к|корпус|корп|строение|стр|с)\s*\d+\s*[а-яa-z]?)?)$/.exec(text);
+  const number = match ? houseNumber(match[1]) : "";
+  const words = streetText(match ? text.slice(0, match.index) : text).split(" ").filter(Boolean);
+  const matches = entry => entry.full === text || words.every(word => /^\d+$/.test(word)
+    ? (" " + entry.street + " ").includes(" " + word + " ") : entry.compact.includes(word)) && (!number ||
+    entry.number.startsWith(number) && !/\d/.test(entry.number.charAt(number.length)));
+  const found = new Map(cityAddresses.filter(matches).map(entry => [entry.key, entry]));
+  for (const h of mapHouses) {
+    const entry = addressEntry(h.address, h.latitude == null ? null : [h.longitude, h.latitude], h);
+    if (!matches(entry)) continue;
+    entry.center ??= found.get(entry.key)?.center;
+    found.set(entry.key, entry);
+  }
+  const rows = [...found.values()].sort((a, b) => Number(b.number === number) - Number(a.number === number)
+    || a.address.localeCompare(b.address, "ru", { numeric: true }));
+  const note = addressesLoading ? "Загружаются адреса города…" : addressesUnavailable
+    ? "Адресный справочник города недоступен. Доступны дома Аверса; обратитесь к администратору."
+    : rows.length ? "" : "Ничего не найдено. Проверьте улицу и номер дома.";
+  listHouses(rows, note);
+}
+
 $("map-search").oninput = () => {
-  const words = simple($("map-search").value).split(" ").filter(w => w);
-  if (words.length === 0) { listHouses([]); return; }
-  const found = mapHouses.filter(h => { const a = simple(h.address); return words.every(w => a.includes(w)); });
-  listHouses(found, found.length ? "" : "Ничего не найдено.");
+  mapSearchActive = true;
+  clearTimeout(mapSearchTimer);
+  mapSearchTimer = setTimeout(searchMapAddresses, 150);
 };
 
-$("map-missing").onclick = () => listHouses(mapHouses.filter(h => h.latitude == null),
-  "Нажмите дом, затем место на карте, где он стоит.");
+function selectAddress(entry) {
+  mapSearchActive = false;
+  listHouses([]);
+  const house = entry.house ?? (entry.id ? entry : null);
+  if (house?.latitude != null || !entry.center) { if (house) focusHouse(house.id); return; }
+  if (!map?.getSource("houses")) {
+    if (house) openHouse(house.id, true);
+    else $("map-note").textContent = entry.address + ". Карта недоступна на этом устройстве.";
+    return;
+  }
+  map.flyTo({ center: entry.center, zoom: Math.max(map.getZoom(), 17) });
+  showAddressPopup(entry.address, entry.center, house);
+}
+
+$("map-search").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.isComposing) {
+    clearTimeout(mapSearchTimer);
+    searchMapAddresses();
+    if (listedAddresses.length) { e.preventDefault(); selectAddress(listedAddresses[0]); }
+  }
+  if (e.key === "Escape") { mapSearchActive = false; listHouses([]); }
+});
+
+$("map-missing").onclick = () => {
+  mapSearchActive = false;
+  listHouses(mapHouses.filter(h => h.latitude == null), "Нажмите дом, затем место на карте, где он стоит.");
+};
 
 function focusHouse(id) {
   const h = mapHouses.find(x => x.id === id);
@@ -240,7 +358,11 @@ function stopPlacing() {
 }
 
 document.addEventListener("keydown", e => { if (e.key === "Escape" && placing) { stopPlacing(); $("map-note").textContent = ""; } });
-$("map-search").addEventListener("focus", () => { if (placing) { stopPlacing(); $("map-note").textContent = ""; } });
+$("map-search").addEventListener("focus", () => {
+  if (placing) { stopPlacing(); $("map-note").textContent = ""; }
+  mapSearchActive = true;
+  searchMapAddresses();
+});
 
 function showBuildingAddress(e) {
   if (map.queryRenderedFeatures(e.point, { layers: ["houses"] }).length) return;
@@ -248,18 +370,23 @@ function showBuildingAddress(e) {
     ? map.queryRenderedFeatures(e.point, { layers: ["address-buildings"] })[0] : null;
   const building = addressed ?? map.queryRenderedFeatures(e.point).find(f => f.sourceLayer === "buildings");
   if (!building) return;
-  const box = document.createElement("div");
   const address = addressed?.properties.address;
   const number = building.properties?.addr_housenumber;
-  box.append(Object.assign(document.createElement("b"), {
-    textContent: address || (number ? "Дом № " + number : "Здание")
-  }));
-  box.append(Object.assign(document.createElement("div"), {
-    textContent: address ? "Адрес из OpenStreetMap" : addressesLoading
-      ? "Адреса зданий загружаются… Нажмите ещё раз." : "Полный адрес отсутствует в загруженных данных."
-  }));
+  showAddressPopup(address || (number ? "Дом № " + number : "Здание"), e.lngLat, null,
+    address ? "" : addressesLoading ? "Адреса зданий загружаются… Нажмите ещё раз." : "Полный адрес отсутствует в загруженных данных.");
+}
+
+function showAddressPopup(address, point, house, note) {
+  const box = document.createElement("div");
+  box.append(Object.assign(document.createElement("b"), { textContent: address }));
+  if (note) box.append(Object.assign(document.createElement("div"), { textContent: note }));
+  if (house) {
+    const card = Object.assign(document.createElement("button"), { textContent: "Сведения о доме" });
+    card.onclick = () => openHouse(house.id, true);
+    box.append(card);
+  }
   popup?.remove();
-  popup = new maplibregl.Popup({ maxWidth: "280px" }).setLngLat(e.lngLat).setDOMContent(box).addTo(map);
+  popup = new maplibregl.Popup({ maxWidth: "280px" }).setLngLat(point).setDOMContent(box).addTo(map);
 }
 
 function onMapClick(e) {
