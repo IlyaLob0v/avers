@@ -17,12 +17,12 @@
       <TextBlock Classes="hint" Text="{Binding Status}" TextWrapping="Wrap" />
       <DataGrid Height="240" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="True">
         <DataGrid.Columns>
-          <DataGridTextColumn Header="Операция JACK" Binding="{Binding Id}" Width="140" />
-          <DataGridTextColumn Header="Расчётный период" Binding="{Binding Period, StringFormat='{}{0:MM.yyyy}'}" Width="140" />
-          <DataGridTextColumn Header="Дата поступления" Binding="{Binding PaidAt, StringFormat='{}{0:dd.MM.yyyy HH:mm}'}" Width="170" />
-          <DataGridTextColumn Header="Исходная сумма" Binding="{Binding Amount, StringFormat='{}{0:N2}'}" Width="140" />
-          <DataGridTextColumn Header="Источник" Binding="{Binding Source}" Width="*" />
-          <DataGridTextColumn Header="Кто внёс" Binding="{Binding RecordedBy}" Width="150" />
+          <DataGridTextColumn Header="Операция JACK" Binding="{Binding Id, Mode=OneWay}" Width="140" />
+          <DataGridTextColumn Header="Расчётный период" Binding="{Binding Period, Mode=OneWay, StringFormat='{}{0:MM.yyyy}'}" Width="140" />
+          <DataGridTextColumn Header="Дата поступления" Binding="{Binding PaidAt, Mode=OneWay, StringFormat='{}{0:dd.MM.yyyy HH:mm}'}" Width="170" />
+          <DataGridTextColumn Header="Исходная сумма" Binding="{Binding Amount, Mode=OneWay, StringFormat='{}{0:N2}'}" Width="140" />
+          <DataGridTextColumn Header="Источник" Binding="{Binding Source, Mode=OneWay}" Width="*" />
+          <DataGridTextColumn Header="Кто внёс" Binding="{Binding RecordedBy, Mode=OneWay}" Width="150" />
         </DataGrid.Columns>
       </DataGrid>
     </StackPanel>

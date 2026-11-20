@@ -110,31 +110,50 @@ public class AppearanceTests
 
     private static bool HasDebt(Subscriber s) => Billing.Debt(Billing.Due(s.Payments, DemoSeeder.WorkDate)) > 0;
 
-    [AvaloniaFact]
-    public void OriginalArchive_ExpandedTableShowsSourceIdDateAndAmount()
+    [AvaloniaTheory]
+    [InlineData("ru-RU")]
+    [InlineData("en-US")]
+    public void OriginalArchive_ExpandedTableShowsSourceIdDateAndAmount(string cultureName)
     {
-        using var app = new DesktopApp();
-        app.Go(AppModule.Subscriber);
-        app.Vm.ArchiveScreen.IsExpanded = true;
-        app.Vm.ArchiveScreen.Rows.Add(new JackPayment
+        var previousCulture = System.Globalization.CultureInfo.CurrentCulture;
+        var previousUiCulture = System.Globalization.CultureInfo.CurrentUICulture;
+        System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo(cultureName);
+        System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo(cultureName);
+        try
         {
-            Id = 3_000_000_000,
-            SubscriberId = app.Vm.SelectedSubscriber!.Id,
-            Period = new DateTime(1996, 1, 1),
-            PaidAt = new DateTime(1996, 2, 3, 10, 25, 0),
-            Amount = 15000,
-            Source = "Проверка архива"
-        });
-        app.Pump();
-        var grid = app.Window.GetVisualDescendants().OfType<DataGrid>()
-            .Single(g => ReferenceEquals(g.ItemsSource, app.Vm.ArchiveScreen.Rows));
-        grid.BringIntoView();
-        app.Pump();
-        var texts = grid.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
-        Assert.Contains("3000000000", texts);
-        Assert.Contains("01.1996", texts);
-        Assert.Contains("03.02.1996 10:25", texts);
-        Assert.Contains(15000m.ToString("N2", System.Globalization.CultureInfo.CurrentCulture), texts);
+            using var app = new DesktopApp();
+            app.Go(AppModule.Subscriber);
+            app.Vm.ArchiveScreen.IsExpanded = true;
+            var row = new JackPayment
+            {
+                Id = 3_000_000_000,
+                SubscriberId = app.Vm.SelectedSubscriber!.Id,
+                Period = new DateTime(1996, 1, 17, 16, 45, 20),
+                PaidAt = new DateTime(1996, 2, 3, 10, 25, 37),
+                Amount = 15000.25m,
+                Source = "Проверка архива"
+            };
+            app.Vm.ArchiveScreen.Rows.Add(row);
+            app.Pump();
+            var grid = app.Window.GetVisualDescendants().OfType<DataGrid>()
+                .Single(g => ReferenceEquals(g.ItemsSource, app.Vm.ArchiveScreen.Rows));
+            grid.BringIntoView();
+            app.Pump();
+            var texts = grid.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
+            Assert.Contains("3000000000", texts);
+            Assert.Contains("01.1996", texts);
+            Assert.Contains("03.02.1996 10:25", texts);
+            Assert.Contains(15000.25m.ToString("N2", System.Globalization.CultureInfo.CurrentCulture), texts);
+            Assert.Equal(3_000_000_000, row.Id);
+            Assert.Equal(new DateTime(1996, 1, 17, 16, 45, 20), row.Period);
+            Assert.Equal(new DateTime(1996, 2, 3, 10, 25, 37), row.PaidAt);
+            Assert.Equal(15000.25m, row.Amount);
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = previousCulture;
+            System.Globalization.CultureInfo.CurrentUICulture = previousUiCulture;
+        }
     }
 
     [AvaloniaFact]
