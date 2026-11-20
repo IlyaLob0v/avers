@@ -298,7 +298,11 @@ function selectAddress(entry) {
 }
 
 $("map-search").addEventListener("keydown", e => {
-  if (e.key === "Enter" && listedAddresses.length && !e.isComposing) { e.preventDefault(); selectAddress(listedAddresses[0]); }
+  if (e.key === "Enter" && !e.isComposing) {
+    clearTimeout(mapSearchTimer);
+    searchMapAddresses();
+    if (listedAddresses.length) { e.preventDefault(); selectAddress(listedAddresses[0]); }
+  }
   if (e.key === "Escape") { mapSearchActive = false; listHouses([]); }
 });
 

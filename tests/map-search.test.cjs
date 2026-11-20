@@ -236,3 +236,13 @@ test('Находит полный адрес с нестандартным об�
     assert.equal(page.buttons()[0].textContent, address);
   }
 });
+
+test('Enter после быстрого изменения запроса выбирает новый адрес', async () => {
+  const page = browser([building('улица Серова, 8'), building('улица Серова, 10')]);
+  await page.load();
+  page.search('серова 8');
+  page.context.setTimeout = () => 1;
+  page.search('серова 10');
+  page.context.$('map-search').events.keydown({ key: 'Enter', preventDefault() {} });
+  assert.equal(page.context.lastPopup.box.children[0].textContent, 'улица Серова, 10');
+});
