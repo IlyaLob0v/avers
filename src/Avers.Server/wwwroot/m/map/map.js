@@ -214,7 +214,7 @@ function addressEntry(address, center, house) {
   const type = simple(streetAddress).split(" ").map(word => streetTypes[word]).find(Boolean) ?? "улица";
   const number = comma < 0 ? "" : houseNumber(addressText(address.slice(comma + 1)));
   const compact = street.replaceAll(" ", "");
-  return { address, center, house, street, compact, number, key: type + "|" + compact + "|" + number };
+  return { address, center, house, street, compact, number, full: addressText(address), key: type + "|" + compact + "|" + number };
 }
 
 function buildingCenter(coordinates) {
@@ -259,7 +259,7 @@ function searchMapAddresses() {
   const match = /(?:^|\s)(\d+\s*[а-яa-z]?(?:[/-]\d+\s*[а-яa-z]?)*(?:\s*(?:к|корпус|корп|строение|стр|с)\s*\d+\s*[а-яa-z]?)?)$/.exec(text);
   const number = match ? houseNumber(match[1]) : "";
   const words = streetText(match ? text.slice(0, match.index) : text).split(" ").filter(Boolean);
-  const matches = entry => words.every(word => /^\d+$/.test(word)
+  const matches = entry => entry.full === text || words.every(word => /^\d+$/.test(word)
     ? (" " + entry.street + " ").includes(" " + word + " ") : entry.compact.includes(word)) && (!number ||
     entry.number.startsWith(number) && !/\d/.test(entry.number.charAt(number.length)));
   const found = new Map(cityAddresses.filter(matches).map(entry => [entry.key, entry]));

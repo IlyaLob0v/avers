@@ -226,3 +226,13 @@ test('Находит букву в номере корпуса', async () => {
   assert.equal(page.buttons().length, 1);
   assert.equal(page.buttons()[0].textContent, 'Индустриальная улица, 11 к2А');
 });
+
+test('Находит полный адрес с нестандартным обозначением литера', async () => {
+  const page = browser([building('улица 70 лет Октября, 25 литЛ'), building('Партизанская улица, 5А лит С')]);
+  await page.load();
+  for (const address of ['улица 70 лет Октября, 25 литЛ', 'Партизанская улица, 5А лит С']) {
+    page.search(address);
+    assert.equal(page.buttons().length, 1);
+    assert.equal(page.buttons()[0].textContent, address);
+  }
+});
