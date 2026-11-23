@@ -21,6 +21,7 @@ function browser(features, houses = [], response) {
     addEventListener(name, action) { this.events[name] = action; }
     setAttribute(name, value) { this[name] = value; }
     focus() { this.focused = true; }
+    select() { this.selected = true; }
   }
   const elements = new Map();
   const context = vm.createContext({
@@ -254,4 +255,30 @@ test('Показывает готовность городского справ�
   const missing = browser([], [], async () => ({ ok: false, status: 404 }));
   await missing.load();
   assert.match(missing.context.$('map-catalog').textContent, /недоступен/);
+});
+
+test('Кнопка Поиск фокусирует адрес на карте; Дома открывает отдельный список', () => {
+  const page = browser([]);
+  const elementById = page.context.$;
+  Object.assign(page.context.document, {
+    getElementById: elementById,
+    documentElement: { style: { setProperty() {} } },
+    querySelector: () => ({ offsetHeight: 48 })
+  });
+  page.context.window = { closeMap: () => { page.context.closedMap = true; } };
+  page.context.sessionStorage = { getItem: () => null };
+  page.context.location = { hash: '', search: '' };
+  const html = fs.readFileSync(path.join(__dirname, '../src/Avers.Server/wwwroot/m/index.html'), 'utf8');
+  vm.runInContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], page.context);
+  vm.runInContext('show("map")', page.context);
+  elementById('map-search').value = 'Лукашевича 14/4';
+  elementById('list-open').onclick();
+  assert.equal(elementById('map').hidden, false);
+  assert.equal(elementById('map-search').focused, true);
+  assert.equal(elementById('map-search').value, 'Лукашевича 14/4');
+  assert.equal(page.context.closedMap, undefined);
+  elementById('houses-open').onclick();
+  assert.equal(elementById('map').hidden, true);
+  assert.equal(elementById('search').hidden, false);
+  assert.equal(elementById('houses-open').hidden, true);
 });

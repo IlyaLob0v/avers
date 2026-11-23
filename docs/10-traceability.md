@@ -16,6 +16,9 @@
 
 ## Дом и техника
 
+Кнопки «Поиск» и «Дома» в верхней панели проверяются в `tests/map-search.test.cjs` на настоящем скрипте страницы:
+поиск оставляет карту открытой и фокусирует адрес, список домов открывается отдельно.
+
 Доступность карты с рабочего стола и видимая версия проверяются в `ShellTests.Desktop_MapShortcutAndVersion`,
 ссылка выбранного дома с номером выпуска — в `ServerModeTests.Map_OpensServerPageOnSelectedHouse`,
 перепроверка страницы после обновления — в `MapTests.MapApplication_RevalidatesAfterUpdate`.
