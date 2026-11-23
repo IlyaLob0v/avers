@@ -59,7 +59,7 @@
 </style>
 </head>
 <body>
-<header><b>Аверс · дома</b><nav><button id="map-open" hidden>Карта</button><button id="list-open" hidden>Поиск</button><button id="logout" hidden>Выйти</button></nav></header>
+<header><b>Аверс</b><nav><button id="map-open" hidden>Карта</button><button id="list-open" hidden>Поиск</button><button id="houses-open" hidden>Дома</button><button id="logout" hidden>Выйти</button></nav></header>
 <main>
   <form id="login" hidden>
     <label for="user">Логин</label>
@@ -112,6 +112,7 @@ function show(id) {
   $("logout").hidden = id === "login";
   $("map-open").hidden = id === "login" || id === "map";
   $("list-open").hidden = id !== "map";
+  $("houses-open").hidden = id !== "map";
   document.documentElement.style.setProperty("--top", document.querySelector("header").offsetHeight + "px");
 }
 
@@ -160,7 +161,8 @@ $("login").onsubmit = async e => {
 $("logout").onclick = logout;
 $("back").onclick = () => fromMap ? showMap() : show("search");
 $("map-open").onclick = () => showMap(null).catch(err => alert(err.message));
-$("list-open").onclick = () => { fromMap = false; show("search"); };
+$("list-open").onclick = () => { $("map-search").focus(); $("map-search").select(); };
+$("houses-open").onclick = () => { fromMap = false; show("search"); };
 
 let timer;
 for (const id of ["street", "number"]) $(id).oninput = () => { clearTimeout(timer); timer = setTimeout(search, 300); };
