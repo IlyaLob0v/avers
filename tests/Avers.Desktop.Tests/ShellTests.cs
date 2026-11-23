@@ -12,6 +12,22 @@ namespace Avers.Desktop.Tests;
 
 public class ShellTests
 {
+    [AvaloniaTheory]
+    [InlineData("sokolova", true)]
+    [InlineData("lawyer", false)]
+    public void Desktop_MapShortcutAndVersion(string login, bool hasMapAccess)
+    {
+        using var app = new DesktopApp(login);
+        app.Go(AppModule.Desktop);
+        var shortcut = app.Window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "CityMapShortcut");
+        Assert.Equal(hasMapAccess, shortcut.IsEffectivelyVisible);
+        Assert.Equal(app.Vm.OpenMapCommand, shortcut.Command);
+        Assert.False(shortcut.IsEnabled); // Локальная учебная база не подключена к серверу карты.
+        var version = app.Window.FindControl<TextBlock>("ShellVersion")!;
+        Assert.True(version.IsEffectivelyVisible);
+        Assert.Equal(app.Vm.ApplicationVersion, version.Text);
+    }
+
     [AvaloniaFact]
     public void ChangeLog_CanSwitchBackFromViewsToChanges()
     {

@@ -10,6 +10,19 @@ namespace Avers.Server.Tests;
 
 public class MapTests
 {
+    [Theory]
+    [InlineData("/m/")]
+    [InlineData("/m/index.html")]
+    [InlineData("/m/map/map.js")]
+    public async Task MapApplication_RevalidatesAfterUpdate(string path)
+    {
+        await using var app = new AversApp();
+        using var client = app.CreateClient();
+        var response = await client.GetAsync(path);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.CacheControl?.NoCache);
+    }
+
     [Fact]
     public async Task BuildingAddresses_AreServedOnlyToStaffWithHouseAccess()
     {

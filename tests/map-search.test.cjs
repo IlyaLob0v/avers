@@ -246,3 +246,12 @@ test('Enter после быстрого изменения запроса выб
   page.context.$('map-search').events.keydown({ key: 'Enter', preventDefault() {} });
   assert.equal(page.context.lastPopup.box.children[0].textContent, 'улица Серова, 10');
 });
+
+test('Показывает готовность городского справочника до ввода запроса', async () => {
+  const page = browser([building('улица Серова, 8'), building('улица Серова, 10')]);
+  await page.load();
+  assert.match(page.context.$('map-catalog').textContent, /Адресов города: 2/);
+  const missing = browser([], [], async () => ({ ok: false, status: 404 }));
+  await missing.load();
+  assert.match(missing.context.$('map-catalog').textContent, /недоступен/);
+});

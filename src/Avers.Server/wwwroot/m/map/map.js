@@ -23,6 +23,7 @@ async function openMap(houseId) {
     map?.resize();
   } catch (err) {
     if (session !== mapSession) return;
+    $("map-catalog").textContent = "Доступны дома базы Аверса";
     $("map-note").textContent = mapHouses.length
       ? "Карта недоступна на этом устройстве. Сведения о доме можно открыть через поиск по адресу."
       : err.message;
@@ -44,6 +45,7 @@ function closeMap() {
   clearTimeout(mapSearchTimer);
   canPlace = false;
   $("map-search").value = "";
+  $("map-catalog").textContent = "Поиск по адресам города";
   $("map-missing").hidden = true;
   listHouses([]);
 }
@@ -134,6 +136,7 @@ async function createMap(session) {
 async function loadBuildingAddresses(session) {
   addressesLoading = true;
   addressesUnavailable = false;
+  $("map-catalog").textContent = "Загружаем адреса города…";
   searchMapAddresses();
   try {
     const response = await fetch("/api/mobile/map/buildings", { cache: "no-cache", headers: { Authorization: "Bearer " + token } });
@@ -163,6 +166,7 @@ async function loadBuildingAddresses(session) {
   finally {
     if (session === mapSession) {
       addressesLoading = false;
+      $("map-catalog").textContent = addressesUnavailable ? "Справочник города недоступен" : `Адресов города: ${cityAddresses.length.toLocaleString("ru")} · офлайн`;
       searchMapAddresses();
     }
   }

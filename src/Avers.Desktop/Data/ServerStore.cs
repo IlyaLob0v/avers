@@ -35,7 +35,11 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public IReadOnlyList<AppUser> LoginUsers() => [];
 
     // Токен в адрес не кладём: на терминальном сервере строку запуска браузера видят другие сеансы. Страница просит вход сама.
-    public Uri? MapAddress(int? houseId) => new(http.BaseAddress!, houseId is { } id ? $"m/#map={id}" : "m/#map");
+    public Uri? MapAddress(int? houseId)
+    {
+        var version = typeof(ServerStore).Assembly.GetName().Version?.ToString(3);
+        return new(http.BaseAddress!, $"m/?v={version}#map" + (houseId is { } id ? $"={id}" : ""));
+    }
 
     public async Task<AppUser> SignInAsync(string login, string password)
     {

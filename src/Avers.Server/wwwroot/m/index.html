@@ -44,8 +44,10 @@
   .map-legend span { display: inline-flex; align-items: center; gap: 5px; }
   .map-legend i { width: 9px; height: 9px; border-radius: 50%; background: #2b5cb0; }
   .map-legend .fault { background: #c62828; }
-  .map-bar input { box-shadow: 0 1px 4px rgba(0,0,0,.3); }
-  .map-bar ul { list-style: none; margin: 4px 0 0; padding: 4px; background: #fff; border: 1px solid var(--line); border-radius: 3px; max-height: 50vh; overflow: auto; }
+  .map-search-panel { padding: 10px; background: #fff; border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+  .map-search-panel label { margin: 0 0 6px; font-weight: 600; color: var(--navy); }
+  .map-search-panel p { margin: 6px 0 0; color: #555; font-size: 12px; }
+  .map-bar ul { list-style: none; margin: 4px 0 0; padding: 4px; background: #fff; border: 1px solid var(--line); border-radius: 3px; max-height: 40vh; overflow: auto; }
   .map-bar li button { width: 100%; text-align: left; padding: 8px; font: inherit; font-size: 15px; background: none; border: 0; border-bottom: 1px solid var(--face); }
   .map-bar li.muted { padding: 6px 8px; }
   #map-missing { margin-top: 6px; padding: 6px 10px; font: inherit; font-size: 14px; background: #fff; border: 1px solid var(--blue); color: var(--blue); border-radius: 3px; }
@@ -85,7 +87,11 @@
 <div id="map" hidden>
   <div id="map-canvas"></div>
   <div class="map-bar">
-    <input id="map-search" type="search" aria-label="Поиск адреса на карте" aria-controls="map-results" aria-expanded="false" placeholder="Адрес в Омске, например «Ленина 12»" autocomplete="off">
+    <div class="map-search-panel">
+      <label for="map-search">Найти адрес в Омске</label>
+      <input id="map-search" type="search" aria-label="Поиск адреса на карте" aria-controls="map-results" aria-describedby="map-catalog" aria-expanded="false" placeholder="Улица и дом, например «Ленина 12»" autocomplete="off">
+      <p id="map-catalog" role="status">Поиск по адресам города</p>
+    </div>
     <ul id="map-results" aria-label="Найденные адреса" hidden></ul>
     <button id="map-missing" hidden></button>
     <div class="map-legend" aria-label="Обозначения на карте">
@@ -114,7 +120,7 @@ let fromMap = false;
 async function showMap(houseId) {
   fromMap = true;
   if (!window.openMap) await new Promise((resolve, reject) => document.head.append(Object.assign(document.createElement("script"),
-    { src: "map/map.js?v=city-addresses", onload: resolve, onerror: () => reject(new Error("Не удалось загрузить карту с сервера.")) })));
+    { src: "map/map.js?v=" + encodeURIComponent(new URLSearchParams(location.search).get("v") || "city-addresses"), onload: resolve, onerror: () => reject(new Error("Не удалось загрузить карту с сервера.")) })));
   await openMap(houseId);
 }
 const hashHouse = () => (/^#map=(\d+)/.exec(location.hash) || [])[1];

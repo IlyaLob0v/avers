@@ -7,6 +7,21 @@
   <ScrollViewer>
     <StackPanel Margin="32,24,20,24">
       <TextBlock FontSize="24" FontWeight="SemiBold" Margin="0,0,0,18" Text="Рабочий стол" />
+      <Border Classes="card" Padding="18,16" Margin="0,0,8,18" IsVisible="{Binding CanOpenMap}">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <Border Classes="tileglyph" Margin="0,0,16,0" VerticalAlignment="Center">
+            <Path Data="M12,22 Q3,14 3,10 A9,9 0 0 1 21,10 Q21,14 12,22 Z M12,13 A3,3 0 1 0 12,7 A3,3 0 1 0 12,13" Stretch="Uniform" />
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="5" Margin="0,0,20,0" VerticalAlignment="Center">
+            <TextBlock Text="Карта Омска" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource Caption}" />
+            <TextBlock Classes="hint" Text="Поиск по улицам, домам и корпусам. Адреса загруженного города доступны без интернета." TextWrapping="Wrap" />
+            <TextBlock Classes="hint" Text="Для открытия карты подключитесь к серверу Аверса." IsVisible="{Binding !IsShared}" TextWrapping="Wrap" />
+          </StackPanel>
+          <Button x:Name="CityMapShortcut" Grid.Column="2" Classes="primary" Content="Открыть карту"
+                  AutomationProperties.Name="Открыть карту города" Command="{Binding OpenMapCommand}"
+                  IsEnabled="{Binding IsShared}" VerticalAlignment="Center" MinWidth="132" />
+        </Grid>
+      </Border>
       <ItemsControl ItemsSource="{Binding Navigation}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate><UniformGrid Columns="4" /></ItemsPanelTemplate>
