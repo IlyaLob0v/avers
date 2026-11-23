@@ -57,7 +57,15 @@ app.UseDefaultFiles();
 // Глифы подписей офлайн-карты (.pbf) — тип, которого нет в списке по умолчанию.
 var contentTypes = new FileExtensionContentTypeProvider();
 contentTypes.Mappings[".pbf"] = "application/x-protobuf";
-app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = contentTypes });
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = contentTypes,
+    OnPrepareResponse = context =>
+    {
+        if (context.Context.Request.Path == "/m/index.html" || context.Context.Request.Path == "/m/map/map.js")
+            context.Context.Response.Headers.CacheControl = "no-cache";
+    }
+});
 app.UseAuthentication();
 app.UseFreshUser();
 app.UseAuthorization();

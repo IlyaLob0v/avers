@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Avalonia.Headless.XUnit;
 using Avers.Contracts;
 using Avers.Data;
 using Avers.Desktop.Data;
@@ -61,7 +62,7 @@ public sealed class ServerModeTests : IAsyncDisposable
         Assert.Equal(1, _server.WithDb(db => db.PaymentOperations.Count()));
     }
 
-    [Fact]
+    [AvaloniaFact]
     public async Task Map_OpensServerPageOnSelectedHouse()
     {
         var vm = await SignIn("sokolova");
@@ -71,7 +72,9 @@ public sealed class ServerModeTests : IAsyncDisposable
         vm.OpenMapCommand.Execute(null);
 
         Assert.True(vm.CanOpenMap);
-        Assert.EndsWith($"/m/#map={vm.SelectedHouse!.Id}", Assert.Single(opened));
+        var address = new Uri(Assert.Single(opened));
+        Assert.Equal($"#map={vm.SelectedHouse!.Id}", address.Fragment);
+        Assert.Equal($"?v={typeof(ServerStore).Assembly.GetName().Version?.ToString(3)}", address.Query);
     }
 
     [Fact]
