@@ -21,7 +21,6 @@ function browser(features, houses = [], response) {
     addEventListener(name, action) { this.events[name] = action; }
     setAttribute(name, value) { this[name] = value; }
     focus() { this.focused = true; }
-    select() { this.selected = true; }
   }
   const elements = new Map();
   const context = vm.createContext({
@@ -257,8 +256,8 @@ test('Показывает готовность городского справ�
   assert.match(missing.context.$('map-catalog').textContent, /недоступен/);
 });
 
-test('Кнопка Поиск фокусирует адрес на карте; Дома открывает отдельный список', () => {
-  const page = browser([]);
+function houseListPage(response) {
+  const page = browser([], [], response);
   const elementById = page.context.$;
   Object.assign(page.context.document, {
     getElementById: elementById,
@@ -266,19 +265,76 @@ test('Кнопка Поиск фокусирует адрес на карте; �
     querySelector: () => ({ offsetHeight: 48 })
   });
   page.context.window = { closeMap: () => { page.context.closedMap = true; } };
-  page.context.sessionStorage = { getItem: () => null };
+  page.context.sessionStorage = { getItem: () => null, removeItem() {} };
   page.context.location = { hash: '', search: '' };
   const html = fs.readFileSync(path.join(__dirname, '../src/Avers.Server/wwwroot/m/index.html'), 'utf8');
   vm.runInContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], page.context);
+  page.html = html;
+  page.houseButtons = () => elementById('houses').children.flatMap(li => li.children);
+  page.filter = text => { elementById('house-filter').value = text; elementById('house-filter').oninput(); };
+  return page;
+}
+
+const ownHouses = [
+  { id: 1, address: 'ул. Волочаевская, д. 19' },
+  { id: 2, address: 'ул. Волочаевская, д. 19Д' },
+  { id: 3, address: 'ул. Братская, д. 18' }
+];
+const houseResponse = houses => async () => ({ ok: true, json: async () => ({ houses }) });
+
+test('Дома Аверса сразу открывает список, без верхней кнопки Поиск', async () => {
+  const page = houseListPage(houseResponse(ownHouses));
   vm.runInContext('show("map")', page.context);
-  elementById('map-search').value = 'Лукашевича 14/4';
-  elementById('list-open').onclick();
-  assert.equal(elementById('map').hidden, false);
-  assert.equal(elementById('map-search').focused, true);
-  assert.equal(elementById('map-search').value, 'Лукашевича 14/4');
-  assert.equal(page.context.closedMap, undefined);
-  elementById('houses-open').onclick();
-  assert.equal(elementById('map').hidden, true);
-  assert.equal(elementById('search').hidden, false);
-  assert.equal(elementById('houses-open').hidden, true);
+  await page.context.$('houses-open').onclick();
+  assert.equal(page.context.$('map').hidden, true);
+  assert.equal(page.context.$('search').hidden, false);
+  assert.equal(page.houseButtons().length, 3);
+  assert.doesNotMatch(page.html, /id="list-open"/);
+  assert.match(page.html, /id="houses-open"[^>]*>Дома Аверса</);
+});
+
+test('Поиск над списком фильтрует дома Аверса; очистка возвращает список', async () => {
+  const page = houseListPage(houseResponse(ownHouses));
+  await page.context.$('houses-open').onclick();
+  page.filter('ВОЛОЧ 19');
+  assert.equal(page.houseButtons().length, 2);
+  page.filter('братская');
+  assert.equal(page.houseButtons()[0].textContent, 'ул. Братская, д. 18');
+  page.filter('');
+  assert.equal(page.houseButtons().length, 3);
+});
+
+test('В списке домов нет прежнего ограничения поиска до 30 результатов', async () => {
+  const page = houseListPage(houseResponse(Array.from({ length: 150 }, (_, id) => ({ id, address: `ул. Тестовая, д. ${id + 1}` }))));
+  await page.context.$('houses-open').onclick();
+  assert.equal(page.houseButtons().length, 150);
+});
+
+test('Запрос, введённый во время загрузки домов, применяется к полученному списку', async () => {
+  let complete;
+  const page = houseListPage(() => new Promise(resolve => { complete = resolve; }));
+  const loading = page.context.$('houses-open').onclick();
+  page.filter('братская');
+  assert.match(page.context.$('search-note').textContent, /Загружаем/);
+  complete({ ok: true, json: async () => ({ houses: ownHouses }) });
+  await loading;
+  assert.equal(page.houseButtons().length, 1);
+});
+
+test('Выход во время загрузки не показывает дома прошлого сеанса', async () => {
+  let complete;
+  const page = houseListPage(() => new Promise(resolve => { complete = resolve; }));
+  const loading = page.context.$('houses-open').onclick();
+  vm.runInContext('logout()', page.context);
+  complete({ ok: true, json: async () => ({ houses: ownHouses }) });
+  await loading;
+  assert.equal(page.context.$('login').hidden, false);
+  assert.equal(page.houseButtons().length, 0);
+});
+
+test('Сбой загрузки домов показан явно и не маскируется поиском', async () => {
+  const page = houseListPage(async () => ({ ok: false, status: 503 }));
+  await page.context.$('houses-open').onclick();
+  page.filter('братская');
+  assert.match(page.context.$('search-note').textContent, /Ошибка сервера: 503/);
 });

@@ -14,9 +14,7 @@
   main { padding: 12px 16px 32px; max-width: 640px; margin: 0 auto; }
   label { display: block; font-size: 14px; margin: 10px 0 4px; }
   input { width: 100%; padding: 10px; font: inherit; border: 1px solid var(--line); border-radius: 3px; background: #fff; }
-  .row { display: flex; gap: 8px; }
-  .row > div:first-child { flex: 3; }
-  .row > div:last-child { flex: 1; }
+  .house-list-title { font-size: 22px; color: var(--navy); margin: 0 0 12px; }
   .primary { width: 100%; margin-top: 14px; padding: 12px; font: inherit; color: #fff; background: var(--blue); border: 0; border-radius: 3px; }
   .error { color: #b00020; margin-top: 10px; }
   .muted { color: #555; font-size: 14px; }
@@ -59,7 +57,7 @@
 </style>
 </head>
 <body>
-<header><b>Аверс</b><nav><button id="map-open" hidden>Карта</button><button id="list-open" hidden>Поиск</button><button id="houses-open" hidden>Дома</button><button id="logout" hidden>Выйти</button></nav></header>
+<header><b>Аверс</b><nav><button id="map-open" hidden>Карта</button><button id="houses-open" hidden>Дома Аверса</button><button id="logout" hidden>Выйти</button></nav></header>
 <main>
   <form id="login" hidden>
     <label for="user">Логин</label>
@@ -71,12 +69,11 @@
   </form>
 
   <div id="search" hidden>
-    <div class="row">
-      <div><label for="street">Улица</label><input id="street" placeholder="Начало названия"></div>
-      <div><label for="number">Дом</label><input id="number" inputmode="numeric"></div>
-    </div>
-    <ul class="houses" id="houses"></ul>
-    <div class="muted" id="search-note"></div>
+    <h1 class="house-list-title">Дома Аверса</h1>
+    <label for="house-filter">Поиск по списку</label>
+    <input id="house-filter" type="search" placeholder="Улица и номер дома" aria-controls="houses" autocomplete="off">
+    <div class="muted" id="search-note" role="status"></div>
+    <ul class="houses" id="houses" aria-label="Дома Аверса"></ul>
   </div>
 
   <div id="house" hidden>
@@ -105,13 +102,14 @@
 <script>
 const $ = id => document.getElementById(id);
 let token = sessionStorage.getItem("avers-token");
+let listedHouses = [], housesLoading = false, housesError = "", housesRequest = 0;
 
 function show(id) {
+  if (id !== "search") housesRequest++;
   if (id !== "map" && !$("map").hidden) window.closeMap?.();
   for (const s of ["login", "search", "house", "map"]) $(s).hidden = s !== id;
   $("logout").hidden = id === "login";
   $("map-open").hidden = id === "login" || id === "map";
-  $("list-open").hidden = id !== "map";
   $("houses-open").hidden = id !== "map";
   document.documentElement.style.setProperty("--top", document.querySelector("header").offsetHeight + "px");
 }
@@ -138,6 +136,9 @@ function logout() {
   token = null;
   sessionStorage.removeItem("avers-token");
   $("viewer").hidden = true;
+  listedHouses = [];
+  $("houses").replaceChildren();
+  $("house-filter").value = "";
   show("login");
 }
 
@@ -154,37 +155,58 @@ $("login").onsubmit = async e => {
   sessionStorage.setItem("avers-token", token);
   $("pass").value = "";
   if (location.hash.startsWith("#map")) { showMap(+hashHouse() || null); return; }
-  show("search");
-  $("street").focus();
+  showHouses();
+  $("house-filter").focus();
 };
 
 $("logout").onclick = logout;
-$("back").onclick = () => fromMap ? showMap() : show("search");
+$("back").onclick = () => fromMap ? showMap() : showHouses();
 $("map-open").onclick = () => showMap(null).catch(err => alert(err.message));
-$("list-open").onclick = () => { $("map-search").focus(); $("map-search").select(); };
-$("houses-open").onclick = () => { fromMap = false; show("search"); };
+$("houses-open").onclick = () => { $("house-filter").value = ""; return showHouses(); };
 
-let timer;
-for (const id of ["street", "number"]) $(id).oninput = () => { clearTimeout(timer); timer = setTimeout(search, 300); };
+$("house-filter").oninput = renderHouses;
 
-async function search() {
-  const street = $("street").value.trim(), number = $("number").value.trim();
+async function showHouses() {
+  fromMap = false;
+  show("search");
+  const request = ++housesRequest;
+  listedHouses = [];
+  housesLoading = true;
+  housesError = "";
+  $("houses").replaceChildren();
+  $("search-note").textContent = "Загружаем дома Аверса…";
+  try {
+    const data = await api("/api/mobile/map/houses");
+    if (request !== housesRequest) return;
+    listedHouses = data.houses;
+  } catch (err) {
+    if (request === housesRequest) housesError = err.message;
+  } finally {
+    if (request === housesRequest) {
+      housesLoading = false;
+      renderHouses();
+    }
+  }
+}
+
+function renderHouses() {
+  if (housesLoading) return;
   const list = $("houses");
   list.replaceChildren();
-  $("search-note").textContent = "";
-  if (!street) return;
-  try {
-    const houses = await api(`/api/mobile/houses?street=${encodeURIComponent(street)}&house=${encodeURIComponent(number)}`);
-    if (houses.length === 0) $("search-note").textContent = "Ничего не найдено.";
-    for (const h of houses) {
-      const b = document.createElement("button");
-      b.textContent = h.address;
-      b.onclick = () => openHouse(h.id);
-      const li = document.createElement("li");
-      li.append(b);
-      list.append(li);
-    }
-  } catch (err) { $("search-note").textContent = err.message; }
+  if (housesError) { $("search-note").textContent = housesError; return; }
+  const normalize = text => text.toLowerCase().replaceAll("ё", "е").replace(/[.,]/g, " ");
+  const words = normalize($("house-filter").value).split(/\s+/).filter(Boolean);
+  const houses = listedHouses.filter(h => words.every(word => normalize(h.address).includes(word)));
+  $("search-note").textContent = !listedHouses.length ? "В базе Аверса пока нет домов." : !houses.length
+    ? "Ничего не найдено." : words.length ? `Найдено: ${houses.length} из ${listedHouses.length}` : `Домов: ${houses.length}`;
+  for (const h of houses) {
+    const b = document.createElement("button");
+    b.textContent = h.address;
+    b.onclick = () => openHouse(h.id);
+    const li = document.createElement("li");
+    li.append(b);
+    list.append(li);
+  }
 }
 
 function section(title, rows, cls) {
@@ -284,7 +306,7 @@ $("viewer-close").onclick = () => $("viewer").hidden = true;
 
 if (!token) show("login");
 else if (location.hash.startsWith("#map")) showMap(+hashHouse() || null).catch(err => alert(err.message));
-else show("search");
+else showHouses();
 </script>
 </body>
 </html>
