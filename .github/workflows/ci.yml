@@ -22,6 +22,8 @@ jobs:
           package-manager-cache: false
       - name: Map search tests
         run: node --test tests/map-search.test.cjs
+      - name: Map address import tests
+        run: python -B -m unittest discover -s tests -p test_map_building_addresses.py
       - name: Restore
         if: hashFiles('Avers.sln') != ''
         run: dotnet restore Avers.sln

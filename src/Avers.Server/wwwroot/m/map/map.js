@@ -4,7 +4,7 @@
 
 const Omsk = [73.37, 54.99];
 let addressesLoading = false;
-let cityAddresses = [], addressesUnavailable = false, listedAddresses = [], mapSearchTimer, mapSearchActive = false;
+let cityAddresses = [], addressPoints = [], addressesUnavailable = false, listedAddresses = [], mapSearchTimer, mapSearchActive = false;
 const mapAttribution = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">участники OpenStreetMap</a>';
 let map = null, mapHouses = [], canPlace = false, mapSession = 0;
 let mapLibraries;
@@ -40,6 +40,7 @@ function closeMap() {
   map = null;
   mapHouses = [];
   cityAddresses = [];
+  addressPoints = [];
   addressesLoading = addressesUnavailable = false;
   mapSearchActive = false;
   clearTimeout(mapSearchTimer);
@@ -146,10 +147,13 @@ async function loadBuildingAddresses(session) {
       const buildings = await response.json();
       if (session !== mapSession) return;
       const unique = new Map();
+      addressPoints = [];
       for (const feature of buildings.features ?? []) {
         const address = feature.properties?.address;
         const center = buildingCenter(feature.geometry?.coordinates);
         if (typeof address !== "string" || !address || !center) continue;
+        feature.properties.housenumber ??= address.slice(address.lastIndexOf(",") + 1).trim().replace(/^д\.\s*/i, "");
+        if (feature.geometry.type === "Point") addressPoints.push(feature);
         const entry = addressEntry(address, center);
         if (!unique.has(entry.key)) unique.set(entry.key, entry);
       }
@@ -159,8 +163,19 @@ async function loadBuildingAddresses(session) {
         id: "address-buildings", type: "fill", source: "address-buildings", minzoom: 13,
         paint: { "fill-color": "#2b5cb0", "fill-opacity": 0.04 }
       }, "houses");
+      map.addLayer({
+        id: "address-labels", type: "symbol", source: "address-buildings", minzoom: 16,
+        layout: {
+          "text-field": ["get", "housenumber"], "text-font": ["Medium"],
+          "text-size": ["interpolate", ["linear"], ["zoom"], 16, 11, 18, 13],
+          "text-allow-overlap": false, "text-padding": 3
+        },
+        paint: { "text-color": "#334155", "text-halo-color": "#fff", "text-halo-width": 1.5 }
+      }, "houses-labels");
       map.on("mouseenter", "address-buildings", () => map.getCanvas().style.cursor = "pointer");
       map.on("mouseleave", "address-buildings", () => map.getCanvas().style.cursor = "");
+      map.on("mouseenter", "address-labels", () => map.getCanvas().style.cursor = "pointer");
+      map.on("mouseleave", "address-labels", () => map.getCanvas().style.cursor = "");
     } else addressesUnavailable = true;
   } catch { if (session === mapSession) addressesUnavailable = true; }
   finally {
@@ -371,13 +386,32 @@ $("map-search").addEventListener("focus", () => {
 function showBuildingAddress(e) {
   if (map.queryRenderedFeatures(e.point, { layers: ["houses"] }).length) return;
   const addressed = map.getLayer("address-buildings")
-    ? map.queryRenderedFeatures(e.point, { layers: ["address-buildings"] })[0] : null;
+    ? map.queryRenderedFeatures(e.point, { layers: ["address-labels", "address-buildings"] })[0] : null;
   const building = addressed ?? map.queryRenderedFeatures(e.point).find(f => f.sourceLayer === "buildings");
   if (!building) return;
-  const address = addressed?.properties.address;
+  const address = addressed?.properties.address || [...new Set(addressPoints
+    .filter(feature => containsAddressPoint(building.geometry, feature.geometry.coordinates))
+    .map(feature => feature.properties.address))].join("; ");
   const number = building.properties?.addr_housenumber;
   showAddressPopup(address || (number ? "Дом № " + number : "Здание"), e.lngLat, null,
     address ? "" : addressesLoading ? "Адреса зданий загружаются… Нажмите ещё раз." : "Полный адрес отсутствует в загруженных данных.");
+}
+
+function containsAddressPoint(geometry, point) {
+  function inRing(ring) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [x, y] = point, [xi, yi] = ring[i], [xj, yj] = ring[j];
+      const cross = (x - xi) * (yj - yi) - (y - yi) * (xj - xi);
+      if (Math.abs(cross) < 1e-12 && x >= Math.min(xi, xj) && x <= Math.max(xi, xj)
+        && y >= Math.min(yi, yj) && y <= Math.max(yi, yj)) return true;
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  const polygons = geometry?.type === "Polygon" ? [geometry.coordinates]
+    : geometry?.type === "MultiPolygon" ? geometry.coordinates : [];
+  return polygons.some(rings => inRing(rings[0]) && !rings.slice(1).some(inRing));
 }
 
 function showAddressPopup(address, point, house, note) {

@@ -1,7 +1,71 @@
 """Convert an Overpass JSON export with building geometry into offline GeoJSON."""
 import argparse
 import json
+import math
 from pathlib import Path
+
+
+def coordinates(points):
+    result = [[p.get("lon"), p.get("lat")] for p in points]
+    if any(not isinstance(v, (int, float)) or isinstance(v, bool) or not math.isfinite(v)
+           for point in result for v in point):
+        return []
+    return result if all(abs(x) <= 180 and abs(y) <= 90 for x, y in result) else []
+
+
+def rings(members):
+    pending = [coordinates(m.get("geometry", [])) for m in members]
+    if any(len(part) < 2 for part in pending):
+        return None
+    result = []
+    while pending:
+        ring = pending.pop()
+        while ring[0] != ring[-1]:
+            for i, part in enumerate(pending):
+                if part[0] == ring[-1] or part[-1] == ring[-1]:
+                    ring.extend((part if part[0] == ring[-1] else part[::-1])[1:])
+                    pending.pop(i)
+                    break
+            else:
+                return None
+        if len(ring) < 4:
+            return None
+        result.append(ring)
+    return result
+
+
+def inside(point, ring):
+    x, y = point
+    found = False
+    for (xi, yi), (xj, yj) in zip(ring, ring[1:]):
+        if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / (yj - yi) + xi:
+            found = not found
+    return found
+
+
+def geometry(element):
+    if element.get("type") == "node":
+        point = coordinates([element])
+        return {"type": "Point", "coordinates": point[0]} if point else None
+    if not element.get("tags", {}).get("building"):
+        return None
+    if element.get("type") == "relation":
+        if element.get("tags", {}).get("type") != "multipolygon":
+            return None
+        members = [m for m in element.get("members", []) if m.get("type") == "way"]
+        outer = rings([m for m in members if m.get("role", "") in ("", "outer")])
+        inner = rings([m for m in members if m.get("role") == "inner"])
+        if not outer or inner is None:
+            return None
+        polygons = [[ring] for ring in outer]
+        for hole in inner:
+            owners = [polygon for polygon in polygons if inside(hole[0], polygon[0])]
+            if len(owners) != 1:
+                return None
+            owners[0].append(hole)
+        return {"type": "MultiPolygon", "coordinates": polygons}
+    ring = coordinates(element.get("geometry", []))
+    return {"type": "Polygon", "coordinates": [ring]} if len(ring) >= 4 and ring[0] == ring[-1] else None
 
 
 def building_features(elements):
@@ -9,16 +73,16 @@ def building_features(elements):
         tags = element.get("tags", {})
         street = tags.get("addr:street") or tags.get("addr:place")
         number = tags.get("addr:housenumber")
-        if not tags.get("building") or not street or not number:
+        if not street or not number:
             continue
-        coordinates = [[p["lon"], p["lat"]] for p in element.get("geometry", [])]
-        if len(coordinates) < 4 or coordinates[0] != coordinates[-1]:
+        shape = geometry(element)
+        if not shape:
             continue
         address = ", ".join(filter(None, [tags.get("addr:city"), street, number]))
         yield {
             "type": "Feature",
-            "geometry": {"type": "Polygon", "coordinates": [coordinates]},
-            "properties": {"address": address},
+            "geometry": shape,
+            "properties": {"address": address, "housenumber": number},
         }
 
 
