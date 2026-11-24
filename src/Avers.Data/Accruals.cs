@@ -16,8 +16,8 @@ public static class Accruals
     {
         using var transaction = db.Database.BeginTransaction();
         var rows = db.Database.ExecuteSql($"""
-            INSERT INTO "Payments" ("SubscriberId", "Year", "Month", "Tariff")
-            SELECT s."Id", {year}, m."Month",
+            INSERT INTO "Payments" ("SubscriberId", "Year", "Month", "Revision", "Tariff")
+            SELECT s."Id", {year}, m."Month", 0,
                    (SELECT p."Tariff" FROM "Payments" p WHERE p."SubscriberId" = s."Id" AND p."Year" < {year}
                     ORDER BY p."Year" DESC, p."Month" DESC LIMIT 1)
             FROM "Subscribers" s

@@ -184,7 +184,9 @@ Kestrel слушает `127.0.0.1:5115`, офис — HTTPS через Caddy с 
 `AVERS_BACKUP_DAYS`, перенос на другой компьютер, копия перед обновлением, ключи и данные Caddy в копии, еженедельная
 проверка восстановления (`deploy/server/avers-backup`, `avers-restore-check`).
 По ADR-0015 сделано: заявки запросами по фильтру, сводка в базе (`src/Avers.Data/TicketQueries.cs`).
-`DesktopClient.Version` сейчас 3 (`src/Avers.Contracts/DesktopClient.cs`); переходы по ADR-0010, 0011 и 0016 его поднимают.
+`DesktopClient.Version` сейчас 7 (`src/Avers.Contracts/DesktopClient.cs`). Версии паспорта, организации и месяца оплаты
+защищают сохранение и отмену; касса, отмена, договор и ОЭК блокируют абонента на время транзакции
+([ADR-0019](adr/0019-concurrent-editing.md)). Защита остальных карточек по ADR-0011 остаётся в плане.
 
 ## Дальше
 

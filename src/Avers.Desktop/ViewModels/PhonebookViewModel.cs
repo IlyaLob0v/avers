@@ -104,7 +104,7 @@ public sealed partial class PhonebookViewModel(MainViewModel shell) : Observable
         if (EditHouse is not { Id: > 0 } house || !ConfirmDelete(house, $"дом {house.AddressLine}")) return;
         await shell.Save(async () =>
         {
-            await shell.Store.DeleteHouseAsync(house.Id);
+            await shell.Store.DeleteHouseAsync(house.Id, house.Revision);
             await shell.ReloadAsync();
             shell.SelectedStreet = shell.Streets.FirstOrDefault(s => s.Id == house.StreetId);
             shell.Status = $"Дом {house.AddressLine} удалён.";
@@ -138,7 +138,7 @@ public sealed partial class PhonebookViewModel(MainViewModel shell) : Observable
         if (EditOrganization is not { Id: > 0 } org || !ConfirmDelete(org, $"организацию «{org.Name}»")) return;
         await shell.Save(async () =>
         {
-            await shell.Store.DeleteOrganizationAsync(org.Id);
+            await shell.Store.DeleteOrganizationAsync(org.Id, org.Revision);
             await shell.ReloadAsync();
             shell.Status = $"Организация «{org.Name}» удалена.";
         });

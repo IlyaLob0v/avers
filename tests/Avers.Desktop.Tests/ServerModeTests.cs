@@ -219,7 +219,7 @@ public sealed class ServerModeTests : IAsyncDisposable
         Assert.True(paid.IsPaid);
         Assert.Equal((paid.Month, paid.Tariff, "Касса"), (saved.Month, saved.Amount!.Value, saved.Source!));
 
-        await store.CancelPaymentAsync(subscriberId, paid.Id);
+        await store.CancelPaymentAsync(subscriberId, paid.Id, paid.Revision);
 
         Assert.Null(_server.WithDb(db => db.Payments.AsNoTracking().Single(p => p.Id == paid.Id).Amount));
     }
@@ -229,9 +229,9 @@ public sealed class ServerModeTests : IAsyncDisposable
     {
         var (store, user) = await Connect("admin");
         var paid = await store.RecordPaymentAsync(1, new RecordPaymentRequest(Year), user);
-        await store.CancelPaymentAsync(1, paid.Id);
+        await store.CancelPaymentAsync(1, paid.Id, paid.Revision);
 
-        var error = await Assert.ThrowsAsync<StoreException>(() => store.CancelPaymentAsync(1, paid.Id));
+        var error = await Assert.ThrowsAsync<StoreException>(() => store.CancelPaymentAsync(1, paid.Id, paid.Revision + 1));
 
         Assert.Equal($"Месяц {paid.Month:00}.{Year} не оплачен.", error.Message);
     }

@@ -124,8 +124,8 @@ public sealed class ServerStore(HttpClient http) : IAversStore
             : http.PutAsJsonAsync($"api/subscribers/{subscriberId}/court-cases/{draft.Id}", request, Json));
     }
 
-    public Task CancelPaymentAsync(int subscriberId, int paymentId) =>
-        Write(() => http.DeleteAsync($"api/subscribers/{subscriberId}/payments/{paymentId}"));
+    public Task CancelPaymentAsync(int subscriberId, int paymentId, long revision) =>
+        Write(() => http.DeleteAsync($"api/subscribers/{subscriberId}/payments/{paymentId}?revision={revision}"));
 
     public Task<OekImportResult> ImportOekAsync(OekImportRequest request) =>
         Read<OekImportResult>(() => http.PostAsJsonAsync("api/oek/import", request, Json));
@@ -226,15 +226,15 @@ public sealed class ServerStore(HttpClient http) : IAversStore
 
     public Task SaveHouseAsync(House draft) =>
         Upsert("houses", draft.Id, new HouseRequest(draft.StreetId, draft.Number, draft.PzhreuIndex, draft.PzhreuAccount,
-            draft.Floors, draft.Entrances, draft.Risers, draft.Apartments, draft.Zone, draft.OrganizationId, draft.Serviced));
+            draft.Floors, draft.Entrances, draft.Risers, draft.Apartments, draft.Zone, draft.OrganizationId, draft.Serviced, draft.Revision));
 
-    public Task DeleteHouseAsync(int id) => Write(() => http.DeleteAsync($"api/houses/{id}"));
+    public Task DeleteHouseAsync(int id, long revision) => Write(() => http.DeleteAsync($"api/houses/{id}?revision={revision}"));
 
     public Task SaveOrganizationAsync(Organization draft) =>
         Upsert("organizations", draft.Id, new OrganizationRequest(draft.Name, draft.Branch, draft.Address, draft.Phones,
-            draft.HeadName, draft.HeadPhone, draft.EngineerName, draft.EngineerPhone));
+            draft.HeadName, draft.HeadPhone, draft.EngineerName, draft.EngineerPhone, draft.Revision));
 
-    public Task DeleteOrganizationAsync(int id) => Write(() => http.DeleteAsync($"api/organizations/{id}"));
+    public Task DeleteOrganizationAsync(int id, long revision) => Write(() => http.DeleteAsync($"api/organizations/{id}?revision={revision}"));
 
     public Task SaveMaterialAsync(Material draft) =>
         Upsert("materials", draft.Id, new MaterialRequest(draft.Name, draft.Unit));

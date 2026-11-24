@@ -25,8 +25,8 @@ public static class Apartments
             return "Телефон и номер договора — до 40 символов.";
         if (draft.ContractDate is not { } signed || signed.Year > today.Year)
             return $"Дата договора обязательна и не позже {today.Year} года.";
-        if (tariff <= 0 || decimal.Round(tariff, 2) != tariff)
-            return "Тариф — больше нуля, не больше двух знаков после запятой.";
+        if (tariff <= 0 || tariff > Payments.MaxAmount || decimal.Round(tariff, 2) != tariff)
+            return "Тариф — больше нуля, не больше 9 999 999 999,99 ₽, с точностью до копеек.";
         var house = db.Houses.FirstOrDefault(h => h.Id == draft.HouseId);
         if (house is null)
             return "Дом не найден.";

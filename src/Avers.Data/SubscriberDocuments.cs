@@ -14,7 +14,7 @@ public static class SubscriberDocuments
     public static IReadOnlyList<string> Kinds { get; } = ["Договор", "Решение суда", "Постановление ОСП", "Другое"];
 
     /// <summary>Формат по первым байтам файла; null — не PDF, не JPEG и не PNG.</summary>
-    public static string? Format(byte[] content) => content switch
+    public static string? Format(byte[]? content) => content switch
     {
         [0x25, 0x50, 0x44, 0x46, ..] => "PDF",
         _ => SchemeFiles.ImageFormat(content)
@@ -25,12 +25,15 @@ public static class SubscriberDocuments
     public static string Extension(string format) => format switch { "PDF" => ".pdf", "PNG" => ".png", _ => ".jpg" };
 
     /// <summary>Текст ошибки для сотрудника или null, если документ подходит.</summary>
-    public static string? Check(string kind, string name, byte[] content) =>
+    public static string? Check(string kind, string name, byte[]? content) =>
         !Kinds.Contains(kind) ? "Выберите вид документа."
         : string.IsNullOrWhiteSpace(name) || name.Trim().Length > 200 ? "Название документа — от 1 до 200 символов."
+        : content is null || content.Length == 0 ? "Выберите файл документа."
         : content.Length > MaxBytes ? "Файл — не больше 20 МБ."
         : Format(content) is null ? "Скан должен быть файлом PDF, JPG или PNG."
-        : null;
+        : Format(content) != "PDF" ? SchemeFiles.CheckImage(content, MaxBytes)
+        : !content.AsSpan().StartsWith("%PDF-"u8) || content.AsSpan(Math.Max(0, content.Length - 1024)).IndexOf("%%EOF"u8) < 0
+            ? "PDF повреждён или загружен не полностью." : null;
 
     public static List<DocumentInfo> List(AversDbContext db, int subscriberId) =>
         db.SubscriberDocuments.AsNoTracking()

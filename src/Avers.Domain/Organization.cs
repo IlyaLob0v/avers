@@ -3,6 +3,7 @@ namespace Avers.Domain;
 public sealed class Organization
 {
     public int Id { get; set; }
+    public long Revision { get; set; }
     public string Name { get; set; } = "";
     public string Branch { get; set; } = "";
     public string Address { get; set; } = "";

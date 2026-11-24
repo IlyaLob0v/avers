@@ -68,7 +68,8 @@ public sealed record PaymentDto(
     string? Source,
     bool IsPaid,
     string? RecordedBy = null,
-    string? PayerName = null);
+    string? PayerName = null,
+    long Revision = 0);
 
 /// <summary>
 /// Внести оплату. Всё, кроме года, можно не заполнять: месяц — первый неоплаченный,

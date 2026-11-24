@@ -69,6 +69,8 @@ public static class Phonebook
         var house = draft.Id == 0 ? new House() : db.Houses.Include(h => h.Organization).FirstOrDefault(h => h.Id == draft.Id);
         if (house is null)
             return "Дом не найден.";
+        if (draft.Id != 0 && draft.Revision != house.Revision)
+            throw new DbUpdateConcurrencyException("Дом уже изменён. Обновите словарь перед сохранением.");
         var organization = db.Organizations.AsNoTracking().FirstOrDefault(o => o.Id == draft.OrganizationId)?.Name;
         var isNew = draft.Id == 0;
         var changes = ChangeLog.Diff(
@@ -102,11 +104,13 @@ public static class Phonebook
     }
 
     /// <summary>Дом без абонентов, заявок, схем, ППР и домофонов удаляется; с ними — только снимается с обслуживания.</summary>
-    public static string? DeleteHouse(AversDbContext db, int id, string who, DateTimeOffset at)
+    public static string? DeleteHouse(AversDbContext db, int id, string who, DateTimeOffset at, long? revision = null)
     {
         var house = db.Houses.Include(h => h.Street).FirstOrDefault(h => h.Id == id);
         if (house is null)
             return "Дом не найден.";
+        if (revision is { } expected && house.Revision != expected)
+            throw new DbUpdateConcurrencyException("Дом уже изменён. Обновите словарь перед удалением.");
         var linked = new (string Name, int Count)[]
         {
             ("абоненты", db.Subscribers.Count(x => x.HouseId == id)),
@@ -136,6 +140,8 @@ public static class Phonebook
         var org = draft.Id == 0 ? new Organization() : db.Organizations.FirstOrDefault(o => o.Id == draft.Id);
         if (org is null)
             return "Организация не найдена.";
+        if (draft.Id != 0 && draft.Revision != org.Revision)
+            throw new DbUpdateConcurrencyException("Организация уже изменена. Обновите словарь перед сохранением.");
         var isNew = draft.Id == 0;
         var changes = ChangeLog.Diff(
             ("Название", isNew ? null : org.Name, name),
@@ -161,11 +167,13 @@ public static class Phonebook
         return null;
     }
 
-    public static string? DeleteOrganization(AversDbContext db, int id, string who, DateTimeOffset at)
+    public static string? DeleteOrganization(AversDbContext db, int id, string who, DateTimeOffset at, long? revision = null)
     {
         var org = db.Organizations.FirstOrDefault(o => o.Id == id);
         if (org is null)
             return "Организация не найдена.";
+        if (revision is { } expected && org.Revision != expected)
+            throw new DbUpdateConcurrencyException("Организация уже изменена. Обновите словарь перед удалением.");
         var houses = db.Houses.Count(h => h.OrganizationId == id);
         if (houses > 0)
             return $"Организация обслуживает дома ({houses}). Сначала выберите домам другую.";

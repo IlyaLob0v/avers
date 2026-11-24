@@ -1,4 +1,5 @@
 using Avers.Domain;
+using SkiaSharp;
 
 namespace Avers.Data;
 
@@ -6,9 +7,12 @@ namespace Avers.Data;
 public static class SchemeFiles
 {
     public const int MaxBytes = 10 * 1024 * 1024;
+    public const long MaxPixels = 16_000_000;
+
+    public static bool SafeDimensions(int width, int height) => width > 0 && height > 0 && width <= 16_384 && height <= 16_384 && (long)width * height <= MaxPixels;
 
     /// <summary>Формат по первым байтам файла; null — не JPEG и не PNG.</summary>
-    public static string? ImageFormat(byte[] content) => content switch
+    public static string? ImageFormat(byte[]? content) => content switch
     {
         [0xFF, 0xD8, 0xFF, ..] => "JPEG",
         [0x89, 0x50, 0x4E, 0x47, ..] => "PNG",
@@ -16,10 +20,26 @@ public static class SchemeFiles
     };
 
     /// <summary>Текст ошибки для сотрудника или null, если файл подходит.</summary>
-    public static string? Check(byte[] content) =>
-        content.Length > MaxBytes ? "Файл схемы — не больше 10 МБ."
-        : ImageFormat(content) is null ? "Схема должна быть картинкой JPG или PNG."
-        : null;
+    public static string? Check(byte[]? content) => CheckImage(content, MaxBytes);
+
+    public static string? CheckImage(byte[]? content, int maxBytes)
+    {
+        if (content is null || content.Length == 0)
+            return "Выберите файл картинки.";
+        if (content.Length > maxBytes)
+            return $"Файл — не больше {maxBytes / 1024 / 1024} МБ.";
+        if (ImageFormat(content) is null)
+            return "Схема должна быть картинкой JPG или PNG.";
+        using var stream = new SKMemoryStream(content);
+        using var codec = SKCodec.Create(stream);
+        if (codec is null || codec.EncodedFormat is not (SKEncodedImageFormat.Jpeg or SKEncodedImageFormat.Png))
+            return "Картинка повреждена или имеет неподдерживаемый формат.";
+        if (!SafeDimensions(codec.Info.Width, codec.Info.Height))
+            return "Картинка слишком большая: не больше 16 миллионов пикселей и 16384 по каждой стороне.";
+        using var bitmap = new SKBitmap(codec.Info);
+        return codec.GetPixels(bitmap.Info, bitmap.GetPixels()) == SKCodecResult.Success
+            ? null : "Картинка повреждена или загружена не полностью.";
+    }
 
     public static string? CheckName(string? name) =>
         string.IsNullOrWhiteSpace(name) || name.Trim().Length > 200 ? "Название схемы — от 1 до 200 символов." : null;

@@ -15,8 +15,8 @@ public static class Tariffs
     {
         if (year is < 2000 or > 2100 || month is < 1 or > 12)
             return ("Месяц — в виде мм.гггг.", 0);
-        if (tariff <= 0 || decimal.Round(tariff, 2) != tariff)
-            return ("Тариф — больше нуля, не больше двух знаков после запятой.", 0);
+        if (tariff <= 0 || tariff > Payments.MaxAmount || decimal.Round(tariff, 2) != tariff)
+            return ("Тариф — больше нуля, не больше 9 999 999 999,99 ₽, с точностью до копеек.", 0);
 
         var months = db.Payments.Where(p => p.Amount == null && (p.Year > year || p.Year == year && p.Month >= month));
         string target;
@@ -42,7 +42,7 @@ public static class Tariffs
         }
 
         using var transaction = db.Database.BeginTransaction();
-        var changed = months.ExecuteUpdate(u => u.SetProperty(p => p.Tariff, tariff));
+        var changed = months.ExecuteUpdate(u => u.SetProperty(p => p.Tariff, tariff).SetProperty(p => p.Revision, p => p.Revision + 1));
         ChangeLog.Add(db, at, who, $"Тариф с {month:00}.{year}", target,
             changed > 0 ? [$"Тариф: {tariff.ToString("0.00", System.Globalization.CultureInfo.GetCultureInfo("ru-RU"))}", $"Месяцев: {changed}"] : []);
         db.SaveChanges();

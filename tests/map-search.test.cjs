@@ -259,6 +259,8 @@ test('Показывает готовность городского справ�
 function houseListPage(response) {
   const page = browser([], [], response);
   const elementById = page.context.$;
+  const createElement = page.context.document.createElement;
+  page.context.document.createElement = tag => Object.assign(createElement(tag), { style: {} });
   Object.assign(page.context.document, {
     getElementById: elementById,
     documentElement: { style: { setProperty() {} } },
@@ -274,6 +276,52 @@ function houseListPage(response) {
   page.filter = text => { elementById('house-filter').value = text; elementById('house-filter').oninput(); };
   return page;
 }
+
+test('Поздний ответ карточки не смешивает сведения двух домов', async () => {
+  const replies = [];
+  const page = houseListPage(() => new Promise(resolve => replies.push(resolve)));
+  const first = vm.runInContext('openHouse(1)', page.context);
+  const second = vm.runInContext('openHouse(2)', page.context);
+  replies[1]({ ok: true, json: async () => ({ address: 'Дом 2', schemes: [] }) });
+  await second;
+  replies[0]({ ok: true, json: async () => ({ address: 'Дом 1', schemes: [] }) });
+  await first;
+  assert.deepEqual(page.context.$('house-body').children.filter(e => e.tagName === 'h1').map(e => e.textContent), ['Дом 2']);
+});
+
+test('Выход во время загрузки схемы не открывает её поверх входа', async () => {
+  let complete;
+  const page = houseListPage(() => new Promise(resolve => { complete = resolve; }));
+  page.context.createImageBitmap = async () => ({ width: 1, height: 1, close() {} });
+  page.context.$('viewer-canvas').getContext = () => ({ drawImage() {}, clearRect() {} });
+  page.context.alert = () => {};
+  const loading = vm.runInContext('token = "audit"; openScheme(1, document.createElement("button"))', page.context);
+  vm.runInContext('logout()', page.context);
+  complete({ ok: true, blob: async () => ({}) });
+  await loading;
+  assert.equal(page.context.$('login').hidden, false);
+  assert.equal(page.context.$('viewer').hidden, true);
+});
+
+test('Поздний ответ первого входа не заменяет второй сеанс', async () => {
+  const replies = [];
+  const page = houseListPage(() => new Promise(resolve => replies.push(resolve)));
+  page.context.sessionStorage.setItem = () => {};
+  const first = vm.runInContext('$("login").onsubmit({ preventDefault() {} })', page.context);
+  const second = vm.runInContext('$("login").onsubmit({ preventDefault() {} })', page.context);
+  replies[1]({ ok: true, json: async () => ({ accessToken: 'second-session' }) });
+  await second;
+  replies[0]({ ok: true, json: async () => ({ accessToken: 'first-session' }) });
+  await first;
+  assert.equal(vm.runInContext('token', page.context), 'second-session');
+});
+
+test('Сбой сети при входе показывает сообщение и позволяет повторить вход', async () => {
+  const page = houseListPage(async () => { throw new Error('offline'); });
+  await vm.runInContext('$("login").onsubmit({ preventDefault() {} })', page.context);
+  assert.match(page.context.$('login-error').textContent, /связи с сервером/);
+  assert.equal(vm.runInContext('token', page.context), null);
+});
 
 const ownHouses = [
   { id: 1, address: 'ул. Волочаевская, д. 19' },

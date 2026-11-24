@@ -726,7 +726,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             await _store.SaveHousePassportAsync(h.Id, new HousePassportRequest(
                 h.Antennas, h.AerialCables, h.Amplifiers, h.PowerSupplies, h.TechFloorKey, h.OtherNotes,
-                h.OpenFault, h.OpenFaultReason, fix, org));
+                h.OpenFault, h.OpenFaultReason, fix, org, h.Revision, h.Organization?.Revision ?? 0));
             // Как сохранил сервер: пустая неисправность снимает причину и план.
             h.OpenFault = string.IsNullOrWhiteSpace(h.OpenFault) ? null : h.OpenFault.Trim();
             h.OpenFaultReason = h.OpenFault is null || string.IsNullOrWhiteSpace(h.OpenFaultReason) ? null : h.OpenFaultReason.Trim();
@@ -735,6 +735,7 @@ public sealed partial class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(FaultBanner));
             OnPropertyChanged(nameof(HasFault));
             OnPropertyChanged(nameof(FaultOverdue));
+            await ReloadAsync();
             Status = "Паспорт дома сохранён.";
         });
     }
@@ -750,6 +751,14 @@ public sealed partial class MainViewModel : ObservableObject
         catch (StoreException e)
         {
             Status = e.Message;
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+        {
+            Status = "Запись уже изменена другим сотрудником. Обновите сведения и повторите действие.";
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException e) when (DatabaseErrors.IsReferenceConflict(e))
+        {
+            Status = DatabaseErrors.LinkedDataMessage;
         }
     }
 

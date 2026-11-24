@@ -7,6 +7,28 @@ public sealed class AversDbContext : DbContext
 {
     public AversDbContext(DbContextOptions<AversDbContext> options) : base(options) { }
 
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        AdvanceRevisions();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        AdvanceRevisions();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    private void AdvanceRevisions()
+    {
+        ChangeTracker.DetectChanges();
+        foreach (var entry in ChangeTracker.Entries().Where(e => e.State == EntityState.Modified && e.Metadata.FindProperty("Revision") is not null))
+        {
+            var revision = entry.Property("Revision");
+            revision.CurrentValue = checked((long)revision.OriginalValue! + 1);
+        }
+    }
+
     public DbSet<Organization> Organizations => Set<Organization>();
     public DbSet<Street> Streets => Set<Street>();
     public DbSet<House> Houses => Set<House>();
@@ -37,6 +59,7 @@ public sealed class AversDbContext : DbContext
             .HasName("avers_phone_digits").IsNullable(false);
         model.Entity<Organization>(e =>
         {
+            e.Property(x => x.Revision).IsConcurrencyToken();
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
             e.Property(x => x.Branch).HasMaxLength(200);
             e.Property(x => x.Address).HasMaxLength(300);
@@ -51,6 +74,8 @@ public sealed class AversDbContext : DbContext
 
         model.Entity<House>(e =>
         {
+            e.Property(x => x.Revision).IsConcurrencyToken();
+            e.HasOne(x => x.Street).WithMany(x => x.Houses).HasForeignKey(x => x.StreetId).OnDelete(DeleteBehavior.NoAction);
             e.Property(x => x.Number).HasMaxLength(20).IsRequired();
             e.Property(x => x.PzhreuIndex).HasMaxLength(16);
             e.Property(x => x.PzhreuAccount).HasMaxLength(32);
@@ -68,6 +93,8 @@ public sealed class AversDbContext : DbContext
 
         model.Entity<Subscriber>(e =>
         {
+            e.Property(x => x.LastPaymentDate).IsConcurrencyToken();
+            e.HasOne(x => x.House).WithMany(x => x.Subscribers).HasForeignKey(x => x.HouseId).OnDelete(DeleteBehavior.NoAction);
             e.Property(x => x.LastName).HasMaxLength(80).IsRequired();
             e.Property(x => x.FirstName).HasMaxLength(80);
             e.Property(x => x.Patronymic).HasMaxLength(80);
@@ -98,6 +125,7 @@ public sealed class AversDbContext : DbContext
 
         model.Entity<YearPayment>(e =>
         {
+            e.Property(x => x.Revision).IsConcurrencyToken();
             e.Property(x => x.Tariff).HasPrecision(12, 2);
             e.Property(x => x.Amount).HasPrecision(12, 2);
             e.Property(x => x.Source).HasMaxLength(40);
@@ -136,6 +164,7 @@ public sealed class AversDbContext : DbContext
 
         model.Entity<WorkTicket>(e =>
         {
+            e.HasOne(x => x.House).WithMany(x => x.Tickets).HasForeignKey(x => x.HouseId).OnDelete(DeleteBehavior.NoAction);
             e.Property(x => x.Fault).HasMaxLength(500);
             e.Property(x => x.WorkDone).HasMaxLength(500);
             e.Property(x => x.Mechanic).HasMaxLength(120);
@@ -205,5 +234,9 @@ public sealed class AversDbContext : DbContext
 
         model.Entity<Mechanic>().Property(x => x.FullName).HasMaxLength(120).IsRequired();
         model.Entity<Material>().Property(x => x.Name).HasMaxLength(200).IsRequired();
+        model.Entity<HouseScheme>().HasOne(x => x.House).WithMany(x => x.Schemes).HasForeignKey(x => x.HouseId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<PprEntry>().HasOne(x => x.House).WithMany(x => x.Ppr).HasForeignKey(x => x.HouseId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<IntercomPanel>().HasOne(x => x.House).WithMany(x => x.Intercoms).HasForeignKey(x => x.HouseId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<IntercomTicket>().HasOne(x => x.House).WithMany().HasForeignKey(x => x.HouseId).OnDelete(DeleteBehavior.NoAction);
     }
 }
