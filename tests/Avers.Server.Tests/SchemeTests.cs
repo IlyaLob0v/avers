@@ -13,7 +13,14 @@ public class SchemeTests
     private static readonly byte[] Png = Convert.FromBase64String(
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==");
 
-    private static readonly byte[] Jpeg = [0xFF, 0xD8, 0xFF, 0xE0, 0, 0x10];
+    private static readonly byte[] Jpeg = CreateJpeg();
+
+    private static byte[] CreateJpeg()
+    {
+        using var bitmap = new SKBitmap(2, 2);
+        using var data = bitmap.Encode(SKEncodedImageFormat.Jpeg, 95);
+        return data.ToArray();
+    }
 
     private static async Task<MobileHouseDto> HouseAsync(HttpClient client, string street, string number)
     {

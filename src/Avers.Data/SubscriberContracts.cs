@@ -1,4 +1,5 @@
 using Avers.Domain;
+using Microsoft.EntityFrameworkCore;
 
 namespace Avers.Data;
 
@@ -11,6 +12,11 @@ public static class SubscriberContracts
 {
     public static void Save(AversDbContext db, Subscriber s, Subscriber draft, DateOnly today, string who, DateTimeOffset at)
     {
+        using var transaction = db.Database.BeginTransaction();
+        Payments.LockSubscriber(db, s.Id);
+        var lastPaidAt = db.Subscribers.AsNoTracking().Where(x => x.Id == s.Id).Select(x => x.LastPaymentDate).Single();
+        var paymentDate = db.Entry(s).Property(x => x.LastPaymentDate);
+        paymentDate.CurrentValue = paymentDate.OriginalValue = lastPaidAt;
         var legal = draft.IsLegalEntity;
         draft.Inn = legal ? draft.Inn.Trim() : "";
         draft.Kpp = legal ? draft.Kpp.Trim() : "";
@@ -69,6 +75,7 @@ public static class SubscriberContracts
 
         ChangeLog.Add(db, at, who, "Договор и примечание", ChangeLog.Account(s), changes);
         db.SaveChanges();
+        transaction.Commit();
     }
 
     private static int Index(DateOnly d) => d.Year * 12 + d.Month - 1;

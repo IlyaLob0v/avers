@@ -320,7 +320,7 @@ public sealed partial class MainViewModel
         }
         await Save(async () =>
         {
-            await _store.CancelPaymentAsync(s.Id, p.Id);
+            await _store.CancelPaymentAsync(s.Id, p.Id, p.Revision);
             await ReloadAsync();
             Status = $"Оплата за {MonthName(p.Month)} {p.Year} отменена.";
         });

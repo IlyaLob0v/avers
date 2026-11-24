@@ -31,7 +31,7 @@ public class PhonebookTests
         Assert.Equal(("7А", 144, true), (house.Number, house.Apartments, house.Serviced));
 
         Assert.Equal("На улице Звёздная есть дома (1). Сначала удалите их.", await ErrorAsync(await engineer.DeleteAsync($"/api/streets/{streetId}")));
-        (await engineer.DeleteAsync($"/api/houses/{house.Id}")).EnsureSuccessStatusCode();
+        (await engineer.DeleteAsync($"/api/houses/{house.Id}?revision={house.Revision}")).EnsureSuccessStatusCode();
         (await engineer.DeleteAsync($"/api/streets/{streetId}")).EnsureSuccessStatusCode();
 
         var log = await (await app.LoginAsync("admin")).GetFromJsonAsync<List<ChangeLogEntry>>("/api/change-log");
@@ -47,7 +47,7 @@ public class PhonebookTests
         var engineer = await app.LoginAsync("engineer");
         var id = await app.WithDbAsync(db => db.Houses.Where(h => h.Subscribers.Any()).Select(h => h.Id).FirstAsync());
 
-        var error = await ErrorAsync(await engineer.DeleteAsync($"/api/houses/{id}"));
+        var error = await ErrorAsync(await engineer.DeleteAsync($"/api/houses/{id}?revision=0"));
 
         Assert.StartsWith("У дома есть абоненты", error);
         Assert.EndsWith("Снимите отметку «На обслуживании».", error);
@@ -110,8 +110,8 @@ public class PhonebookTests
         Assert.Equal("21-00-01", await app.WithDbAsync(db => db.Organizations.Where(o => o.Id == id).Select(o => o.Phones).SingleAsync()));
         Assert.Equal("Название организации — от 1 до 200 символов.",
             await ErrorAsync(await engineer.PostAsJsonAsync("/api/organizations", request with { Name = " " })));
-        Assert.StartsWith("Организация обслуживает дома", await ErrorAsync(await engineer.DeleteAsync($"/api/organizations/{busy}")));
-        (await engineer.DeleteAsync($"/api/organizations/{id}")).EnsureSuccessStatusCode();
+        Assert.StartsWith("Организация обслуживает дома", await ErrorAsync(await engineer.DeleteAsync($"/api/organizations/{busy}?revision=0")));
+        (await engineer.DeleteAsync($"/api/organizations/{id}?revision=1")).EnsureSuccessStatusCode();
         Assert.False(await app.WithDbAsync(db => db.Organizations.AnyAsync(o => o.Id == id)));
         var log = await (await app.LoginAsync("admin")).GetFromJsonAsync<List<ChangeLogEntry>>("/api/change-log");
         Assert.Equal(["Словарь: организация", "Словарь: организация", "Словарь: новая организация"], log!.Take(3).Select(e => e.Action));

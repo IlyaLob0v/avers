@@ -3,6 +3,7 @@ namespace Avers.Domain;
 public sealed class YearPayment
 {
     public int Id { get; set; }
+    public long Revision { get; set; }
     public int SubscriberId { get; set; }
     public Subscriber Subscriber { get; set; } = null!;
     public int Year { get; set; }

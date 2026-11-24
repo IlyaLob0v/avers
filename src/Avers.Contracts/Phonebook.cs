@@ -15,7 +15,8 @@ public sealed record HouseRequest(
     int Apartments,
     string? Zone,
     int? OrganizationId,
-    bool Serviced);
+    bool Serviced,
+    long Revision = 0);
 
 /// <summary>Обслуживающая организация в словаре.</summary>
 public sealed record OrganizationRequest(
@@ -26,7 +27,8 @@ public sealed record OrganizationRequest(
     string? HeadName,
     string? HeadPhone,
     string? EngineerName,
-    string? EngineerPhone);
+    string? EngineerPhone,
+    long Revision = 0);
 
 /// <summary>Материал в словаре.</summary>
 public sealed record MaterialRequest(string? Name, string? Unit);

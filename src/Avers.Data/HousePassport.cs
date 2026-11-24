@@ -10,11 +10,14 @@ public static class HousePassport
     /// Переносит поля паспорта из <paramref name="draft"/>; false — дом не найден. Пустая неисправность снимает и причину, и план.
     /// <c>draft.Organization</c> — новые сведения об организации дома (они общие для всех её домов); null — не трогать.
     /// </summary>
-    public static bool Save(AversDbContext db, int houseId, House draft, string who, DateTimeOffset at)
+    public static bool Save(AversDbContext db, int houseId, House draft, string who, DateTimeOffset at, long? revision = null, long? organizationRevision = null)
     {
         var house = db.Houses.Include(h => h.Street).Include(h => h.Organization).FirstOrDefault(h => h.Id == houseId);
         if (house is null)
             return false;
+        if ((revision is { } expected && house.Revision != expected) ||
+            (draft.Organization is not null && organizationRevision is { } expectedOrg && house.Organization?.Revision != expectedOrg))
+            throw new DbUpdateConcurrencyException("Паспорт или организация уже изменены. Обновите сведения перед сохранением.");
 
         var antennas = draft.Antennas.Trim();
         var aerialCables = draft.AerialCables.Trim();

@@ -7,6 +7,12 @@ namespace Avers.Data;
 public static class Payments
 {
     public const string DefaultSource = "Касса";
+    // Соответствует numeric(12,2) рабочего счёта в PostgreSQL.
+    public const decimal MaxAmount = 9_999_999_999.99m;
+
+    // Вызывается внутри транзакции: касса, отмена, договор и ОЭК блокируют абонента в одном порядке.
+    internal static void LockSubscriber(AversDbContext db, int subscriberId) => db.Subscribers.Where(s => s.Id == subscriberId)
+        .ExecuteUpdate(u => u.SetProperty(s => s.LastPaymentDate, s => s.LastPaymentDate));
 
     /// <summary>
     /// Оплата месяца <paramref name="month"/>, а без него — первого неоплаченного месяца года; сумма null — по тарифу.
@@ -27,15 +33,19 @@ public static class Payments
             return (null, $"Месяц {target.Month:00}.{target.Year} уже оплачен.");
 
         var paid = amount ?? target.Tariff;
+        if (paid < 0 || paid > MaxAmount || decimal.Round(paid, 2) != paid)
+            return (null, "Сумма — от 0 до 9 999 999 999,99 ₽, не больше двух знаков после запятой.");
         source = string.IsNullOrWhiteSpace(source) ? DefaultSource : source.Trim();
         payerName = string.IsNullOrWhiteSpace(payerName) ? null : payerName.Trim();
 
         // Условие Amount == null в самом UPDATE: если два кассира внесут один месяц одновременно,
         // пройдёт только первый.
         using var transaction = db.Database.BeginTransaction();
+        LockSubscriber(db, subscriber.Id);
         var updated = db.Payments
-            .Where(p => p.Id == target.Id && p.Amount == null)
+            .Where(p => p.Id == target.Id && p.Amount == null && p.Revision == target.Revision)
             .ExecuteUpdate(u => u
+                .SetProperty(p => p.Revision, p => p.Revision + 1)
                 .SetProperty(p => p.Amount, paid)
                 .SetProperty(p => p.PaidAt, paidAt)
                 .SetProperty(p => p.ImportedFromJack, false)

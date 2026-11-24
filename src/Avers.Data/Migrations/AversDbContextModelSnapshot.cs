@@ -379,6 +379,10 @@ namespace Avers.Data.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
 
+                    b.Property<long>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
                     b.Property<int>("Risers")
                         .HasColumnType("integer");
 
@@ -620,6 +624,10 @@ namespace Avers.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<long>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
                     b.HasKey("Id");
 
                     b.ToTable("Organizations");
@@ -748,6 +756,7 @@ namespace Avers.Data.Migrations
                         .HasColumnType("character varying(80)");
 
                     b.Property<DateOnly?>("LastPaymentDate")
+                        .IsConcurrencyToken()
                         .HasColumnType("date");
 
                     b.Property<string>("LegalAddress")
@@ -1039,6 +1048,10 @@ namespace Avers.Data.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
 
+                    b.Property<long>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
                     b.Property<string>("Source")
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)");
@@ -1094,7 +1107,7 @@ namespace Avers.Data.Migrations
                     b.HasOne("Avers.Domain.Street", "Street")
                         .WithMany("Houses")
                         .HasForeignKey("StreetId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Organization");
@@ -1107,7 +1120,7 @@ namespace Avers.Data.Migrations
                     b.HasOne("Avers.Domain.House", "House")
                         .WithMany("Schemes")
                         .HasForeignKey("HouseId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("House");
@@ -1129,7 +1142,7 @@ namespace Avers.Data.Migrations
                     b.HasOne("Avers.Domain.House", "House")
                         .WithMany("Intercoms")
                         .HasForeignKey("HouseId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("House");
@@ -1140,7 +1153,7 @@ namespace Avers.Data.Migrations
                     b.HasOne("Avers.Domain.House", "House")
                         .WithMany()
                         .HasForeignKey("HouseId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("House");
@@ -1151,7 +1164,7 @@ namespace Avers.Data.Migrations
                     b.HasOne("Avers.Domain.House", "House")
                         .WithMany("Ppr")
                         .HasForeignKey("HouseId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("House");
@@ -1162,7 +1175,7 @@ namespace Avers.Data.Migrations
                     b.HasOne("Avers.Domain.House", "House")
                         .WithMany("Subscribers")
                         .HasForeignKey("HouseId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("House");
@@ -1200,7 +1213,7 @@ namespace Avers.Data.Migrations
                     b.HasOne("Avers.Domain.House", "House")
                         .WithMany("Tickets")
                         .HasForeignKey("HouseId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("Avers.Domain.Subscriber", "Subscriber")

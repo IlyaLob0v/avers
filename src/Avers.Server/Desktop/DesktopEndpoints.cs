@@ -49,7 +49,7 @@ public static class DesktopEndpoints
                 ? new Organization { Name = o.Name ?? "", Branch = o.Branch ?? "", Address = o.Address ?? "", Phones = o.Phones ?? "", HeadName = o.HeadName ?? "", EngineerName = o.EngineerName ?? "" }
                 : null
         };
-        if (!HousePassport.Save(db, id, draft, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow()))
+        if (!HousePassport.Save(db, id, draft, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow(), request.Revision, request.OrganizationRevision))
             return TypedResults.NotFound();
         return TypedResults.NoContent();
     }

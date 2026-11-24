@@ -13,7 +13,7 @@ namespace Avers.Server.Subscribers;
 public static class PaymentEndpoints
 {
     public static PaymentDto ToDto(YearPayment p) =>
-        new(p.Id, p.Year, p.Month, p.Tariff, p.Amount, p.PaidAt, p.Source, p.Amount is not null, p.RecordedBy, p.PayerName);
+        new(p.Id, p.Year, p.Month, p.Tariff, p.Amount, p.PaidAt, p.Source, p.Amount is not null, p.RecordedBy, p.PayerName, p.Revision);
 
     /// <summary>Вносит оплату за месяц (<see cref="Payments.Record"/>).</summary>
     public static async Task<Results<Ok<PaymentDto>, NotFound, ValidationProblem, ProblemHttpResult>> Record(
@@ -30,6 +30,8 @@ public static class PaymentEndpoints
             errors["operationId"] = ["Укажите идентификатор операции."];
         if (request.Amount is < 0)
             errors["amount"] = ["Сумма не может быть отрицательной."];
+        if (request.Amount > Payments.MaxAmount)
+            errors["amount"] = ["Сумма — не больше 9 999 999 999,99 ₽."];
         if (request.Amount is not null && decimal.Round(request.Amount.Value, 2) != request.Amount.Value)
             errors["amount"] = ["Сумма — не больше двух знаков после запятой."];
         if (request.Source is { Length: > 40 })
@@ -89,9 +91,11 @@ public static class PaymentEndpoints
     private static ProblemHttpResult Conflict(string detail) =>
         TypedResults.Problem(detail, statusCode: StatusCodes.Status409Conflict, title: "Оплата не внесена");
 
-    public static Results<NoContent, ValidationProblem> Cancel(int id, int paymentId, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
+    public static Results<NoContent, ValidationProblem> Cancel(int id, int paymentId, long? revision, ClaimsPrincipal user, AversDbContext db, TimeProvider time)
     {
-        var error = PaymentCancellation.Cancel(db, id, paymentId, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow());
+        if (revision is null or < 0)
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["revision"] = ["Обновите карточку перед отменой оплаты."] });
+        var error = PaymentCancellation.Cancel(db, id, paymentId, ChangeLog.Who(db, user.AppUserId()), time.GetUtcNow(), revision);
         return error is null
             ? TypedResults.NoContent()
             : TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["payment"] = [error] });

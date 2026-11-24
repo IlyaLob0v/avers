@@ -64,7 +64,7 @@ public interface IAversStore
     /// <summary>Судебное дело должника; Id = 0 — новое.</summary>
     Task SaveCourtCaseAsync(int subscriberId, CourtCase draft);
 
-    Task CancelPaymentAsync(int subscriberId, int paymentId);
+    Task CancelPaymentAsync(int subscriberId, int paymentId, long revision);
 
     Task<OekImportResult> ImportOekAsync(OekImportRequest request);
 
@@ -118,11 +118,11 @@ public interface IAversStore
 
     Task SaveHouseAsync(House draft);
 
-    Task DeleteHouseAsync(int id);
+    Task DeleteHouseAsync(int id, long revision);
 
     Task SaveOrganizationAsync(Organization draft);
 
-    Task DeleteOrganizationAsync(int id);
+    Task DeleteOrganizationAsync(int id, long revision);
 
     Task SaveMaterialAsync(Material draft);
 

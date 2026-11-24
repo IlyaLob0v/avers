@@ -72,7 +72,9 @@ public sealed record HousePassportRequest(
     string? OpenFault = null,
     string? OpenFaultReason = null,
     DateOnly? OpenFaultPlannedFix = null,
-    HouseOrganizationRequest? Organization = null);
+    HouseOrganizationRequest? Organization = null,
+    long Revision = 0,
+    long OrganizationRevision = 0);
 
 /// <summary>Обслуживающая организация дома и филиал; общие для всех домов этой организации.</summary>
 public sealed record HouseOrganizationRequest(

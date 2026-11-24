@@ -93,6 +93,47 @@ public class OekImportTests
     }
 
     [Fact]
+    public void RepeatFile_DoesNotWriteOrLockSubscribers()
+    {
+        using var database = new SqliteDatabase();
+        var file = August(new OekRow("83072480817", "1", "", "", 150, 150, new DateOnly(2026, 8, 14)));
+        using (var initial = database.CreateContext())
+        {
+            Seed(initial);
+            Assert.Equal(1, OekImport.Apply(initial, file, "Орлов", At).Payments);
+        }
+        var writes = new SubscriberWrites();
+        using var repeat = database.CreateContext(writes);
+
+        var result = OekImport.Apply(repeat, file, "Орлов", At);
+
+        Assert.Equal((0, 1), (result.Payments, result.AlreadyLoaded));
+        Assert.Equal(0, writes.Count);
+    }
+
+    private sealed class SubscriberWrites : DbCommandInterceptor
+    {
+        public int Count { get; private set; }
+
+        private void Observe(DbCommand command)
+        {
+            if (command.CommandText.TrimStart().StartsWith("UPDATE \"Subscribers\"", StringComparison.Ordinal)) Count++;
+        }
+
+        public override InterceptionResult<int> NonQueryExecuting(DbCommand command, CommandEventData eventData, InterceptionResult<int> result)
+        {
+            Observe(command);
+            return result;
+        }
+
+        public override InterceptionResult<DbDataReader> ReaderExecuting(DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result)
+        {
+            Observe(command);
+            return result;
+        }
+    }
+
+    [Fact]
     public void WithoutOurAccount_FoundByOekAccount()
     {
         using var database = new SqliteDatabase();

@@ -51,7 +51,10 @@ public static class DatabaseSetup
             finally { db.Database.SetCommandTimeout(timeout); }
         }
         else if (options.EnsureCreated)
+        {
             await db.Database.EnsureCreatedAsync();
+            SqliteSchema.EnsureRevisions(db);
+        }
         if (StartupWarning(options) is { } warning)
             app.Logger.LogWarning("{Warning}", warning);
         if (options.SeedDemo)

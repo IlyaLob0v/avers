@@ -3,6 +3,7 @@ namespace Avers.Domain;
 public sealed class House
 {
     public int Id { get; set; }
+    public long Revision { get; set; }
     public int StreetId { get; set; }
     public Street Street { get; set; } = null!;
     public string Number { get; set; } = "";

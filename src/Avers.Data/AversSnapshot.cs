@@ -24,16 +24,28 @@ public sealed class AversSnapshot
 
     public static AversSnapshot Load(AversDbContext db, UserRole role)
     {
+        var canSeeTechnical = RoleCatalog.Can(role, AppModule.Anten, out _);
         var snapshot = new AversSnapshot
         {
             PaymentWarningMonths = Settings.PaymentWarningMonths(db),
             PaymentConfirmFrom = Settings.PaymentConfirmFrom(db),
-            Organizations = db.Organizations.AsNoTracking().ToList(),
+            Organizations = canSeeTechnical ? db.Organizations.AsNoTracking().ToList() : [],
             Streets = db.Streets.AsNoTracking().OrderBy(x => x.Name).ToList(),
-            Houses = db.Houses.AsNoTracking().ToList(),
-            Schemes = db.HouseSchemes.AsNoTracking().ToList(),
-            Ppr = db.PprEntries.AsNoTracking().ToList(),
-            Intercoms = db.IntercomPanels.AsNoTracking().ToList()
+            Houses = canSeeTechnical ? db.Houses.AsNoTracking().ToList() : db.Houses.AsNoTracking()
+                .Select(h => new House
+                {
+                    Id = h.Id,
+                    StreetId = h.StreetId,
+                    Number = h.Number,
+                    Serviced = h.Serviced,
+                    PzhreuIndex = h.PzhreuIndex,
+                    PzhreuAccount = h.PzhreuAccount,
+                    Apartments = h.Apartments,
+                    Entrances = h.Entrances
+                }).ToList(),
+            Schemes = RoleCatalog.Can(role, AppModule.Scheme, out _) ? db.HouseSchemes.AsNoTracking().ToList() : [],
+            Ppr = canSeeTechnical ? db.PprEntries.AsNoTracking().ToList() : [],
+            Intercoms = canSeeTechnical ? db.IntercomPanels.AsNoTracking().ToList() : []
         };
         // Радиомеханики (телефоны, адреса) и материалы нужны заявкам и словарю; Читателю и юристу — нет.
         if (RoleCatalog.Can(role, AppModule.Disp, out _) || RoleCatalog.Can(role, AppModule.Phonebook, out _))

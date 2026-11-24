@@ -21,13 +21,15 @@ public static class PhonebookEndpoints
 
         api.MapPost("/houses", (HouseRequest r, ClaimsPrincipal u, AversDbContext db, TimeProvider t) => SaveHouse(0, r, u, db, t));
         api.MapPut("/houses/{id:int}", SaveHouse);
-        api.MapDelete("/houses/{id:int}", (int id, ClaimsPrincipal u, AversDbContext db, TimeProvider t) =>
-            Result(Phonebook.DeleteHouse(db, id, Who(db, u), t.GetUtcNow())));
+        api.MapDelete("/houses/{id:int}", (int id, long? revision, ClaimsPrincipal u, AversDbContext db, TimeProvider t) =>
+            Result(revision is null or < 0 ? "Обновите словарь перед удалением."
+                : Phonebook.DeleteHouse(db, id, Who(db, u), t.GetUtcNow(), revision)));
 
         api.MapPost("/organizations", (OrganizationRequest r, ClaimsPrincipal u, AversDbContext db, TimeProvider t) => SaveOrganization(0, r, u, db, t));
         api.MapPut("/organizations/{id:int}", SaveOrganization);
-        api.MapDelete("/organizations/{id:int}", (int id, ClaimsPrincipal u, AversDbContext db, TimeProvider t) =>
-            Result(Phonebook.DeleteOrganization(db, id, Who(db, u), t.GetUtcNow())));
+        api.MapDelete("/organizations/{id:int}", (int id, long? revision, ClaimsPrincipal u, AversDbContext db, TimeProvider t) =>
+            Result(revision is null or < 0 ? "Обновите словарь перед удалением."
+                : Phonebook.DeleteOrganization(db, id, Who(db, u), t.GetUtcNow(), revision)));
 
         api.MapPost("/materials", (MaterialRequest r, ClaimsPrincipal u, AversDbContext db, TimeProvider t) => SaveMaterial(0, r, u, db, t));
         api.MapPut("/materials/{id:int}", SaveMaterial);
@@ -47,6 +49,7 @@ public static class PhonebookEndpoints
         Result(Phonebook.SaveHouse(db, new House
         {
             Id = id,
+            Revision = r.Revision,
             StreetId = r.StreetId,
             Number = r.Number ?? "",
             PzhreuIndex = r.PzhreuIndex ?? "",
@@ -64,6 +67,7 @@ public static class PhonebookEndpoints
         Result(Phonebook.SaveOrganization(db, new Organization
         {
             Id = id,
+            Revision = r.Revision,
             Name = r.Name ?? "",
             Branch = r.Branch ?? "",
             Address = r.Address ?? "",

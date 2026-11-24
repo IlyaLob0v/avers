@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Avers.Contracts;
 using Avers.Domain;
+using Microsoft.EntityFrameworkCore;
 
 namespace Avers.Server.Tests;
 
@@ -86,8 +87,9 @@ public class ChangeLogTests
         var request = new HousePassportRequest("Антенна ДМВ", "РК-75", "Terra HA-126", "БП 12 В", "у старшего по дому", "");
         var engineer = await app.LoginAsync("engineer");
 
-        await engineer.PutAsJsonAsync("/api/houses/1/passport", request);
-        await engineer.PutAsJsonAsync("/api/houses/1/passport", request);
+        (await engineer.PutAsJsonAsync("/api/houses/1/passport", request)).EnsureSuccessStatusCode();
+        var revision = await app.WithDbAsync(db => db.Houses.Where(h => h.Id == 1).Select(h => h.Revision).SingleAsync());
+        (await engineer.PutAsJsonAsync("/api/houses/1/passport", request with { Revision = revision })).EnsureSuccessStatusCode();
 
         var entry = Assert.Single(await LogAsync(app));
         Assert.Equal("Паспорт дома", entry.Action);

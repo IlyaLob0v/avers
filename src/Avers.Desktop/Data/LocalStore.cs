@@ -102,7 +102,7 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
             ChangeLog.Who(ctx, user.Id), DateTimeOffset.UtcNow);
         return p is null
             ? throw new StoreException(error!)
-            : Task.FromResult(new PaymentDto(p.Id, p.Year, p.Month, p.Tariff, p.Amount, p.PaidAt, p.Source, true, p.RecordedBy));
+            : Task.FromResult(new PaymentDto(p.Id, p.Year, p.Month, p.Tariff, p.Amount, p.PaidAt, p.Source, true, p.RecordedBy, p.PayerName, p.Revision));
     }
 
     public Task<List<IntercomTicket>> LoadIntercomTicketsAsync(int houseId)
@@ -114,8 +114,8 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
     public Task SaveCourtCaseAsync(int subscriberId, CourtCase draft) =>
         EditPhonebook((ctx, who) => CourtCases.Save(ctx, subscriberId, draft, who, DateTimeOffset.UtcNow));
 
-    public Task CancelPaymentAsync(int subscriberId, int paymentId) =>
-        EditPhonebook((ctx, who) => PaymentCancellation.Cancel(ctx, subscriberId, paymentId, who, DateTimeOffset.UtcNow));
+    public Task CancelPaymentAsync(int subscriberId, int paymentId, long revision) =>
+        EditPhonebook((ctx, who) => PaymentCancellation.Cancel(ctx, subscriberId, paymentId, who, DateTimeOffset.UtcNow, revision));
 
     public Task<OekImportResult> ImportOekAsync(OekImportRequest request)
     {
@@ -194,7 +194,7 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
             Organization = request.Organization is { } o
                 ? new Organization { Name = o.Name ?? "", Branch = o.Branch ?? "", Address = o.Address ?? "", Phones = o.Phones ?? "", HeadName = o.HeadName ?? "", EngineerName = o.EngineerName ?? "" }
                 : null
-        }, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow);
+        }, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow, request.Revision, request.OrganizationRevision);
         return Task.CompletedTask;
     }
 
@@ -289,11 +289,11 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
 
     public Task SaveHouseAsync(House draft) => EditPhonebook((ctx, who) => Phonebook.SaveHouse(ctx, draft, who, DateTimeOffset.UtcNow));
 
-    public Task DeleteHouseAsync(int id) => EditPhonebook((ctx, who) => Phonebook.DeleteHouse(ctx, id, who, DateTimeOffset.UtcNow));
+    public Task DeleteHouseAsync(int id, long revision) => EditPhonebook((ctx, who) => Phonebook.DeleteHouse(ctx, id, who, DateTimeOffset.UtcNow, revision));
 
     public Task SaveOrganizationAsync(Organization draft) => EditPhonebook((ctx, who) => Phonebook.SaveOrganization(ctx, draft, who, DateTimeOffset.UtcNow));
 
-    public Task DeleteOrganizationAsync(int id) => EditPhonebook((ctx, who) => Phonebook.DeleteOrganization(ctx, id, who, DateTimeOffset.UtcNow));
+    public Task DeleteOrganizationAsync(int id, long revision) => EditPhonebook((ctx, who) => Phonebook.DeleteOrganization(ctx, id, who, DateTimeOffset.UtcNow, revision));
 
     public Task SaveMaterialAsync(Material draft) => EditPhonebook((ctx, who) => Phonebook.SaveMaterial(ctx, draft, who, DateTimeOffset.UtcNow));
 

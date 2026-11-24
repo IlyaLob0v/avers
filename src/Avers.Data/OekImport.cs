@@ -87,12 +87,18 @@ public static class OekImport
 
         // Месяцы прочитаны в начале, а кассир мог внести оплату, пока шла загрузка. Поэтому, как в Payments.Record,
         // условие Amount == null — в самом UPDATE: месяц, оплаченный кассиром, уходит в расхождения, а не затирается.
+        db.ChangeTracker.DetectChanges();
+        var writeIds = toPay.Select(p => p.Subscriber.Id)
+            .Concat(subscribers.Where(s => db.Entry(s).Property(x => x.OekAccount).IsModified).Select(s => s.Id))
+            .Distinct().Order().ToArray();
         using var transaction = db.Database.BeginTransaction();
+        foreach (var id in writeIds) Payments.LockSubscriber(db, id);
         foreach (var (row, s, month, paidAt) in toPay)
         {
             var updated = db.Payments
-                .Where(p => p.Id == month.Id && p.Amount == null)
+                .Where(p => p.Id == month.Id && p.Amount == null && p.Revision == month.Revision)
                 .ExecuteUpdate(u => u
+                    .SetProperty(p => p.Revision, p => p.Revision + 1)
                     .SetProperty(p => p.Amount, row.Paid)
                     .SetProperty(p => p.PaidAt, paidAt)
                     .SetProperty(p => p.ImportedFromJack, false)
@@ -100,9 +106,11 @@ public static class OekImport
                     .SetProperty(p => p.RecordedBy, "Файл ОЭК"));
             if (updated == 0)
             {
-                var now = db.Payments.AsNoTracking().Single(p => p.Id == month.Id);
+                var now = db.Payments.AsNoTracking().SingleOrDefault(p => p.Id == month.Id);
                 mismatches.Add(new OekMismatch(row.OekAccount, row.Account, row.Address, row.Apartment, row.Accrued, month.Tariff, row.Paid,
-                    $"месяц уже оплачен в Аверсе: {now.Amount:0.00} ({now.Source}), оплата ОЭК не загружена"));
+                    now is null ? "начисление удалено при изменении договора, оплата ОЭК не загружена"
+                    : now.Amount is null ? "начисление изменено, проверьте месяц перед повторной загрузкой"
+                    : $"месяц уже оплачен в Аверсе: {now.Amount:0.00} ({now.Source}), оплата ОЭК не загружена"));
                 continue;
             }
             db.Subscribers
@@ -116,6 +124,12 @@ public static class OekImport
         ChangeLog.Add(db, at, who, "Загрузка файла ОЭК", $"за {request.Month:00}.{request.Year}",
             [$"Строк: {request.Rows.Count}, найдено квартир: {matched}", $"Загружено оплат: {payments} на {total:0.00}",
              $"Уже были загружены: {already}", $"Расхождений: {mismatches.Count}"]);
+        var lastDates = db.Subscribers.AsNoTracking().Where(s => ids.Contains(s.Id)).ToDictionary(s => s.Id, s => s.LastPaymentDate);
+        foreach (var s in subscribers)
+        {
+            var date = db.Entry(s).Property(x => x.LastPaymentDate);
+            date.CurrentValue = date.OriginalValue = lastDates[s.Id];
+        }
         db.SaveChanges();
         transaction.Commit();
 
@@ -127,6 +141,7 @@ public static class OekImport
             month.ImportedFromJack = false;
             month.Source = Source;
             month.RecordedBy = "Файл ОЭК";
+            db.Entry(month).Reload();
             if (s.LastPaymentDate is null || s.LastPaymentDate < paidAt)
                 s.LastPaymentDate = paidAt;
         }

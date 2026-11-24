@@ -1,3 +1,4 @@
+using Avers.Data;
 using SkiaSharp;
 
 namespace Avers.Server.Desktop;
@@ -16,8 +17,9 @@ public static class SchemeWatermark
     /// <summary>Картинка в том же формате (PNG или JPEG) со знаком; null — файл не читается как картинка.</summary>
     public static byte[]? Apply(byte[] image, string format, string text)
     {
-        using var codec = SKCodec.Create(new SKMemoryStream(image));
-        if (codec is null)
+        using var stream = new SKMemoryStream(image);
+        using var codec = SKCodec.Create(stream);
+        if (codec is null || !SchemeFiles.SafeDimensions(codec.Info.Width, codec.Info.Height))
             return null;
         using var source = SKBitmap.Decode(codec);
         if (source is null)

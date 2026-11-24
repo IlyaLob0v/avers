@@ -223,8 +223,8 @@ public class ApartmentCardTests
             .Content.ReadFromJsonAsync<PaymentDto>();
 
         var forbidden = await user.DeleteAsync($"/api/subscribers/3/payments/{paid!.Id}");
-        var cancelled = await head.DeleteAsync($"/api/subscribers/3/payments/{paid.Id}");
-        var again = await head.DeleteAsync($"/api/subscribers/3/payments/{paid.Id}");
+        var cancelled = await head.DeleteAsync($"/api/subscribers/3/payments/{paid.Id}?revision={paid.Revision}");
+        var again = await head.DeleteAsync($"/api/subscribers/3/payments/{paid.Id}?revision={paid.Revision + 1}");
         var card = await head.GetFromJsonAsync<SubscriberCard>("/api/subscribers/3");
 
         Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);

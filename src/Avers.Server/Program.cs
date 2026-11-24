@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using Avers.Data;
 using Avers.Server.Auth;
 using Avers.Server.Desktop;
 using Avers.Server.Hosting;
@@ -12,6 +13,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,6 +54,20 @@ var app = builder.Build();
 // адрес телефона берём из X-Forwarded-For, иначе лимит попыток входа был бы один на всех.
 app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedFor });
 app.UseExceptionHandler();
+app.Use(async (context, next) =>
+{
+    try { await next(); }
+    catch (DbUpdateConcurrencyException)
+    {
+        await Results.Problem("Запись уже изменена другим сотрудником. Обновите сведения и повторите действие.",
+            statusCode: StatusCodes.Status409Conflict, title: "Сведения изменились").ExecuteAsync(context);
+    }
+    catch (DbUpdateException e) when (DatabaseErrors.IsReferenceConflict(e))
+    {
+        await Results.Problem(DatabaseErrors.LinkedDataMessage,
+            statusCode: StatusCodes.Status409Conflict, title: "Запись связана с другими данными").ExecuteAsync(context);
+    }
+});
 app.UseStatusCodePages();
 app.UseDefaultFiles();
 // Глифы подписей офлайн-карты (.pbf) — тип, которого нет в списке по умолчанию.
