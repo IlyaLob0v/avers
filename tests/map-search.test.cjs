@@ -39,7 +39,7 @@ function browser(features, houses = [], response) {
       setDOMContent(box) { this.box = box; return this; } addTo() { return this; }
     } },
     fakeMap: {
-      addSource() {}, addLayer() {}, on() {}, remove() {}, getCanvas: () => ({ style: {} }),
+      addSource() {}, addLayer(layer) { (context.layers ??= []).push(layer); }, on() {}, remove() {}, getCanvas: () => ({ style: {} }),
       getLayer: () => true, getSource: () => ({ setData() {} }), getZoom: () => 12,
       flyTo(options) { context.destination = options; },
       queryRenderedFeatures: (_, options) => options?.layers?.[0] === 'houses' ? []
@@ -69,6 +69,48 @@ test('Находит городской адрес вне базы Аверса 
   assert.ok(Math.abs(page.context.destination.center[1] - 55.001) < 1e-8);
   assert.equal(page.context.lastPopup.box.children[0].textContent, 'улица Ильичёва, 4А');
   assert.equal(page.context.lastPopup.box.children.length, 1);
+});
+
+test('Адрес отдельной точки доступен для поиска, подписи номера и выбора на карте', async () => {
+  const feature = { type: 'Feature', properties: { address: 'улица Тестовая, 12 корпус 2' },
+    geometry: { type: 'Point', coordinates: [73.4, 55] } };
+  const page = browser([feature]);
+  await page.load();
+  page.search('тестовая 12 к2');
+  assert.equal(page.buttons().length, 1);
+  page.buttons()[0].onclick();
+  assert.equal(page.context.destination.center[0], 73.4);
+  assert.equal(page.context.destination.center[1], 55);
+  assert.equal(page.context.lastPopup.box.children[0].textContent, feature.properties.address);
+  assert.equal(feature.properties.housenumber, '12 корпус 2');
+  assert.equal(page.context.layers.find(layer => layer.id === 'address-labels').minzoom, 16);
+});
+
+test('Адресная точка относится только к содержащему её зданию; двор и соседний дом исключены', async () => {
+  const points = [[73.401, 55.001], [73.405, 55.005], [73.41, 55.01]].map((coordinates, i) => ({
+    type: 'Feature', properties: { address: `улица Тестовая, ${i + 1}` }, geometry: { type: 'Point', coordinates }
+  }));
+  const page = browser(points);
+  await page.load();
+  const shell = building('', 73.4, 55).geometry.coordinates[0].map(([x, y]) => [73.4 + (x - 73.4) * 4, 55 + (y - 55) * 4]);
+  const hole = building('', 73.404, 55.004).geometry.coordinates[0];
+  page.context.fakeMap.queryRenderedFeatures = (_, options) => options ? []
+    : [{ sourceLayer: 'buildings', properties: {}, geometry: { type: 'Polygon', coordinates: [shell, hole] } }];
+  vm.runInContext('showBuildingAddress({ point: {}, lngLat: [73.401, 55.001] })', page.context);
+  assert.equal(page.context.lastPopup.box.children[0].textContent, 'улица Тестовая, 1');
+  vm.runInContext('closeMap()', page.context);
+  assert.equal(vm.runInContext('addressPoints.length', page.context), 0);
+});
+
+test('Несколько подтверждённых адресов одного здания показываются вместе', async () => {
+  const features = [1, 2].map(i => ({ type: 'Feature', properties: { address: `улица Тестовая, ${i}` },
+    geometry: { type: 'Point', coordinates: [73.401, 55.001] } }));
+  const page = browser(features);
+  await page.load();
+  page.context.fakeMap.queryRenderedFeatures = (_, options) => options ? []
+    : [{ ...building(''), sourceLayer: 'buildings' }];
+  vm.runInContext('showBuildingAddress({ point: {}, lngLat: [73.401, 55.001] })', page.context);
+  assert.equal(page.context.lastPopup.box.children[0].textContent, 'улица Тестовая, 1; улица Тестовая, 2');
 });
 
 test('Часть улицы, буква, дробь и корпус в номере дома; 4 не превращается в 40', async () => {
