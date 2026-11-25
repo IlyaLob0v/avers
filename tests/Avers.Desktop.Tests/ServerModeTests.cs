@@ -109,18 +109,29 @@ public sealed class ServerModeTests : IAsyncDisposable
         Assert.All(vm.ContractsScreen.ContractRows, r => Assert.Equal(other.HouseId, r.Subscriber.HouseId));
     }
 
-    [Fact]
-    public async Task Find_EmptySurname_ShowsServerAnswer()
+    [AvaloniaTheory]
+    [InlineData(SearchMode.Surname, " ", "Введите фамилию.")]
+    [InlineData(SearchMode.Account, "NO-SUCH-ACCOUNT", "Абонент не найден.")]
+    public async Task Find_UnsuccessfulSearch_ClearsSubscriberAndPreventsPayment(SearchMode mode, string query, string message)
     {
         var vm = await SignIn("orlov");
-        var before = vm.SelectedSubscriber!.Id;
+        var subscriber = vm.SelectedSubscriber!;
+        var before = _server.WithDb(db => db.Payments.Count(p => p.SubscriberId == subscriber.Id && p.Amount != null));
 
-        vm.SearchMode = SearchMode.Surname;
-        vm.FindQuery = " ";
+        vm.SearchMode = mode;
+        vm.FindQuery = query;
         await vm.FindCommand.ExecuteAsync(null);
 
-        Assert.Equal("Введите фамилию.", vm.Status);
-        Assert.Equal(before, vm.SelectedSubscriber!.Id);
+        Assert.Equal(message, vm.Status);
+        Assert.Null(vm.SelectedSubscriber);
+        await vm.RecordPaymentCommand.ExecuteAsync(null);
+        Assert.Equal(before, _server.WithDb(db => db.Payments.Count(p => p.SubscriberId == subscriber.Id && p.Amount != null)));
+
+        vm.SearchMode = SearchMode.Account;
+        vm.FindQuery = subscriber.Account;
+        await vm.FindCommand.ExecuteAsync(null);
+
+        Assert.Equal(subscriber.Id, vm.SelectedSubscriber!.Id);
     }
 
     [Fact]
@@ -142,6 +153,65 @@ public sealed class ServerModeTests : IAsyncDisposable
 
         Assert.Equal(chosen.Id, vm.SelectedSubscriber!.Id);
         Assert.Empty(vm.SearchMatches);
+    }
+
+    [AvaloniaTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Find_AccountUsesExactIdentifierOrAsksForPartialMatches(bool exact)
+    {
+        var vm = await SignIn("orlov");
+        var account = vm.SelectedSubscriber!.Account;
+        var houseId = vm.SelectedHouse!.Id;
+        _server.WithDb(db =>
+        {
+            db.Subscribers.Add(new Subscriber { HouseId = houseId, Account = account + "0", LastName = "Проверка", Apartment = "999" });
+            return db.SaveChanges();
+        });
+        vm.SearchMode = SearchMode.Account;
+        vm.FindQuery = exact ? account : account[..^1];
+
+        await vm.FindCommand.ExecuteAsync(null);
+
+        if (exact)
+        {
+            Assert.Equal(account, vm.SelectedSubscriber?.Account);
+            Assert.Empty(vm.SearchMatches);
+            return;
+        }
+        Assert.Null(vm.SelectedSubscriber);
+        Assert.True(vm.SearchMatches.Count > 1);
+        Assert.Contains(vm.SearchMatches, match => match.Account == account);
+        Assert.Contains(vm.SearchMatches, match => match.Account == account + "0");
+    }
+
+    [AvaloniaTheory]
+    [InlineData(true, AppModule.Desktop)]
+    [InlineData(false, AppModule.Abon)]
+    [InlineData(false, AppModule.Contract)]
+    public async Task Find_LateReply_DoesNotRestoreDiscardedSearch(bool logout, AppModule destination)
+    {
+        using var delay = new ResponseDelayHandler(_server.Server.CreateHandler(), "/api/subscribers");
+        using var client = new HttpClient(delay) { BaseAddress = new Uri("http://localhost/") };
+        var vm = await SignIn("orlov", client);
+        vm.SearchMode = SearchMode.Address;
+        vm.FindStreet = DemoSeeder.StartStreet;
+        vm.FindHouse = DemoSeeder.StartHouse;
+        vm.FindSection = vm.FindApartment = "";
+        delay.PauseNext();
+        var search = vm.FindCommand.ExecuteAsync(null);
+        try
+        {
+            await delay.ResponseReady.Task.WaitAsync(TimeSpan.FromSeconds(15), TestContext.Current.CancellationToken);
+            if (logout) vm.LogoutCommand.Execute(null);
+            else vm.OpenModuleCommand.Execute(destination);
+        }
+        finally { delay.Release(); }
+        await search;
+
+        Assert.Null(vm.SelectedSubscriber);
+        Assert.Empty(vm.SearchMatches);
+        if (logout) Assert.Null(vm.User);
     }
 
     [Fact]
@@ -401,6 +471,18 @@ public sealed class ServerModeTests : IAsyncDisposable
         vm.Password = "avers";
         await vm.LoginCommand.ExecuteAsync(null);
         Assert.Null(vm.LoginError);
+        if (vm.User is { } user && RoleCatalog.Can(user.Role, AppModule.Abon, out _))
+        {
+            vm.SearchMode = SearchMode.Account;
+            vm.FindQuery = DemoSeeder.StartAccount;
+            await vm.FindCommand.ExecuteAsync(null);
+        }
+        else
+        {
+            vm.SelectedStreet = vm.Streets.FirstOrDefault(s => s.Name == DemoSeeder.StartStreet);
+            vm.SelectedHouse = vm.HousesOnStreet.FirstOrDefault(h => h.Number == DemoSeeder.StartHouse);
+        }
+        vm.TicketsScreen.SelectedTicket = vm.TicketsScreen.Tickets.FirstOrDefault(ticket => ticket.Number == DemoSeeder.StartTicket);
         return vm;
     }
 
@@ -427,7 +509,28 @@ public sealed class ServerModeTests : IAsyncDisposable
         }
     }
 
-    private sealed class SharedServer : WebApplicationFactory<Program>
+    internal sealed class ResponseDelayHandler(HttpMessageHandler inner, string path) : DelegatingHandler(inner)
+    {
+        private int _armed;
+        private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ResponseReady { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public void PauseNext() => Interlocked.Exchange(ref _armed, 1);
+        public void Release() => _release.TrySetResult();
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var response = await base.SendAsync(request, cancellationToken);
+            if (request.RequestUri!.AbsolutePath == path && Interlocked.Exchange(ref _armed, 0) == 1)
+            {
+                ResponseReady.TrySetResult();
+                await _release.Task.WaitAsync(cancellationToken);
+            }
+            return response;
+        }
+    }
+
+    internal sealed class SharedServer : WebApplicationFactory<Program>
     {
         private readonly string _databaseFile = Path.Combine(Path.GetTempPath(), $"avers-shared-test-{Guid.NewGuid():N}.db");
 

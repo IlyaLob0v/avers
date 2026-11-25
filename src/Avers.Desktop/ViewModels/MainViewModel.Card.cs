@@ -181,6 +181,7 @@ public sealed partial class MainViewModel
         EditOgrn = s?.Ogrn ?? "";
         EditLegalAddress = s?.LegalAddress ?? "";
         EditDirector = s?.Director ?? "";
+        _cardEditBaseline = CaptureCardEdits();
     }
 
     private void RebuildCardPayments()
@@ -272,33 +273,38 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private async Task SaveCard()
     {
-        if (SelectedSubscriber is null) return;
+        await SaveCardEdits();
+    }
+
+    private async Task<bool> SaveCardEdits()
+    {
+        if (SelectedSubscriber is null) return false;
         if (!CanEditCard)
         {
             Status = "Нет права править договор и примечание (нужно право правки лицевого счёта).";
-            return;
+            return false;
         }
         if (!TryParseDate(EditContractDate, out var signed) || !TryParseDate(EditContractTerminated, out var ended))
         {
             Status = "Дата договора — в виде дд.мм.гггг или пусто.";
-            return;
+            return false;
         }
         if (signed is not null && ended is not null && ended < signed)
         {
             Status = "Договор не может быть расторгнут раньше, чем заключён.";
-            return;
+            return false;
         }
         if (EditIsLegalEntity && Subscriber.RequisitesError(EditInn, EditKpp, EditOgrn) is { } requisites)
         {
             Status = requisites;
-            return;
+            return false;
         }
 
         var s = SelectedSubscriber;
         var legal = EditIsLegalEntity
             ? new LegalEntityRequest(EditInn.Trim(), EditKpp.Trim(), EditOgrn.Trim(), EditLegalAddress.Trim(), EditDirector.Trim())
             : null;
-        await Save(async () =>
+        return await TrySave(async () =>
         {
             await _store.SaveContractAsync(s.Id, new UpdateContractRequest(
                 EditContractNumber.Trim(), signed, ended, EditContractHolder.Trim(), EditNotes.Trim(), EditBenefit, legal));

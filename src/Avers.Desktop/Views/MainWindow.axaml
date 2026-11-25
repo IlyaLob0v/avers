@@ -10,6 +10,20 @@
         Icon="/Assets/avers.ico"
         Width="1280" Height="840" MinWidth="1000" MinHeight="680"
         WindowStartupLocation="CenterScreen">
+  <Window.Resources>
+    <ControlTheme x:Key="NavigationEntryTheme" TargetType="MenuItem"
+                  BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="vm:NavItem">
+      <Setter Property="Header" Value="{Binding Title}" />
+      <Setter Property="Command" Value="{Binding Go}" />
+      <Setter Property="CommandParameter" Value="{Binding Module}" />
+    </ControlTheme>
+    <ControlTheme x:Key="NavigationGroupTheme" TargetType="MenuItem"
+                  BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="vm:NavGroup">
+      <Setter Property="Header" Value="{Binding Title}" />
+      <Setter Property="ItemsSource" Value="{Binding Items}" />
+      <Setter Property="ItemContainerTheme" Value="{StaticResource NavigationEntryTheme}" />
+    </ControlTheme>
+  </Window.Resources>
   <Grid>
     <!-- Вход: белая карточка на тёмно-синем фоне -->
     <Panel IsVisible="{Binding ShowLogin}" Background="{StaticResource TopBar}">
@@ -109,7 +123,7 @@
     <!-- Рабочее место -->
     <DockPanel IsVisible="{Binding ShowShell}">
       <!-- Шапка: марка, меню, рабочая дата, пользователь, выход -->
-      <Border DockPanel.Dock="Top" Classes="topbar">
+      <Border DockPanel.Dock="Top" Classes="topbar" IsEnabled="{Binding !HasPendingEditTransition}">
         <DockPanel>
           <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="8" Margin="0,0,14,0">
             <Image Source="/Assets/logo-avers-servis.png" Height="26" VerticalAlignment="Center" />
@@ -117,7 +131,7 @@
           </StackPanel>
           <Button DockPanel.Dock="Right" Classes="ontop" Content="Выйти" Command="{Binding LogoutCommand}"
                   VerticalAlignment="Center" ToolTip.Tip="Сменить пользователя" />
-          <TextBlock DockPanel.Dock="Right" Classes="ontop" Margin="14,0">
+          <TextBlock DockPanel.Dock="Right" Classes="ontop" Margin="14,0" MaxWidth="280" TextWrapping="Wrap">
             <Run Classes="strong" Text="{Binding User.DisplayName, Mode=OneWay}" />
             <Run Text="·" />
             <Run Text="{Binding UserRoleTitle, Mode=OneWay}" />
@@ -132,16 +146,8 @@
               <Separator />
               <MenuItem Header="Сменить пользователя" Command="{Binding LogoutCommand}" />
             </MenuItem>
-            <MenuItem Header="_Модули" ItemsSource="{Binding Navigation}">
-              <MenuItem.Styles>
-                <Style Selector="MenuItem" x:DataType="vm:NavItem">
-                  <Setter Property="Header" Value="{Binding Title}" />
-                  <Setter Property="Command" Value="{Binding Go}" />
-                  <Setter Property="CommandParameter" Value="{Binding Module}" />
-                  <Setter Property="InputGesture" Value="{x:Null}" />
-                </Style>
-              </MenuItem.Styles>
-            </MenuItem>
+            <MenuItem Header="_Модули" ItemsSource="{Binding NavigationGroups}"
+                      ItemContainerTheme="{StaticResource NavigationGroupTheme}" />
             <MenuItem Header="_Справка">
               <MenuItem Header="О программе" Click="OnAboutClick" />
             </MenuItem>
@@ -149,8 +155,8 @@
         </DockPanel>
       </Border>
 
-      <!-- Полоса модулей: рабочий стол и модули, разрешённые роли -->
-      <Border DockPanel.Dock="Top" Classes="modbar">
+      <!-- Группы разделов, разрешённых роли -->
+      <Border DockPanel.Dock="Top" Classes="modbar" IsEnabled="{Binding !HasPendingEditTransition}">
         <DockPanel>
           <Button DockPanel.Dock="Left" Classes="mod" Width="32" Padding="0,2,0,0"
                   HorizontalContentAlignment="Center" AutomationProperties.Name="Назад" ToolTip.Tip="Назад" Command="{Binding BackCommand}">
@@ -169,22 +175,8 @@
               <TextBlock Text="Карта города" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
-          <ItemsControl ItemsSource="{Binding Navigation}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:NavItem">
-                <Button Classes="mod" Classes.current="{Binding IsCurrent}" AutomationProperties.Name="{Binding Title}" ToolTip.Tip="{Binding Hint}"
-                        Command="{Binding Go}" CommandParameter="{Binding Module}">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <Border Classes="navglyph"><Path Data="{Binding Icon}" Stretch="Uniform" /></Border>
-                    <TextBlock Text="{Binding ShortTitle}" VerticalAlignment="Center" />
-                  </StackPanel>
-                </Button>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
+          <Menu ItemsSource="{Binding NavigationGroups}" Background="Transparent"
+                ItemContainerTheme="{StaticResource NavigationGroupTheme}" />
         </DockPanel>
       </Border>
 
@@ -200,13 +192,14 @@
 
       <!-- Заголовок экрана: модуль серым и название окна -->
       <Border DockPanel.Dock="Top" Classes="screenhead" IsVisible="{Binding !IsOnDesktop}">
-        <StackPanel Orientation="Horizontal" Spacing="8">
+        <Grid ColumnDefinitions="Auto,*">
           <TextBlock Classes="crumb" Text="{Binding ModuleTitle, StringFormat='{}{0} ›'}" />
-          <TextBlock Classes="h1" Text="{Binding WindowTitle}" />
-        </StackPanel>
+          <TextBlock Grid.Column="1" Classes="h1" Margin="8,0,0,0" Text="{Binding WindowTitle}" TextWrapping="Wrap" />
+        </Grid>
       </Border>
 
-      <Panel IsEnabled="{Binding !IsLoadingSubscriber}">
+      <views:EditGuardView DockPanel.Dock="Top" IsVisible="{Binding HasPendingEditTransition}" />
+      <Panel IsEnabled="{Binding CanUseWorkspace}">
         <views:DesktopView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Desktop}}" />
         <views:AbonView IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Abon}}" />
         <Panel IsVisible="{Binding Module, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:AppModule.Disp}}">

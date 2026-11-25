@@ -1,0 +1,35 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Avers.Desktop.ViewModels"
+             x:Class="Avers.Desktop.Views.BillingOperationsView"
+             x:DataType="vm:MainViewModel">
+  <StackPanel Spacing="10" IsVisible="{Binding CanEditSettings}">
+    <TextBlock Classes="hint" Text="Эти настройки и начисления относятся ко всему разделу. Для тарифа явно выберите область применения." TextWrapping="Wrap" />
+    <WrapPanel Orientation="Horizontal">
+      <TextBlock VerticalAlignment="Center" Text="Подсвечивать без оплаты от" Margin="0,0,8,0" />
+      <NumericUpDown Width="110" Minimum="1" Maximum="36" Increment="1" FormatString="0" Value="{Binding EditWarningMonths}" />
+      <TextBlock VerticalAlignment="Center" Text="месяцев (все рабочие места)" Margin="8,0" />
+      <Button Content="Применить" Command="{Binding SavePaymentWarningCommand}" />
+    </WrapPanel>
+    <WrapPanel Orientation="Horizontal">
+      <TextBlock VerticalAlignment="Center" Text="Подтверждать оплату от" Margin="0,0,8,0" />
+      <NumericUpDown Width="140" Minimum="1" Maximum="1000000" Increment="100" FormatString="N2" Value="{Binding EditPaymentConfirmFrom}" />
+      <TextBlock VerticalAlignment="Center" Text="₽ (все рабочие места)" Margin="8,0" />
+      <Button Content="Применить" Command="{Binding SavePaymentConfirmCommand}" />
+    </WrapPanel>
+    <WrapPanel Orientation="Horizontal">
+      <TextBlock VerticalAlignment="Center" Text="Начисления всем абонентам с действующим договором по последнему тарифу" TextWrapping="Wrap" MaxWidth="520" Margin="0,0,8,0" />
+      <Button Content="{Binding OpenYearTitle}" Command="{Binding OpenYearCommand}" />
+    </WrapPanel>
+    <StackPanel Spacing="6" IsEnabled="{Binding HasSelectedSubscriber}">
+      <TextBlock Classes="hint" Text="Для изменения тарифа сначала найдите абонента: он определяет квартиру и дом. Оплаченные месяцы не меняются." TextWrapping="Wrap" />
+      <WrapPanel Orientation="Horizontal">
+        <TextBlock VerticalAlignment="Center" Text="Тариф с" Margin="0,0,8,0" />
+        <TextBox Classes="cell" Width="90" PlaceholderText="мм.гггг" Text="{Binding TariffFrom}" />
+        <TextBox Classes="cell" Width="100" PlaceholderText="₽ в месяц" Text="{Binding NewTariffValue}" />
+        <ComboBox Width="150" ItemsSource="{x:Static vm:MainViewModel.TariffScopes}" SelectedItem="{Binding TariffScope}" />
+        <Button Content="Изменить тариф" Command="{Binding ChangeTariffCommand}" />
+      </WrapPanel>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

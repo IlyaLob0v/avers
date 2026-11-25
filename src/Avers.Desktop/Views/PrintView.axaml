@@ -7,9 +7,10 @@
     <Style Selector="Grid.form > TextBlock">
       <Setter Property="Margin" Value="0,2,8,2" />
       <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
   </UserControl.Styles>
-  <HeaderedContentControl Classes="group" Header="Квитанция на оплату ТО СКПТ" Width="420"
+  <HeaderedContentControl Classes="group" Header="Печать документов абонента" Width="420"
                           HorizontalAlignment="Center" VerticalAlignment="Top" Margin="16,0,16,12" Padding="16,12">
     <StackPanel Spacing="6">
       <TextBlock HorizontalAlignment="Center" Classes="hint" Text="{Binding HouseCaption}" />

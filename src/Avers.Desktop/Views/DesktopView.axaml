@@ -22,23 +22,32 @@
                   IsEnabled="{Binding IsShared}" VerticalAlignment="Center" MinWidth="132" />
         </Grid>
       </Border>
-      <ItemsControl ItemsSource="{Binding Navigation}">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><UniformGrid Columns="4" /></ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
+      <ItemsControl ItemsSource="{Binding NavigationGroups}">
         <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="vm:NavItem">
-            <Button Classes="tile" AutomationProperties.Name="{Binding Title}" ToolTip.Tip="{Binding Hint}" Command="{Binding Go}" CommandParameter="{Binding Module}">
-              <DockPanel>
-                <Border DockPanel.Dock="Left" Classes="tileglyph" Margin="0,0,12,0">
-                  <Path Data="{Binding Icon}" Stretch="Uniform" />
-                </Border>
-                <StackPanel>
-                  <TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextWrapping="Wrap" />
-                  <TextBlock Classes="hint" Margin="0,2,0,0" Text="{Binding Summary}" TextWrapping="Wrap" />
-                </StackPanel>
-              </DockPanel>
-            </Button>
+          <DataTemplate x:DataType="vm:NavGroup">
+            <StackPanel Margin="0,0,0,16">
+              <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,10" />
+              <ItemsControl ItemsSource="{Binding Items}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:NavItem">
+                    <Button Classes="tile" AutomationProperties.Name="{Binding Title}" ToolTip.Tip="{Binding Hint}" Command="{Binding Go}" CommandParameter="{Binding Module}">
+                      <DockPanel>
+                        <Border DockPanel.Dock="Left" Classes="tileglyph" Margin="0,0,12,0">
+                          <Path Data="{Binding Icon}" Stretch="Uniform" />
+                        </Border>
+                        <StackPanel>
+                          <TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextWrapping="Wrap" />
+                          <TextBlock Classes="hint" Margin="0,2,0,0" Text="{Binding Summary}" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </DockPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>

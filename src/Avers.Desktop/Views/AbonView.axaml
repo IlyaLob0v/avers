@@ -4,6 +4,7 @@
              xmlns:d="using:Avers.Domain"
              xmlns:data="using:Avers.Desktop.Data"
              xmlns:ctl="using:Avers.Desktop.Controls"
+             xmlns:views="using:Avers.Desktop.Views"
              x:Class="Avers.Desktop.Views.AbonView"
              x:DataType="vm:MainViewModel">
   <UserControl.Styles>
@@ -14,44 +15,121 @@
     </Style>
   </UserControl.Styles>
   <ScrollViewer>
-  <DockPanel MinHeight="740">
-    <Border DockPanel.Dock="Top" Classes="toolbar">
-      <WrapPanel Orientation="Horizontal">
-        <Button Content="Улицы…" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Phonebook}" />
-        <Button Content="Данные по дому" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Anten}" />
-        <Button Content="Карточка" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Subscriber}" />
-        <Button Content="Печать л/с" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Print}" />
-        <TextBlock Text="Искать по:" VerticalAlignment="Center" Margin="16,0,8,0" Classes="hint" />
-        <RadioButton Content="Адресу" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.Address}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Address}" />
-        <RadioButton Content="ПЖРЭУ" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.Pzhreu}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Pzhreu}" />
-        <RadioButton Content="Лиц. счёту" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.Account}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Account}" />
-        <RadioButton Content="Вн. коду" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.InnerCode}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.InnerCode}" />
-        <RadioButton Content="Фамилии" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.Surname}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Surname}" />
-        <RadioButton Content="Телефону" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.Phone}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Phone}" />
-      </WrapPanel>
-    </Border>
-    <ScrollViewer>
-      <StackPanel Margin="16,0,16,2">
-        <Grid ColumnDefinitions="320,*">
+    <StackPanel Margin="16,0,16,12" Spacing="10">
+      <HeaderedContentControl x:Name="SubscriberSearch" Classes="group" Header="Найти абонента" IsVisible="{Binding !HasSelectedSubscriber}">
+        <StackPanel Spacing="10">
+          <StackPanel Spacing="10">
+            <StackPanel.KeyBindings>
+              <KeyBinding Gesture="Enter" Command="{Binding FindCommand}" />
+            </StackPanel.KeyBindings>
+            <TextBlock Classes="hint" Text="Укажите адрес или выберите другой способ поиска. Если найден один абонент, он откроется сразу." TextWrapping="Wrap" />
+            <WrapPanel Orientation="Horizontal">
+              <TextBlock Text="Искать по:" VerticalAlignment="Center" Margin="0,0,12,0" />
+              <RadioButton Content="Адресу" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.Address}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Address}" />
+              <RadioButton Content="ПЖРЭУ" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.Pzhreu}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Pzhreu}" />
+              <RadioButton Content="Лицевому счёту" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.Account}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Account}" />
+              <RadioButton Content="Внутреннему коду" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.InnerCode}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.InnerCode}" />
+              <RadioButton Content="Фамилии" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.Surname}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Surname}" />
+              <RadioButton Content="Телефону" IsChecked="{Binding SearchMode, Mode=OneWay, Converter={x:Static ctl:Is.Equal}, ConverterParameter={x:Static d:SearchMode.Phone}}" Command="{Binding SetSearchCommand}" CommandParameter="{x:Static d:SearchMode.Phone}" />
+            </WrapPanel>
+            <Grid ColumnDefinitions="*,120,110,110" IsVisible="{Binding SearchByAddress}">
+              <StackPanel Margin="0,0,8,0">
+                <TextBlock Classes="hint" Text="Улица" />
+                <TextBox Text="{Binding FindStreet}" AutomationProperties.Name="Улица для поиска абонента" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                <TextBlock Classes="hint" Text="Дом" />
+                <TextBox Text="{Binding FindHouse}" AutomationProperties.Name="Дом для поиска абонента" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Margin="0,0,8,0">
+                <TextBlock Classes="hint" Text="Секция" />
+                <TextBox Text="{Binding FindSection}" AutomationProperties.Name="Секция для поиска абонента" />
+              </StackPanel>
+              <StackPanel Grid.Column="3">
+                <TextBlock Classes="hint" Text="Квартира" />
+                <TextBox Text="{Binding FindApartment}" AutomationProperties.Name="Квартира для поиска абонента" />
+              </StackPanel>
+            </Grid>
+            <TextBox Text="{Binding FindQuery}" PlaceholderText="Счёт, внутренний код, фамилия или телефон"
+                     IsVisible="{Binding !SearchByAddress}" AutomationProperties.Name="Поиск абонента по счёту, фамилии или телефону" />
+            <Button Classes="primary" Content="Найти" Command="{Binding FindCommand}" HorizontalAlignment="Left" />
+          </StackPanel>
+          <StackPanel IsVisible="{Binding HasSearchMatches}" Spacing="8">
+            <TextBlock Text="Выберите нужного абонента из результатов" FontWeight="SemiBold" />
+            <DataGrid x:Name="SubscriberResults" ItemsSource="{Binding SearchMatches}" SelectedItem="{Binding SelectedSearchMatch}"
+                      AutoGenerateColumns="False" IsReadOnly="True" Height="280" RowHeight="NaN"
+                      DoubleTapped="OnSubscriberDoubleTapped" AutomationProperties.Name="Найденные абоненты">
+              <DataGrid.KeyBindings>
+                <KeyBinding Gesture="Enter" Command="{Binding OpenSearchMatchCommand}" CommandParameter="{Binding SelectedSearchMatch}" />
+              </DataGrid.KeyBindings>
+              <DataGrid.Columns>
+                <DataGridTemplateColumn Header="Абонент" Width="2*" MinWidth="180">
+                  <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate x:DataType="data:SubscriberMatch">
+                      <TextBlock Text="{Binding FullName}" TextWrapping="Wrap" Margin="6,4" />
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Адрес дома" Width="2*" MinWidth="210">
+                  <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate x:DataType="data:SubscriberMatch">
+                      <TextBlock Text="{Binding Address}" TextWrapping="Wrap" Margin="6,4" />
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Секция" Binding="{Binding Section}" Width="85" />
+                <DataGridTextColumn Header="Квартира" Binding="{Binding Apartment}" Width="95" />
+                <DataGridTextColumn Header="Лицевой счёт" Binding="{Binding Account}" Width="140" />
+              </DataGrid.Columns>
+            </DataGrid>
+            <Button Content="Открыть абонента" Command="{Binding OpenSearchMatchCommand}"
+                    CommandParameter="{Binding SelectedSearchMatch}" HorizontalAlignment="Left" />
+          </StackPanel>
+        </StackPanel>
+      </HeaderedContentControl>
+      <StackPanel x:Name="SubscriberWorkspace" IsVisible="{Binding HasSelectedSubscriber}" Spacing="10">
+        <Border Classes="toolbar">
+          <WrapPanel>
+            <Button Content="Новый поиск" Command="{Binding ShowSubscriberSearchCommand}" />
+            <Button Content="Дом абонента" Command="{Binding OpenSubscriberHouseCommand}" IsVisible="{Binding CanOpenSubscriberHouse}" />
+            <Button Content="Карточка абонента" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Subscriber}" />
+          </WrapPanel>
+        </Border>
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <StackPanel.KeyBindings>
+              <KeyBinding Gesture="Enter" Command="{Binding FindApartmentInCurrentHouseCommand}" />
+            </StackPanel.KeyBindings>
+            <TextBlock Text="{Binding SelectedSubscriber.House.AddressLine, StringFormat='Другая квартира в доме: {0}'}" TextWrapping="Wrap" />
+            <WrapPanel>
+              <TextBlock Text="Секция" VerticalAlignment="Center" Margin="0,0,8,0" />
+              <TextBox Text="{Binding FindSection}" Width="90" Margin="0,0,16,0" AutomationProperties.Name="Секция в текущем доме" />
+              <TextBlock Text="Квартира" VerticalAlignment="Center" Margin="0,0,8,0" />
+              <TextBox Text="{Binding FindApartment}" Width="90" Margin="0,0,16,0" AutomationProperties.Name="Квартира в текущем доме" />
+              <Button Content="Найти квартиру" Command="{Binding FindApartmentInCurrentHouseCommand}" />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+        <Grid ColumnDefinitions="290,*">
           <StackPanel Margin="0,0,10,0">
             <HeaderedContentControl Classes="group" Header="Абонент">
               <Grid Classes="form" ColumnDefinitions="112,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                 <TextBlock Classes="label" Text="ФИО полностью" />
-                <TextBox Grid.Column="1" Text="{Binding SelectedSubscriber.FullName}" IsReadOnly="True" />
+                <TextBox Grid.Column="1" Text="{Binding SelectedSubscriber.FullName}" IsReadOnly="True" TextWrapping="Wrap" />
                 <TextBlock Grid.Row="1" Classes="label" Text="Телефон" />
-                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding SelectedSubscriber.Phone}" />
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding SelectedSubscriber.Phone}" IsReadOnly="True" />
                 <TextBlock Grid.Row="2" Classes="label" Text="Улица" />
-                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding SelectedSubscriber.House.Street.Name}" IsReadOnly="True" />
+                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding SelectedSubscriber.House.Street.Name}" IsReadOnly="True" TextWrapping="Wrap" />
                 <TextBlock Grid.Row="3" Classes="label" Text="Дом / секц / кв" />
                 <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding HouseAptLine, Mode=OneWay}" IsReadOnly="True" />
                 <TextBlock Grid.Row="4" Classes="label" Text="Вн. код" />
-                <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding SelectedSubscriber.InnerCode}" />
+                <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding SelectedSubscriber.InnerCode}" IsReadOnly="True" />
                 <TextBlock Grid.Row="5" Classes="label" Text="Лиц. счёт" />
-                <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding SelectedSubscriber.Account}" />
+                <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding SelectedSubscriber.Account}" IsReadOnly="True" />
                 <TextBlock Grid.Row="6" Classes="label" Text="Индекс ПЖРЭУ" />
-                <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding SelectedSubscriber.PzhreuIndex}" />
+                <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding SelectedSubscriber.PzhreuIndex}" IsReadOnly="True" />
                 <TextBlock Grid.Row="7" Classes="label" Text="Счёт ПЖРЭУ" />
-                <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding SelectedSubscriber.PzhreuAccount}" />
+                <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding SelectedSubscriber.PzhreuAccount}" IsReadOnly="True" />
                 <TextBlock Grid.Row="8" Classes="label" Text="Договор" />
                 <Button Grid.Row="8" Grid.Column="1" Classes="link" Margin="0,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                         ToolTip.Tip="Открыть договор" Command="{Binding OpenContractCommand}">
@@ -62,37 +140,6 @@
                 <TextBlock Grid.Row="10" Classes="label" Text="Расчёт с" />
                 <TextBox Grid.Row="10" Grid.Column="1" Text="{Binding SelectedSubscriber.SettlementFrom}" IsReadOnly="True" />
               </Grid>
-            </HeaderedContentControl>
-            <HeaderedContentControl Classes="group" Header="Поиск">
-              <StackPanel>
-                <StackPanel.KeyBindings>
-                  <KeyBinding Gesture="Enter" Command="{Binding FindCommand}" />
-                </StackPanel.KeyBindings>
-                <Grid ColumnDefinitions="*,64,48,48">
-                  <TextBox Classes="cell" Margin="0,0,4,0" Text="{Binding FindStreet}" PlaceholderText="Улица" />
-                  <TextBox Grid.Column="1" Classes="cell" Margin="0,0,4,0" Text="{Binding FindHouse}" PlaceholderText="Дом" />
-                  <TextBox Grid.Column="2" Classes="cell" Margin="0,0,4,0" Text="{Binding FindSection}" PlaceholderText="Секц" />
-                  <TextBox Grid.Column="3" Classes="cell" Margin="0" Text="{Binding FindApartment}" PlaceholderText="Кв" />
-                </Grid>
-                <TextBox Classes="cell" Margin="0,4,0,0" Text="{Binding FindQuery}" PlaceholderText="ПЖРЭУ / лиц. счёт / вн. код / фамилия / телефон" />
-                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                  <Button Classes="primary" Content="Найти" Command="{Binding FindCommand}" />
-                  <TextBlock Classes="hint" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="200"
-                             Text="Улица · Дом · Секция · Кв. · Фамилия" />
-                </StackPanel>
-                <StackPanel IsVisible="{Binding HasSearchMatches}" Spacing="4" Margin="0,6,0,0">
-                  <ComboBox ItemsSource="{Binding SearchMatches}" SelectedItem="{Binding SelectedSearchMatch}"
-                            PlaceholderText="Выберите абонента" HorizontalAlignment="Stretch">
-                    <ComboBox.ItemTemplate>
-                      <DataTemplate x:DataType="data:SubscriberMatch">
-                        <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
-                      </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                  </ComboBox>
-                  <Button Content="Открыть карточку" Command="{Binding OpenSearchMatchCommand}"
-                          CommandParameter="{Binding SelectedSearchMatch}" />
-                </StackPanel>
-              </StackPanel>
             </HeaderedContentControl>
           </StackPanel>
           <StackPanel Grid.Column="1">
@@ -107,9 +154,36 @@
             </Border>
             <HeaderedContentControl Classes="group" Header="{Binding PaymentsCaption}">
               <StackPanel>
-                <DataGrid ItemsSource="{Binding PaymentRows}" AutoGenerateColumns="False" Height="168" IsReadOnly="True">
+                <Grid ColumnDefinitions="*,*,*,*" Margin="0,10,0,0">
+                  <StackPanel>
+                    <TextBlock Classes="hint" Text="Всего должен" />
+                    <TextBlock Classes="total" Text="{Binding ChargedText}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1">
+                    <TextBlock Classes="hint" Text="Оплачено" />
+                    <TextBlock Classes="total ok" Text="{Binding PaidText}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                    <TextBlock Classes="hint" Text="Долг за год" />
+                    <TextBlock Classes="total" Classes.debt="{Binding HasDebt}" Text="{Binding DebtText}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="3">
+                    <TextBlock Classes="hint" Text="К внесению" />
+                    <TextBox Text="{Binding PaymentAmount}" PlaceholderText="{Binding ToPayText}" IsReadOnly="{Binding !CanEditCard}" FontSize="15" FontWeight="SemiBold" MinHeight="30" />
+                  </StackPanel>
+                </Grid>
+                <WrapPanel Orientation="Horizontal" Margin="0,10,0,0">
+                  <Button Classes="primary" Content="Внести оплату" Command="{Binding RecordPaymentCommand}"
+                          IsEnabled="{Binding CanEditCard}" />
+                  <Button Content="Печать документов" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Print}" />
+                  <TextBlock Classes="hint" VerticalAlignment="Center" Margin="8,0,0,0" TextWrapping="Wrap"
+                             Text="{Binding PaymentConfirmHint, StringFormat='{}{0} ФИО на печати полностью.'}" MaxWidth="420" />
+                </WrapPanel>
+                <TextBlock Text="{Binding PaymentStatus}" Margin="0,6,0,0" TextWrapping="Wrap"
+                           AutomationProperties.LiveSetting="Polite" />
+                <DataGrid ItemsSource="{Binding PaymentRows}" AutoGenerateColumns="False" Height="172" IsReadOnly="True" FrozenColumnCount="1" Margin="0,10,0,0">
                   <DataGrid.Columns>
-                    <DataGridTextColumn Header="" Binding="{Binding Title}" Width="84" />
+                    <DataGridTextColumn Header="" Binding="{Binding Title}" Width="84" MinWidth="84" />
                     <DataGridTextColumn Header="Янв" Binding="{Binding Jan}" Width="*" MinWidth="62" />
                     <DataGridTextColumn Header="Фев" Binding="{Binding Feb}" Width="*" MinWidth="62" />
                     <DataGridTextColumn Header="Мар" Binding="{Binding Mar}" Width="*" MinWidth="62" />
@@ -124,65 +198,14 @@
                     <DataGridTextColumn Header="Дек" Binding="{Binding Dec}" Width="*" MinWidth="62" />
                   </DataGrid.Columns>
                 </DataGrid>
-                <Grid ColumnDefinitions="*,*,*,*" Margin="0,10,0,0">
-                  <StackPanel>
-                    <TextBlock Classes="hint" Text="Всего должен" />
-                    <TextBlock Classes="total" Text="{Binding ChargedText}" />
-                  </StackPanel>
-                  <StackPanel Grid.Column="1">
-                    <TextBlock Classes="hint" Text="Оплачено" />
-                    <TextBlock Classes="total ok" Text="{Binding PaidText}" />
-                  </StackPanel>
-                  <StackPanel Grid.Column="2">
-                    <TextBlock Classes="hint" Text="Долг 26" />
-                    <TextBlock Classes="total" Classes.debt="{Binding HasDebt}" Text="{Binding DebtText}" />
-                  </StackPanel>
-                  <StackPanel Grid.Column="3">
-                    <TextBlock Classes="hint" Text="К внесению" />
-                    <TextBox Text="{Binding PaymentAmount}" PlaceholderText="{Binding ToPayText}" FontSize="15" FontWeight="SemiBold" MinHeight="30" />
-                  </StackPanel>
-                </Grid>
-                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                  <Button Classes="primary" Content="Внести оплату" Command="{Binding RecordPaymentCommand}"
-                          IsEnabled="{Binding !HasSearchMatches}" />
-                  <Button Content="Печать лицевого счёта" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Print}" />
-                  <Button Content="Квитанция" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Print}" />
-                  <TextBlock Classes="hint" VerticalAlignment="Center" Margin="8,0,0,0" TextWrapping="Wrap"
-                             Text="{Binding PaymentConfirmHint, StringFormat='{}{0} ФИО на печати полностью.'}" />
-                </StackPanel>
-                <TextBlock Text="{Binding PaymentStatus}" Margin="0,6,0,0" TextWrapping="Wrap"
-                           AutomationProperties.LiveSetting="Polite" />
               </StackPanel>
             </HeaderedContentControl>
           </StackPanel>
         </Grid>
-        <HeaderedContentControl Classes="group" Header="Улицы и дома · индекс ПЖРЭУ и счета">
-          <StackPanel>
-            <Grid x:Name="StreetsAndHouses" ColumnDefinitions="220,*" Height="190">
-              <ListBox Classes="streets" ItemsSource="{Binding Streets}" SelectedItem="{Binding SelectedStreet}">
-                <ListBox.ItemTemplate>
-                  <DataTemplate x:DataType="d:Street">
-                    <TextBlock Text="{Binding Name}" />
-                  </DataTemplate>
-                </ListBox.ItemTemplate>
-              </ListBox>
-              <DataGrid Grid.Column="1" Margin="10,0,0,0" ItemsSource="{Binding HousesOnStreet}"
-                        SelectedItem="{Binding SelectedHouse}" AutoGenerateColumns="False" IsReadOnly="True">
-                <DataGrid.Columns>
-                  <DataGridTextColumn Header="Дом" Binding="{Binding Number}" Width="80" />
-                  <DataGridTextColumn Header="Индекс" Binding="{Binding PzhreuIndex}" Width="90" />
-                  <DataGridTextColumn Header="Счёт ПЖРЭУ" Binding="{Binding PzhreuAccount}" Width="120" />
-                  <DataGridTextColumn Header="Кв." Binding="{Binding Apartments}" Width="70" />
-                  <DataGridTextColumn Header="Эт." Binding="{Binding Floors}" Width="70" />
-                  <DataGridTextColumn Header="Под." Binding="{Binding Entrances}" Width="70" />
-                </DataGrid.Columns>
-              </DataGrid>
-            </Grid>
-            <TextBlock Classes="hint" Margin="0,6,0,0" Text="Выберите улицу слева — справа дома этой улицы, индекс ПЖРЭУ и счёт." />
-          </StackPanel>
-        </HeaderedContentControl>
       </StackPanel>
-    </ScrollViewer>
-  </DockPanel>
+      <Expander Header="Общие операции по абонентам" IsVisible="{Binding CanEditSettings}">
+        <views:BillingOperationsView />
+      </Expander>
+    </StackPanel>
   </ScrollViewer>
 </UserControl>

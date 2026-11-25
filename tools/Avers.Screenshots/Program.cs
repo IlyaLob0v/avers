@@ -9,7 +9,7 @@ using Avers.Desktop.Views;
 using Avers.Domain;
 
 // Снимки экранов Аверса без монитора: учебная база, вход под ролью, переход по модулям.
-// Запуск: dotnet run --project tools/Avers.Screenshots -- <папка> [логин] [модуль ...] [--size=ШxВ]
+// Запуск: dotnet run --project tools/Avers.Screenshots -- <папка> [логин] [модуль ...] [--size=ШxВ] [--account=счёт]
 // Пример: dotnet run --project tools/Avers.Screenshots -- shots admin Desktop Abon Disp --size=1366x768
 // Без --size главное окно 1280×840, образцы оформления 1000×900; с --size оба окна этого размера.
 
@@ -23,6 +23,10 @@ const string SizeOption = "--size=";
 var sizeArg = args.FirstOrDefault(a => a.StartsWith(SizeOption, StringComparison.Ordinal));
 Size? size = sizeArg is null ? null : ParseSize(sizeArg[SizeOption.Length..]);
 args = args.Where(a => a != sizeArg).ToArray();
+const string AccountOption = "--account=";
+var accountArg = args.FirstOrDefault(a => a.StartsWith(AccountOption, StringComparison.Ordinal));
+var account = accountArg?[AccountOption.Length..];
+args = args.Where(a => a != accountArg).ToArray();
 
 var outDir = Path.GetFullPath(args.Length > 0 ? args[0] : "screenshots");
 var login = args.Length > 1 ? args[1] : "admin";
@@ -54,7 +58,14 @@ vm.LoginCommand.Execute(null);
 var n = 1;
 foreach (var module in modules)
 {
-    vm.GoCommand.Execute(module);
+    vm.OpenModuleCommand.Execute(module);
+    if (account is not null)
+    {
+        vm.SearchMode = SearchMode.Account;
+        vm.FindQuery = account;
+        vm.FindCommand.Execute(null);
+        if (module == AppModule.Anten) vm.OpenSubscriberHouseCommand.Execute(null);
+    }
     Save($"{n++:00}-{module.ToString().ToLowerInvariant()}");
 }
 

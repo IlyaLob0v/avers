@@ -24,10 +24,20 @@ public sealed partial class ContractsViewModel(MainViewModel shell) : Observable
     [ObservableProperty] private bool _onlyActiveContracts = true;
     [ObservableProperty] private string _contractQuery = "";
 
-    partial void OnSelectedContractRowChanged(ContractRow? value)
+    partial void OnSelectedContractRowChanged(ContractRow? oldValue, ContractRow? newValue)
     {
-        if (value is not null && shell.SelectedSubscriber?.Id != value.Subscriber.Id)
-            shell.SelectedSubscriber = value.Subscriber;
+        if (newValue is null || shell.SelectedSubscriber?.Id == newValue.Subscriber.Id) return;
+        if (!shell.TryLeaveEdits(() =>
+            {
+                SelectedContractRow = ContractRows.FirstOrDefault(row => row.Subscriber.Id == newValue.Subscriber.Id) ?? newValue;
+                return Task.CompletedTask;
+            }))
+        {
+            _selectedContractRow = oldValue;
+            OnPropertyChanged(nameof(SelectedContractRow));
+            return;
+        }
+        shell.SelectedSubscriber = newValue.Subscriber;
     }
 
     partial void OnOnlyActiveContractsChanged(bool value) => RebuildRows();
@@ -45,11 +55,10 @@ public sealed partial class ContractsViewModel(MainViewModel shell) : Observable
     }
 
     [RelayCommand]
-    private void OpenCard(ContractRow? row)
+    private async Task OpenCard(ContractRow? row)
     {
-        if (row is not null) shell.SelectedSubscriber = row.Subscriber;
-        if (shell.SelectedSubscriber is null) return;
-        shell.GoCommand.Execute(AppModule.Subscriber);
+        if ((row?.Subscriber ?? shell.SelectedSubscriber) is not { } subscriber) return;
+        await shell.OpenSubscriberAsync(subscriber);
     }
 
 
@@ -57,21 +66,28 @@ public sealed partial class ContractsViewModel(MainViewModel shell) : Observable
     [RelayCommand]
     private async Task FindContract()
     {
+        if (!shell.TryLeaveEdits(FindContract)) return;
+        var user = shell.User;
+        var module = shell.Module;
+        if (user is null) return;
         var query = ContractQuery.Trim();
         var mode = query.Any(char.IsDigit) ? SearchMode.Contract : SearchMode.Surname;
         try
         {
             var hit = await shell.Store.FindSubscriberAsync(mode, query, "", "", "");
+            if (shell.User != user || shell.Module != module) return;
             if (hit is null)
             {
                 shell.Status = mode == SearchMode.Contract ? $"Договор «{query}» не найден." : $"Абонент «{query}» не найден.";
                 return;
             }
+            if (!shell.TryLeaveEdits(FindContract)) return;
             await shell.ShowSubscriberAsync(hit.Value.Id, hit.Value.HouseId);
+            if (shell.User != user || shell.Module != module) return;
         }
         catch (StoreException e)
         {
-            shell.Status = e.Message;
+            if (shell.User == user && shell.Module == module) shell.Status = e.Message;
             return;
         }
         if (shell.SelectedSubscriber is not { } s) return;

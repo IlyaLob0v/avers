@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Avers.Desktop.ViewModels"
+             x:Class="Avers.Desktop.Views.EditGuardView"
+             x:DataType="vm:MainViewModel">
+  <Border Classes="warn" Margin="16,8" Padding="12">
+    <StackPanel Spacing="8">
+      <TextBlock Text="{Binding PendingEditMessage}" TextWrapping="Wrap" FontWeight="SemiBold" />
+      <WrapPanel IsEnabled="{Binding !IsResolvingEditTransition}">
+        <Button Content="Сохранить изменения" Classes="primary" Command="{Binding SaveEditsAndContinueCommand}" IsVisible="{Binding CanSavePendingEdits}" />
+        <Button Content="Отменить изменения" Command="{Binding DiscardEditsAndContinueCommand}" />
+        <Button Content="Остаться" Command="{Binding StayWithEditsCommand}" />
+      </WrapPanel>
+      <TextBlock Text="{Binding Status}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+    </StackPanel>
+  </Border>
+</UserControl>
