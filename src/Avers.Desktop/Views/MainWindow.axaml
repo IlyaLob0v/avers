@@ -9,7 +9,7 @@
         Title="{Binding WindowTitle}"
         Icon="/Assets/avers.ico"
         Width="1280" Height="840" MinWidth="1000" MinHeight="680"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen" WindowState="Maximized">
   <Window.Resources>
     <ControlTheme x:Key="NavigationEntryTheme" TargetType="MenuItem"
                   BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="vm:NavItem">

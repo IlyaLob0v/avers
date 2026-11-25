@@ -1,3 +1,4 @@
+using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Threading;
 using Avers.Data;
@@ -20,7 +21,7 @@ public sealed class DesktopApp : IDisposable
     public DesktopApp(string login = "admin", DateOnly? today = null, bool selectRecord = true)
     {
         Vm = App.CreateMainViewModel(_databaseFile, today ?? DemoSeeder.WorkDate);
-        Window = new MainWindow { DataContext = Vm, Width = 1280, Height = 840 };
+        Window = new MainWindow { DataContext = Vm, WindowState = WindowState.Normal, Width = 1280, Height = 840 };
         Window.Show();
         Vm.LoginUser = Vm.Users.Single(u => u.Login == login);
         Vm.Password = "avers";
