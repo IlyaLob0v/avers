@@ -16,6 +16,9 @@ public sealed record NavEntry(
     AppModule AccessModule,
     AppModule[] Children);
 
+/// <summary>Доступные сотруднику разделы одной группы верхнего меню.</summary>
+public sealed record NavGroup(string Title, IReadOnlyList<NavItem> Items);
+
 /// <summary>
 /// Перечень модулей единого рабочего места. Порядок — порядок кнопок.
 /// Summary — строка под названием на плитке рабочего стола, Hint — подсказка у кнопки модуля.

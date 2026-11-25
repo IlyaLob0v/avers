@@ -73,7 +73,8 @@ public class ShellTests
     public async Task Find_ByCallerPhone_OpensApartment()
     {
         using var app = new DesktopApp("sokolova");
-        app.Go(AppModule.Abon);
+        app.Vm.ShowSubscriberSearchCommand.Execute(null);
+        app.Pump();
         var radio = app.Window.GetVisualDescendants().OfType<RadioButton>().Single(r => r.IsEffectivelyVisible && Equals(r.Content, "Телефону"));
         radio.Command!.Execute(radio.CommandParameter);
 

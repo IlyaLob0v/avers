@@ -86,11 +86,12 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private Street? _selectedStreet;
     [ObservableProperty] private House? _selectedHouse;
     [ObservableProperty] private Subscriber? _selectedSubscriber;
-    [ObservableProperty] private SearchMode _searchMode = SearchMode.Address;
-    [ObservableProperty] private string _findStreet = DemoSeeder.StartStreet;
-    [ObservableProperty] private string _findHouse = DemoSeeder.StartHouse;
-    [ObservableProperty] private string _findSection = DemoSeeder.StartSection;
-    [ObservableProperty] private string _findApartment = DemoSeeder.StartApartment;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(SearchByAddress))]
+    private SearchMode _searchMode = SearchMode.Address;
+    [ObservableProperty] private string _findStreet = "";
+    [ObservableProperty] private string _findHouse = "";
+    [ObservableProperty] private string _findSection = "";
+    [ObservableProperty] private string _findApartment = "";
     [ObservableProperty] private string _findQuery = "";
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasSearchMatches))]
     private IReadOnlyList<SubscriberMatch> _searchMatches = [];
@@ -98,6 +99,8 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _paymentStatus = "";
     [ObservableProperty] private string _status = "Готово.";
     public bool HasSearchMatches => SearchMatches.Count > 0;
+    public bool HasSelectedSubscriber => SelectedSubscriber is not null;
+    public bool SearchByAddress => SearchMode == SearchMode.Address;
 
     public string LoginRoleTitle => LoginUser is null ? "" : RoleCatalog.Title(LoginUser.Role);
     public bool ShowLogin => User is null;
@@ -107,16 +110,16 @@ public sealed partial class MainViewModel : ObservableObject
 
     public string WindowTitle => Module switch
     {
-        AppModule.Abon => $"Ввод платежей абонентов за {_today:dd.MM.yyyy}",
+        AppModule.Abon => HasSelectedSubscriber ? $"Абонент · {SelectedSubscriber!.Account}" : "Поиск абонента",
         AppModule.Disp => $"Приём заявок от населения · {_today:dd.MM.yyyy}",
         AppModule.Ticket => TicketsScreen.SelectedTicket is not { } t ? "Заявка" : $"Заявка № {t.Number} от {t.Date:dd.MM.yyyy}",
-        AppModule.Anten => SelectedHouse is null ? "Паспорт дома" : $"Паспорт дома · {SelectedHouse.AddressLine}",
+        AppModule.Anten => IsHouseList ? "Дома Аверса" : SelectedHouse is null ? "Паспорт дома" : $"Паспорт дома · {SelectedHouse.AddressLine}",
         AppModule.AntenInfo => "Сведения по антенне / дому",
         AppModule.Scheme => SelectedHouse is null ? "Схема СКПТ" : $"Схема СКПТ · {SelectedHouse.AddressLine}",
         AppModule.Subscriber => SelectedSubscriber?.FullName ?? "Карточка абонента",
         AppModule.PrDubl => "Данные о платежах по единым квитанциям",
         AppModule.Contract => SelectedHouse is null ? "Договоры" : $"Договоры · {SelectedHouse.AddressLine}",
-        AppModule.Print => "Квитанция на оплату ТО СКПТ",
+        AppModule.Print => "Печать документов абонента",
         AppModule.Ppr => "Сервис → Графики ППР",
         AppModule.Legal => "Должники · юристы, суд",
         AppModule.Claim => "Досудебное уведомление",
@@ -198,11 +201,9 @@ public sealed partial class MainViewModel : ObservableObject
         // После записи остаёмся на том же доме и квартире; экраны пересчитываем один раз, в конце.
         var keep = _houses.FirstOrDefault(h => h.Id == keepHouseId);
         _holdRefresh = true;
-        SelectedStreet = Streets.FirstOrDefault(s => s.Id == keep?.StreetId)
-                         ?? Streets.FirstOrDefault(s => s.Name == DemoSeeder.StartStreet) ?? Streets.FirstOrDefault();
+        SelectedStreet = Streets.FirstOrDefault(s => s.Id == keep?.StreetId);
         RefreshHouses();
-        SelectedHouse = HousesOnStreet.FirstOrDefault(h => h.Id == keep?.Id)
-                        ?? HousesOnStreet.FirstOrDefault(h => h.Number == DemoSeeder.StartHouse) ?? HousesOnStreet.FirstOrDefault();
+        SelectedHouse = HousesOnStreet.FirstOrDefault(h => h.Id == keep?.Id);
         _holdRefresh = false;
         _intercomHouseId = null;
         TicketsScreen.BindTicket();
@@ -210,7 +211,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>
-    /// После входа: годы журнала, журнал со сводкой и итоги дня. Стартовая заявка учебной базы выбирается, если она в журнале.
+    /// После входа: годы журнала, журнал со сводкой и итоги дня, без автоматически выбранной заявки.
     /// </summary>
     private async Task LoadTicketsAfterLoginAsync()
     {
@@ -218,7 +219,6 @@ public sealed partial class MainViewModel : ObservableObject
         await TicketsScreen.LoadTicketYearsAsync();
         // force: журнал мог уже начать грузиться при выборе дома, здесь нужно дождаться ответа.
         await TicketsScreen.RefreshTicketsAsync(force: true);
-        TicketsScreen.SelectedTicket ??= TicketsScreen.Tickets.FirstOrDefault(t => t.Number == DemoSeeder.StartTicket);
         await TicketsScreen.LoadOekDayAsync();
     }
 
@@ -289,7 +289,7 @@ public sealed partial class MainViewModel : ObservableObject
         TicketsScreen.NotifyTicketPanel();
     }
 
-    /// <summary>Загружает абонентов выбранного дома и выбирает квартиру: нужную, учебную стартовую или первую.</summary>
+    /// <summary>Загружает абонентов выбранного дома и открывает только явно указанную квартиру.</summary>
     private async Task ShowHouseAsync(int? subscriberId)
     {
         var version = ++_houseSubscribersVersion;
@@ -318,7 +318,7 @@ public sealed partial class MainViewModel : ObservableObject
         _holdRefresh = true;
         SelectedSubscriber = subscriberId is { } id
             ? list.FirstOrDefault(s => s.Id == id)
-            : list.FirstOrDefault(s => s.Account == DemoSeeder.StartAccount) ?? list.FirstOrDefault();
+            : null;
         _holdRefresh = false;
         RefreshDerived();
     }
@@ -373,6 +373,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowShell));
         OnPropertyChanged(nameof(CanEditCard));
         OnPropertyChanged(nameof(CanEditSettings));
+        OnPropertyChanged(nameof(CanEditHousePassport));
         PprScreen.RefreshRights();
         SchemeScreen.RefreshRights();
         IntercomScreen.RefreshRights();
@@ -382,6 +383,7 @@ public sealed partial class MainViewModel : ObservableObject
         TicketsScreen.NotifyTicketPanel();
         TicketsScreen.BindTicket();
         RebuildNavigation();
+        NotifyWorkflowContextChanged();
         OnPropertyChanged(nameof(UserLine));
         OnPropertyChanged(nameof(CanOpenMap));
         OnPropertyChanged(nameof(UserRoleTitle));
@@ -428,12 +430,14 @@ public sealed partial class MainViewModel : ObservableObject
         TicketsScreen.ClearRepeatCallTickets();
         PhonebookScreen.EditHouse = value;
         EditFaultFix = value?.OpenFaultPlannedFix?.ToString("dd.MM.yyyy") ?? "";
+        BindHouseEditBaseline();
         if (!_holdRefresh)
             _ = ShowHouseAsync(null);
     }
 
     partial void OnSelectedSubscriberChanged(Subscriber? value)
     {
+        OnPropertyChanged(nameof(HasSelectedSubscriber));
         TicketsScreen.ClearRepeatCallTickets();
         PrintWithPayDate = value?.PrintAccountWithPayDate ?? true;
         PaymentAmount = "";
@@ -467,6 +471,7 @@ public sealed partial class MainViewModel : ObservableObject
     private void RefreshDerived()
     {
         if (_holdRefresh) return;
+        NotifyWorkflowContextChanged();
         TicketsScreen.RefreshTickets();
         _ = LoadHouseTicketsAsync();
         RebuildPayments();
@@ -552,12 +557,14 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Logout()
     {
+        if (!TryLeaveEdits(() => { Logout(); return Task.CompletedTask; })) return;
         ++_houseSubscribersVersion;
         IsLoadingSubscriber = false;
         SearchMatches = [];
         SelectedSearchMatch = null;
         _store.SignOut();
         User = null;
+        ResetWorkflows();
         LegalScreen.Clear();
         IntercomScreen.ClearTickets();
         ArchiveScreen.SelectSubscriber(null);
@@ -571,6 +578,7 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Go(AppModule page)
     {
+        if (!TryLeaveEdits(() => { Go(page); return Task.CompletedTask; })) return;
         if (User is null) return;
         // Право на окно — как у кнопки модуля, которому оно принадлежит (NavCatalog).
         if (NavCatalog.Owner(page) is { } owner && !NavCatalog.IsAvailable(User.Role, owner))
@@ -580,6 +588,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
         if (page != Module)
             Remember(Module);
+        PrepareContextualNavigation(page);
         Module = page;
         Status = WindowTitle;
     }
@@ -608,34 +617,55 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task Find()
     {
-        SearchMatches = [];
-        SelectedSearchMatch = null;
+        if (!TryLeaveEdits(Find)) return;
+        var user = User;
+        if (user is null) return;
+        ClearSubscriberSelection();
+        var version = _houseSubscribersVersion;
+        var module = Module;
+        var mode = SearchMode;
+        var query = FindQuery;
+        var street = FindStreet;
+        var house = FindHouse;
+        var apartment = FindApartment;
+        var section = FindSection;
         try
         {
-            var matches = await _store.FindSubscribersAsync(SearchMode, FindQuery, FindStreet, FindHouse, FindApartment, FindSection);
+            var matches = await _store.FindSubscribersAsync(mode, query, street, house, apartment, section);
+            if (User != user || version != _houseSubscribersVersion || Module != module) return;
             if (matches.Count == 0) { Status = "Абонент не найден."; return; }
-            var exact = SearchMode == SearchMode.Account
-                ? matches.FirstOrDefault(s => s.Account.Equals(FindQuery.Trim(), StringComparison.OrdinalIgnoreCase)) : null;
-            if (exact is null && matches.Count > 1)
+            if (matches.Count > 1)
             {
                 SelectedSubscriber = null;
                 SearchMatches = matches;
                 Status = "Найдено несколько абонентов. Сверьте адрес и лицевой счёт.";
                 return;
             }
-            await OpenSearchMatch(exact ?? matches[0]);
+            await OpenSearchMatch(matches[0]);
         }
         catch (StoreException e)
         {
-            Status = e.Message;
+            if (User == user && version == _houseSubscribersVersion && Module == module) Status = e.Message;
             return;
         }
+    }
+
+    [RelayCommand]
+    private async Task FindApartmentInCurrentHouse()
+    {
+        if (!TryLeaveEdits(FindApartmentInCurrentHouse)) return;
+        if (SelectedSubscriber is not { } subscriber) return;
+        FindStreet = subscriber.House.Street.Name;
+        FindHouse = subscriber.House.Number;
+        SearchMode = SearchMode.Address;
+        await Find();
     }
 
     [RelayCommand]
     private async Task OpenSearchMatch(SubscriberMatch? match)
     {
         if (match is null) return;
+        if (!TryLeaveEdits(() => OpenSearchMatch(match))) return;
         await ShowSubscriberAsync(match.Id, match.HouseId);
         if (SelectedSubscriber?.Id == match.Id)
         {
@@ -654,6 +684,11 @@ public sealed partial class MainViewModel : ObservableObject
         if (user is { CanEditAccount: false, Role: not UserRole.AdsHead and not UserRole.Administrator })
         {
             PaymentStatus = Status = "Нет права вносить оплату.";
+            return;
+        }
+        if (HasHouseEdits || HasCardEdits)
+        {
+            PaymentStatus = Status = "Сохраните или отмените правки карточки и дома перед внесением оплаты.";
             return;
         }
         var key = (user.Id, subscriber.Id);
@@ -715,14 +750,24 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task SaveHouse()
     {
-        if (SelectedHouse is not { } h) return;
+        await SaveHouseEdits();
+    }
+
+    private async Task<bool> SaveHouseEdits()
+    {
+        if (SelectedHouse is not { } h) return false;
+        if (!CanEditHousePassport)
+        {
+            Status = "Нет права редактировать паспорт дома.";
+            return false;
+        }
         if (!TryParseDate(EditFaultFix, out var fix))
         {
             Status = "План устранения — дата в виде дд.мм.гггг.";
-            return;
+            return false;
         }
         var org = h.Organization is { } o ? new HouseOrganizationRequest(o.Name, o.Branch, o.Address, o.Phones, o.HeadName, o.EngineerName) : null;
-        await Save(async () =>
+        return await TrySave(async () =>
         {
             await _store.SaveHousePassportAsync(h.Id, new HousePassportRequest(
                 h.Antennas, h.AerialCables, h.Amplifiers, h.PowerSupplies, h.TechFloorKey, h.OtherNotes,
@@ -740,13 +785,18 @@ public sealed partial class MainViewModel : ObservableObject
         });
     }
 
-    /// <summary>Запись в базу: отказ сервера или нет связи — в строку состояния, программа продолжает работать.</summary>
     /// <summary>Выполняет запись; отказ хранилища показывает в строке состояния.</summary>
     internal async Task Save(Func<Task> action)
+    {
+        await TrySave(action);
+    }
+
+    private async Task<bool> TrySave(Func<Task> action)
     {
         try
         {
             await action();
+            return true;
         }
         catch (StoreException e)
         {
@@ -760,6 +810,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             Status = DatabaseErrors.LinkedDataMessage;
         }
+        return false;
     }
 
     internal static string Money(decimal value) => value.ToString("N2") + " ₽";

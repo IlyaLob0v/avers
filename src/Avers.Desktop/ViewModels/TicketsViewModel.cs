@@ -111,6 +111,39 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     private bool _ticketFilterReady;
     private bool _holdTicketRefresh;
 
+    internal sealed record JournalNavigationState(
+        WorkTicket? Ticket, TicketOption<TicketScope> Scope, TicketOption<TicketKind> Kind,
+        TicketOption<TicketStatus> Status, bool OnlyOpen, bool OnlyOverdue,
+        DateTime? From, DateTime? To, int Year, string Search);
+
+    internal JournalNavigationState CaptureNavigation() => new(
+        SelectedTicket, ScopeFilter, KindFilter, StatusFilter, OnlyOpenTickets, OnlyOverdueTickets,
+        TicketFrom, TicketTo, TicketYear, TicketSearch);
+
+    internal async Task RestoreNavigationAsync(JournalNavigationState state)
+    {
+        var user = shell.User;
+        var module = shell.Module;
+        var houseId = shell.SelectedHouse?.Id;
+        var subscriberId = shell.SelectedSubscriber?.Id;
+        _holdTicketRefresh = true;
+        ScopeFilter = state.Scope;
+        KindFilter = state.Kind;
+        StatusFilter = state.Status;
+        OnlyOpenTickets = state.OnlyOpen;
+        OnlyOverdueTickets = state.OnlyOverdue;
+        TicketYear = state.Year;
+        TicketFrom = state.From;
+        TicketTo = state.To;
+        TicketSearch = state.Search;
+        _holdTicketRefresh = false;
+        await RefreshTicketsAsync();
+        if (shell.User != user || shell.Module != module || shell.SelectedHouse?.Id != houseId
+            || shell.SelectedSubscriber?.Id != subscriberId) return;
+        SelectedTicket = state.Ticket is { } ticket
+            ? Tickets.FirstOrDefault(row => row.Id == ticket.Id) ?? ticket : null;
+    }
+
     private void EnsureTicketFilter()
     {
         if (_ticketFilterReady) return;
@@ -594,25 +627,21 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     private async Task OpenTicketSubscriber()
     {
         if (TicketSubscriber is not { } s) { shell.Status = "У заявки нет лицевого счёта."; return; }
-        await SelectSubscriberOf(s);
-        shell.GoCommand.Execute(AppModule.Subscriber);
+        await shell.OpenSubscriberAsync(s);
     }
 
     [RelayCommand]
     private async Task OpenTicketContract()
     {
         if (TicketSubscriber is not { } s) { shell.Status = "У заявки нет лицевого счёта, договора не найти."; return; }
-        await SelectSubscriberOf(s);
-        shell.OpenContractCommand.Execute(null);
+        await shell.OpenSubscriberAsync(s, AppModule.Contract);
     }
 
     [RelayCommand]
-    private void OpenTicketHouse()
+    private async Task OpenTicketHouse()
     {
         if (TicketHouse is not { } h) return;
-        shell.SelectedStreet = shell.Streets.FirstOrDefault(x => x.Id == h.StreetId);
-        shell.SelectedHouse = shell.HousesOnStreet.FirstOrDefault(x => x.Id == h.Id);
-        shell.GoCommand.Execute(AppModule.Anten);
+        await shell.OpenHouseCommand.ExecuteAsync(h);
     }
 
     [RelayCommand]
@@ -621,13 +650,6 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         if (SelectedTicket is null) { shell.Status = "Выберите заявку в журнале."; return; }
         if (!CanEditSelectedTicket) { shell.Status = TicketRightsHint; return; }
         shell.GoCommand.Execute(AppModule.Ticket);
-    }
-
-    private async Task SelectSubscriberOf(Subscriber s)
-    {
-        var keep = SelectedTicket;
-        await shell.ShowSubscriberAsync(s.Id, s.HouseId);
-        SelectedTicket = keep;
     }
 
     [RelayCommand]

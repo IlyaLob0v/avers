@@ -70,7 +70,7 @@ public class AppearanceTests
             .Select(b => (NavItem)b.DataContext!)
             .ToList();
 
-        Assert.Equal(app.Vm.Navigation.Select(n => n.Module), tiles.Select(t => t.Module));
+        Assert.Equal(app.Vm.NavigationGroups.SelectMany(group => group.Items).Select(n => n.Module), tiles.Select(t => t.Module));
     }
 
     [AvaloniaFact]
