@@ -177,8 +177,8 @@
         <DataGrid.KeyBindings><KeyBinding Gesture="Enter" Command="{Binding OpenTicketCommand}" /></DataGrid.KeyBindings>
         <DataGrid.Columns>
           <DataGridTextColumn Header="№" Binding="{Binding Number}" Width="65" />
-          <DataGridTextColumn Header="Дата" Binding="{Binding Date, StringFormat='{}{0:dd.MM.yyyy}'}" Width="95" />
-          <DataGridTextColumn Header="Время" Binding="{Binding Time}" Width="60" />
+          <DataGridTextColumn Header="Дата" Binding="{Binding Date, Mode=OneWay, StringFormat='{}{0:dd.MM.yyyy}'}" Width="95" />
+          <DataGridTextColumn Header="Время" Binding="{Binding Time, Mode=OneWay}" Width="60" />
           <DataGridTextColumn Header="Улица" Binding="{Binding House.Street.Name}" Width="110" />
           <DataGridTextColumn Header="Дом" Binding="{Binding House.Number}" Width="58" />
           <DataGridTextColumn Header="Под." Binding="{Binding Section}" Width="50" />
