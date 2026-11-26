@@ -7,6 +7,7 @@
 dotnet run --project tools/Avers.Screenshots -- shots              # admin, основные экраны
 dotnet run --project tools/Avers.Screenshots -- shots sokolova Desktop Disp
 dotnet run --project tools/Avers.Screenshots -- shots admin Abon --size=1366x768   # размер окна
+dotnet run --project tools/Avers.Screenshots -- shots admin Disp --size=1000x680 --new-ticket   # форма приёма
 ```
 
 Снимки для документации лежат в `docs/images/`.

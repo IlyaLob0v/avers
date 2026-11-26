@@ -23,25 +23,28 @@
   </UserControl.Styles>
   <DockPanel Margin="16,0,16,12">
     <Border DockPanel.Dock="Top" Classes="card" Padding="10,4,0,6">
-      <WrapPanel>
-        <StackPanel Classes="f">
-          <TextBlock Text="Год ППР" />
-          <ComboBox Classes="cell" Width="84" ItemsSource="{Binding PprYears}" SelectedItem="{Binding PprYear}" />
-        </StackPanel>
-        <StackPanel Classes="f">
-          <TextBlock Text="Показать по" />
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <RadioButton Content="обслуживающей организации" IsChecked="{Binding !PprByZone}" />
-            <RadioButton Content="зоне" IsChecked="{Binding PprByZone}" />
+      <StackPanel>
+        <WrapPanel>
+          <StackPanel Classes="f">
+            <TextBlock Text="Год ППР" />
+            <ComboBox Classes="cell" Width="84" ItemsSource="{Binding PprYears}" SelectedItem="{Binding PprYear}" />
           </StackPanel>
-        </StackPanel>
-        <StackPanel Classes="f">
-          <TextBlock Text="Отбор" />
-          <ComboBox Classes="cell" Width="200" ItemsSource="{Binding PprFilters}" SelectedItem="{Binding PprFilter}" />
-        </StackPanel>
-        <CheckBox VerticalAlignment="Bottom" Margin="0,0,10,2" Content="Только просроченные (долги ППР)" IsChecked="{Binding PprOnlyOverdue}" />
-        <Button VerticalAlignment="Bottom" Margin="0,0,0,2" Content="{Binding PprCopyTitle}" Command="{Binding CopyPprCommand}" IsVisible="{Binding CanEditPpr}" />
-      </WrapPanel>
+          <StackPanel Classes="f">
+            <TextBlock Text="Отбирать по" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <RadioButton Content="обслуживающей организации" IsChecked="{Binding !PprByZone}" />
+              <RadioButton Content="зоне" IsChecked="{Binding PprByZone}" />
+            </StackPanel>
+          </StackPanel>
+          <StackPanel Classes="f">
+            <TextBlock Text="{Binding PprFilterTitle}" />
+            <ComboBox Classes="cell" Width="200" ItemsSource="{Binding PprFilters}" SelectedItem="{Binding PprFilter}" />
+          </StackPanel>
+          <CheckBox VerticalAlignment="Bottom" Margin="0,0,10,2" Content="Только просроченные (долги ППР)" IsChecked="{Binding PprOnlyOverdue}" />
+          <Button VerticalAlignment="Bottom" Margin="0,0,0,2" Content="{Binding PprCopyTitle}" Command="{Binding CopyPprCommand}" IsVisible="{Binding CanEditPpr}" />
+        </WrapPanel>
+      <TextBlock Classes="hint" Text="Выберите организацию или зону в списке. «Все дома» показывает общий план без отбора." TextWrapping="Wrap" Margin="0,4,10,0" />
+      </StackPanel>
     </Border>
 
     <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">

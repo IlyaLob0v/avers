@@ -267,6 +267,11 @@ public sealed partial class MainViewModel
     private void PrintContract()
     {
         if (SelectedSubscriber is not { } s) return;
+        if (s.IsLegalEntity)
+        {
+            Status = "Для юрлиц согласованного шаблона договора пока нет. Гражданский бланк не применяется; прикрепите скан подписанного договора.";
+            return;
+        }
         OpenWord(PrintPath("договор", s.Account, ".docx"), $"договор {s.FullName}", path => WordForms.Contract(ContractForm.Text(s), path));
     }
 

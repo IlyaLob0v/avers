@@ -6,14 +6,12 @@
              x:Class="Avers.Desktop.Views.DispView"
              x:DataType="vm:TicketsViewModel">
   <UserControl.Styles>
-    <Style Selector="TextBlock.k">
+    <Style Selector="StackPanel.f > TextBlock">
       <Setter Property="FontSize" Value="12" />
       <Setter Property="Foreground" Value="{StaticResource Muted}" />
-      <Setter Property="Margin" Value="0,3,8,0" />
     </Style>
-    <Style Selector="TextBlock.v">
-      <Setter Property="TextWrapping" Value="Wrap" />
-      <Setter Property="Margin" Value="0,2,0,0" />
+    <Style Selector="WrapPanel > StackPanel.f">
+      <Setter Property="Margin" Value="0,0,12,4" />
     </Style>
     <Style Selector="Button.month">
       <Setter Property="Margin" Value="0,0,4,0" />
@@ -29,301 +27,168 @@
     <Style Selector="Button.month.open TextBlock.counts">
       <Setter Property="Foreground" Value="{StaticResource WarnText}" />
     </Style>
-    <Style Selector="StackPanel.f > TextBlock">
-      <Setter Property="FontSize" Value="12" />
-      <Setter Property="Foreground" Value="{StaticResource Muted}" />
-    </Style>
-    <Style Selector="WrapPanel > StackPanel.f">
-      <Setter Property="Margin" Value="0,0,10,0" />
-    </Style>
-    <Style Selector="Button.period">
-      <Setter Property="Padding" Value="8,4" />
-      <Setter Property="Margin" Value="0,0,4,0" />
-    </Style>
   </UserControl.Styles>
 
-  <ScrollViewer>
-  <DockPanel MinHeight="740">
-    <!-- Шапка: как в прежнем AversDisp — дата, оператор, действия -->
-    <Border DockPanel.Dock="Top" Classes="toolbar">
-      <StackPanel Orientation="Horizontal">
-        <TextBlock Classes="label" Text="Рабочая дата" />
-        <TextBox Width="100" Margin="0,0,12,0" Text="{Binding Shell.WorkDateText, Mode=OneWay}" IsReadOnly="True" />
-        <TextBlock Classes="label" Text="Оператор" />
-        <TextBox Width="150" Margin="0,0,16,0" Text="{Binding Shell.User.DisplayName, Mode=OneWay}" IsReadOnly="True" />
-        <Button Classes="primary" Content="Принять заявку" Command="{Binding AcceptTicketCommand}" IsEnabled="{Binding CanAcceptTickets}" />
-        <Button Content="Изменить заявку" Command="{Binding EditTicketCommand}" IsEnabled="{Binding CanEditSelectedTicket}" />
-        <Button Content="Паспорт дома" Command="{Binding OpenTicketHouseCommand}" />
-        <Button Content="Печать наряд-заказа" Command="{Binding PrintWorkOrderCommand}" />
-      </StackPanel>
-    </Border>
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="16,0,16,12">
+    <WrapPanel Margin="0,0,0,8">
+      <Button Classes="primary" Content="Новая заявка" Command="{Binding ShowNewTicketCommand}" IsVisible="{Binding CanAcceptTickets}" />
+      <Button Content="Открыть заявку" Command="{Binding OpenTicketCommand}" />
+      <Button Content="Паспорт дома" Command="{Binding OpenTicketHouseCommand}" />
+      <Button Content="Печать наряд-заказа" Command="{Binding PrintWorkOrderCommand}" />
+    </WrapPanel>
 
-    <Grid ColumnDefinitions="200,*,300" Margin="16,0,16,12">
-      <!-- Слева: улица и дом -->
-      <Grid RowDefinitions="*,10,220">
-        <ListBox Classes="streets" ItemsSource="{Binding Shell.Streets}" SelectedItem="{Binding Shell.SelectedStreet}">
-          <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="d:Street">
-              <TextBlock Text="{Binding Name}" />
-            </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
-        <DataGrid Grid.Row="2" ItemsSource="{Binding Shell.HousesOnStreet}" SelectedItem="{Binding Shell.SelectedHouse}" AutoGenerateColumns="False" IsReadOnly="True">
-          <DataGrid.Columns>
-            <DataGridTextColumn Header="Дом" Binding="{Binding Number}" Width="64" />
-            <DataGridTextColumn Header="Под." Binding="{Binding Entrances}" Width="60" />
-            <DataGridTextColumn Header="Индекс" Binding="{Binding PzhreuIndex}" Width="*" />
-          </DataGrid.Columns>
-        </DataGrid>
-      </Grid>
-
-      <!-- В центре: отбор, сводка по году и журнал (таблица — прежняя) -->
-      <DockPanel Grid.Column="1" Margin="10,0">
-        <Border DockPanel.Dock="Top" Classes="card" Padding="10,4,0,6">
-          <StackPanel>
-            <WrapPanel>
-              <StackPanel Classes="f">
-                <TextBlock Text="Чьи заявки" />
-                <ComboBox Classes="cell" Width="150" ItemsSource="{Binding TicketScopes}" SelectedItem="{Binding ScopeFilter}" />
-              </StackPanel>
-              <StackPanel Classes="f">
-                <TextBlock Text="Вид заявки" />
-                <ComboBox Classes="cell" Width="140" ItemsSource="{Binding TicketKinds}" SelectedItem="{Binding KindFilter}" />
-              </StackPanel>
-              <StackPanel Classes="f">
-                <TextBlock Text="Состояние" />
-                <ComboBox Classes="cell" Width="120" ItemsSource="{Binding TicketStatuses}" SelectedItem="{Binding StatusFilter}" />
-              </StackPanel>
-              <StackPanel Classes="f">
-                <TextBlock Text="Поиск: № заявки, фамилия, неисправность, механик" />
-                <TextBox Classes="cell" Text="{Binding TicketSearch}" PlaceholderText="например, Иванова" />
-              </StackPanel>
-            </WrapPanel>
-            <WrapPanel>
-              <StackPanel Classes="f">
-                <TextBlock Text="Период с" />
-                <CalendarDatePicker Width="110" Margin="0,2" SelectedDate="{Binding TicketFrom}" />
-              </StackPanel>
-              <StackPanel Classes="f">
-                <TextBlock Text="по" />
-                <CalendarDatePicker Width="110" Margin="0,2" SelectedDate="{Binding TicketTo}" />
-              </StackPanel>
-              <StackPanel Classes="f">
-                <TextBlock Text="Год" />
-                <ComboBox Classes="cell" Width="84" ItemsSource="{Binding TicketYears}" SelectedItem="{Binding TicketYear}" />
-              </StackPanel>
-              <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,0,10,2">
-                <Button Classes="period" Content="Сегодня" Command="{Binding PeriodTodayCommand}" />
-                <Button Classes="period" Content="Месяц" Command="{Binding PeriodMonthCommand}" />
-                <Button Classes="period" Content="Год" Command="{Binding PeriodYearCommand}" />
-                <Button Classes="period" Content="Всё время" Command="{Binding PeriodAllCommand}" Margin="0" />
-              </StackPanel>
-              <CheckBox VerticalAlignment="Bottom" Margin="0,0,10,2" Content="Только невыполненные" IsChecked="{Binding OnlyOpenTickets}" />
-              <CheckBox VerticalAlignment="Bottom" Margin="0,0,0,2" Content="Только просроченные" IsChecked="{Binding OnlyOverdueTickets}"
-                        ToolTip.Tip="Принятые и в работе, у которых прошёл срок: 3 дня от приёма" />
-            </WrapPanel>
-          </StackPanel>
-        </Border>
-
-        <HeaderedContentControl DockPanel.Dock="Top" Classes="group" Padding="10,6,6,6">
-          <HeaderedContentControl.Header>
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="{Binding TicketMonthsCaption}" VerticalAlignment="Center" />
-              <TextBlock Classes="hint" VerticalAlignment="Center" Text="принято / выполнено, нажмите месяц — журнал за него" />
+    <Border Grid.Row="1" Classes="card" Margin="0,0,0,8" IsVisible="{Binding IsNewTicketOpen}">
+      <ScrollViewer MaxHeight="300">
+        <StackPanel Spacing="6">
+          <TextBlock Classes="h2" Text="Новая заявка" />
+          <WrapPanel>
+            <Button Classes="primary" Content="Принять заявку" Command="{Binding AcceptTicketCommand}" />
+            <Button Content="Проверить открытые заявки" Command="{Binding CheckRepeatCallCommand}" />
+            <Button Content="Отмена" Command="{Binding CancelNewTicketCommand}" />
+          </WrapPanel>
+          <Border Classes="warn" IsVisible="{Binding HasNewTicketHouseFault}"><TextBlock Text="{Binding NewTicketHouseFaultText}" TextWrapping="Wrap" /></Border>
+          <Grid ColumnDefinitions="3*,100,128,90,160">
+            <StackPanel Classes="f">
+              <TextBlock Text="Улица" />
+              <ComboBox Classes="cell" HorizontalAlignment="Stretch" ItemsSource="{Binding Shell.Streets}" SelectedItem="{Binding NewTicketStreet}">
+                <ComboBox.ItemTemplate><DataTemplate x:DataType="d:Street"><TextBlock Text="{Binding Name}" /></DataTemplate></ComboBox.ItemTemplate>
+              </ComboBox>
             </StackPanel>
-          </HeaderedContentControl.Header>
-          <ItemsControl ItemsSource="{Binding TicketMonths}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <UniformGrid Columns="12" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
+            <StackPanel Grid.Column="1" Classes="f" Margin="8,0,0,0">
+              <TextBlock Text="Дом" />
+              <ComboBox Classes="cell" HorizontalAlignment="Stretch" ItemsSource="{Binding NewTicketHouses}" SelectedItem="{Binding NewTicketHouse}">
+                <ComboBox.ItemTemplate><DataTemplate x:DataType="d:House"><TextBlock Text="{Binding Number}" /></DataTemplate></ComboBox.ItemTemplate>
+              </ComboBox>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Classes="f" Margin="8,0,0,0"><TextBlock Text="Подъезд / секция" /><TextBox x:Name="NewTicketSection" Classes="cell" Text="{Binding NewTicketSection}" /></StackPanel>
+            <StackPanel Grid.Column="3" Classes="f" Margin="8,0,0,0"><TextBlock Text="Квартира" /><TextBox x:Name="NewTicketApartment" Classes="cell" Text="{Binding NewTicketApartment}" /></StackPanel>
+            <StackPanel Grid.Column="4" Classes="f" Margin="8,0,0,0"><TextBlock Text="Вид заявки" /><ComboBox Classes="cell" HorizontalAlignment="Stretch" ItemsSource="{Binding NewTicketKinds}" SelectedItem="{Binding NewTicketKind}" /></StackPanel>
+          </Grid>
+          <StackPanel Classes="f">
+            <TextBlock Text="Описание неисправности — обязательно" />
+            <TextBox x:Name="NewTicketFault" Classes="cell" MinHeight="44" MaxHeight="90" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding NewTicketFault}" PlaceholderText="Что случилось, где и при каких условиях — со слов заявителя" />
+          </StackPanel>
+          <Grid ColumnDefinitions="*,*">
+            <StackPanel Classes="f"><TextBlock Text="Телефон заявителя" /><TextBox x:Name="NewTicketPhone" Classes="cell" Text="{Binding NewTicketPhone}" PlaceholderText="Телефон для связи по этой заявке" /></StackPanel>
+            <StackPanel Grid.Column="1" Classes="f" Margin="12,0,0,0">
+              <TextBlock Text="Ответственный — можно назначить позднее" />
+              <AutoCompleteBox x:Name="NewTicketMechanic" Classes="cell" ItemsSource="{Binding MechanicNames}" Text="{Binding NewTicketMechanic}" FilterMode="ContainsOrdinal" MinimumPrefixLength="0" PlaceholderText="Не назначен" />
+            </StackPanel>
+          </Grid>
+          <TextBlock Classes="hint" Text="{Binding NewTicketDueText}" TextWrapping="Wrap" />
+          <TextBlock Classes="hint" Text="{Binding RepeatCallStatus}" TextWrapping="Wrap" />
+          <ItemsControl ItemsSource="{Binding RepeatCallTickets}">
             <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:TicketMonthRow">
-                <Button Classes="month" Classes.selected="{Binding IsSelected}" Classes.open="{Binding HasOpen}"
-                        Command="{Binding Select}" CommandParameter="{Binding Month}" ToolTip.Tip="{Binding Tip}">
-                  <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-                    <TextBlock Text="{Binding Name}" FontSize="12" VerticalAlignment="Center" />
-                    <TextBlock Classes="counts" Text="{Binding Counts}" FontWeight="SemiBold" VerticalAlignment="Center" />
-                  </StackPanel>
+              <DataTemplate x:DataType="d:WorkTicket">
+                <Button HorizontalAlignment="Stretch" Command="{Binding $parent[UserControl].((vm:TicketsViewModel)DataContext).OpenRepeatCallTicketCommand}" CommandParameter="{Binding}">
+                  <DockPanel>
+                    <TextBlock DockPanel.Dock="Left" Text="{Binding Number, StringFormat='№ {0}'}" Margin="0,0,8,0" />
+                    <TextBlock DockPanel.Dock="Left" Text="{Binding Apartment, StringFormat='Кв. {0}'}" Margin="0,0,8,0" />
+                    <TextBlock DockPanel.Dock="Left" Text="{Binding StatusDescription}" Margin="0,0,8,0" />
+                    <TextBlock Text="{Binding Fault}" TextTrimming="CharacterEllipsis" />
+                  </DockPanel>
                 </Button>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-        </HeaderedContentControl>
-
-        <HeaderedContentControl DockPanel.Dock="Bottom" Classes="group" Margin="0" Padding="10,4,10,8">
-          <HeaderedContentControl.Header>
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="Новая заявка:" VerticalAlignment="Center" />
-              <TextBlock Classes="hint" Text="дом / под. / кв" VerticalAlignment="Center" />
-              <TextBlock Text="{Binding Shell.HouseAptLine}" VerticalAlignment="Center" />
-              <TextBlock Classes="hint" Text="{Binding Shell.SelectedSubscriber.FullName}" VerticalAlignment="Center" />
+          <Expander Header="Сведения о выбранном доме" IsVisible="{Binding HasNewTicketHouse}">
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding NewTicketHouse.AddressLine}" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding NewTicketHouse.Organization.Name}" />
+              <TextBlock Text="{Binding NewTicketHouse.Organization.Phones}" />
+              <TextBlock Text="{Binding NewTicketHouse.Antennas}" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding NewTicketHouse.Amplifiers}" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding NewTicketHouse.TechFloorKey}" TextWrapping="Wrap" />
             </StackPanel>
-          </HeaderedContentControl.Header>
-          <StackPanel Spacing="4">
-            <Grid ColumnDefinitions="140,*,150">
-              <StackPanel Classes="f"><TextBlock Text="Вид заявки"/><ComboBox Classes="cell" HorizontalAlignment="Stretch" ItemsSource="{Binding NewTicketKinds}" SelectedItem="{Binding NewTicketKind}"/></StackPanel>
-              <StackPanel Grid.Column="1" Classes="f" Margin="8,0">
-                <TextBlock Text="Характер неисправности" />
-                <TextBox Classes="cell" MinHeight="28" TextWrapping="Wrap" AcceptsReturn="True" Text="{Binding NewTicketFault}" PlaceholderText="Что случилось — со слов жильца" />
-              </StackPanel>
-              <StackPanel Grid.Column="2" Classes="f">
-                <TextBlock Text="Телефон заявителя" />
-                <TextBox Classes="cell" Text="{Binding NewTicketPhone}" PlaceholderText="пусто — из карточки" />
-              </StackPanel>
-            </Grid>
-            <StackPanel IsVisible="{Binding CanAcceptTickets}" Spacing="4">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="Проверить открытые заявки" Command="{Binding CheckRepeatCallCommand}" />
-                <TextBlock Classes="hint" VerticalAlignment="Center" Text="{Binding RepeatCallStatus}" />
-              </StackPanel>
-              <ScrollViewer MaxHeight="100">
-                <ItemsControl ItemsSource="{Binding RepeatCallTickets}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="d:WorkTicket">
-                      <Button HorizontalAlignment="Stretch"
-                              Command="{Binding $parent[UserControl].((vm:TicketsViewModel)DataContext).OpenRepeatCallTicketCommand}"
-                              CommandParameter="{Binding}">
-                        <DockPanel>
-                          <TextBlock DockPanel.Dock="Left" Text="{Binding Number, StringFormat='№ {0}'}" Margin="0,0,8,0" />
-                          <TextBlock DockPanel.Dock="Left" Text="{Binding Apartment, StringFormat='Кв. {0}'}" Margin="0,0,8,0" />
-                          <TextBlock DockPanel.Dock="Left" Text="{Binding StatusLabel}" Margin="0,0,8,0" />
-                          <TextBlock Text="{Binding Fault}" TextTrimming="CharacterEllipsis" />
-                        </DockPanel>
-                      </Button>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </ScrollViewer>
-            </StackPanel>
-          </StackPanel>
-        </HeaderedContentControl>
-
-        <HeaderedContentControl Classes="group" Padding="0">
-          <HeaderedContentControl.Header>
-            <StackPanel Spacing="2">
-              <TextBlock Text="Журнал заявок" />
-              <TextBlock Classes="hint" TextWrapping="Wrap" Text="{Binding TicketPeriodText}" />
-              <TextBlock Classes="hint" TextWrapping="Wrap" Text="{Binding TicketCountText}" />
-            </StackPanel>
-          </HeaderedContentControl.Header>
-          <DataGrid MaxHeight="360" MinHeight="180" BorderThickness="0" ctl:GridTone.Enabled="True" ctl:GridTone.Selector="{Binding TicketTone}" ItemsSource="{Binding Tickets}" SelectedItem="{Binding JournalSelectedTicket}" AutoGenerateColumns="False" IsReadOnly="True">
-            <DataGrid.Columns>
-              <DataGridTextColumn Header="№" Binding="{Binding Number}" Width="60" />
-              <DataGridTextColumn Header="Время" Binding="{Binding Time}" Width="64" />
-              <DataGridTextColumn Header="Улица" Binding="{Binding House.Street.Name}" Width="110" />
-              <DataGridTextColumn Header="Дом" Binding="{Binding House.Number}" Width="62" />
-              <DataGridTextColumn Header="Кв" Binding="{Binding Apartment}" Width="52" />
-              <DataGridTextColumn Header="ФИО" Binding="{Binding Subscriber.ShortName}" Width="120" />
-              <DataGridTextColumn Header="Неисправность" Binding="{Binding Fault}" Width="*" MinWidth="160" />
-              <DataGridTextColumn Header="Механик" Binding="{Binding Mechanic}" Width="120" />
-              <DataGridTextColumn Header="Выполн." Binding="{Binding StatusLabel}" Width="80" />
-            </DataGrid.Columns>
-          </DataGrid>
-        </HeaderedContentControl>
-      </DockPanel>
-
-      <!-- Справа: выбранная заявка с данными квартиры и данные по дому от антенной службы -->
-      <ScrollViewer Grid.Column="2">
-        <StackPanel>
-          <!-- Неисправность по выбранному дому: одна плашка на экране, всегда на виду при приёме заявки -->
-          <Border Classes.warn="{Binding !Shell.FaultOverdue}" Classes.debt="{Binding Shell.FaultOverdue}" IsVisible="{Binding Shell.HasFault}">
-            <TextBlock Text="{Binding Shell.FaultBanner}" TextWrapping="Wrap" />
-          </Border>
-
-          <HeaderedContentControl Classes="group" Header="{Binding TicketHeader}">
-            <StackPanel>
-              <Grid ColumnDefinitions="114,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
-                <TextBlock Classes="k" Text="Адрес" />
-                <TextBlock Grid.Column="1" Classes="v" Text="{Binding TicketAddress}" />
-                <TextBlock Grid.Row="1" Classes="k" Text="Вид" />
-                <TextBlock Grid.Row="1" Grid.Column="1" Classes="v" Text="{Binding TicketKindText}" />
-                <TextBlock Grid.Row="2" Classes="k" Text="Состояние" />
-                <TextBlock Grid.Row="2" Grid.Column="1" Classes="v" Text="{Binding TicketStatusText}" />
-                <TextBlock Grid.Row="3" Classes="k" Text="Принял(а)" />
-                <TextBlock Grid.Row="3" Grid.Column="1" Classes="v" Text="{Binding TicketAcceptedBy}" />
-                <TextBlock Grid.Row="4" Classes="k" Text="Домовладелец" />
-                <TextBlock Grid.Row="4" Grid.Column="1" Classes="v" Text="{Binding TicketHomeowner}" />
-                <TextBlock Grid.Row="5" Classes="k" Text="Зона" />
-                <TextBlock Grid.Row="5" Grid.Column="1" Classes="v" Text="{Binding TicketZone}" />
-                <TextBlock Grid.Row="6" Classes="k" Text="Сделано" />
-                <TextBlock Grid.Row="6" Grid.Column="1" Classes="v" Text="{Binding SelectedTicket.WorkDone}" />
-                <TextBlock Grid.Row="7" Classes="k" Text="Срок" />
-                <Border Grid.Row="7" Grid.Column="1" Classes.debt="{Binding IsSelectedTicketOverdue}" Padding="4,0" Margin="0,2,0,0" CornerRadius="3">
-                  <TextBlock Classes="v" Margin="0" Text="{Binding TicketDueText}" />
-                </Border>
-              </Grid>
-              <Border Classes="warn" Margin="0,6,0,0" IsVisible="{Binding HasTicketRightsHint}">
-                <TextBlock Text="{Binding TicketRightsHint}" TextWrapping="Wrap" />
-              </Border>
-            </StackPanel>
-          </HeaderedContentControl>
-
-          <HeaderedContentControl Classes="group" Header="Квартира заявки">
-            <StackPanel>
-              <Grid ColumnDefinitions="114,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
-                <TextBlock Classes="k" Text="Фамилия, имя" />
-                <TextBlock Grid.Column="1" Classes="v" FontWeight="SemiBold" Text="{Binding TicketSubscriberName}" />
-                <TextBlock Grid.Row="1" Classes="k" Text="Лицевой счёт" />
-                <TextBlock Grid.Row="1" Grid.Column="1" Classes="v" Text="{Binding TicketAccount}" />
-                <TextBlock Grid.Row="2" Classes="k" Text="Телефон" />
-                <TextBlock Grid.Row="2" Grid.Column="1" Classes="v" Text="{Binding SelectedTicket.Phone}" />
-                <TextBlock Grid.Row="3" Classes="k" Text="Договор" />
-                <TextBlock Grid.Row="3" Grid.Column="1" Classes="v" Text="{Binding TicketContract}" />
-                <TextBlock Grid.Row="4" Classes="k" Text="Последняя оплата" />
-                <Border Grid.Row="4" Grid.Column="1" Classes.warn="{Binding IsTicketPaymentLate}" Padding="4,0" Margin="0,2,0,0" CornerRadius="3">
-                  <TextBlock Classes="v" Margin="0" Text="{Binding TicketLastPayment}" />
-                </Border>
-                <TextBlock Grid.Row="5" Classes="k" Text="Примечание" />
-                <TextBlock Grid.Row="5" Grid.Column="1" Classes="v" Text="{Binding TicketNotes}" />
-              </Grid>
-              <WrapPanel Margin="0,8,0,0" IsEnabled="{Binding HasTicketSubscriber}">
-                <Button Content="Лицевой счёт" Command="{Binding OpenTicketSubscriberCommand}" />
-                <Button Content="Договор" Command="{Binding OpenTicketContractCommand}" />
-              </WrapPanel>
-            </StackPanel>
-          </HeaderedContentControl>
-
-          <HeaderedContentControl Classes="group" Header="Дом — данные антенной службы">
-            <StackPanel>
-              <TextBlock FontWeight="SemiBold" Text="{Binding Shell.HouseCaption}" TextWrapping="Wrap" />
-              <Grid ColumnDefinitions="114,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
-                <TextBlock Classes="k" Text="Домовладелец" />
-                <TextBlock Grid.Column="1" Classes="v" Text="{Binding HouseHomeowner}" />
-                <TextBlock Grid.Row="1" Classes="k" Text="Телефоны" />
-                <TextBlock Grid.Row="1" Grid.Column="1" Classes="v" Text="{Binding HouseHomeownerPhones}" />
-                <TextBlock Grid.Row="2" Classes="k" Text="Антенны" />
-                <TextBlock Grid.Row="2" Grid.Column="1" Classes="v" Text="{Binding Shell.SelectedHouse.Antennas}" />
-                <TextBlock Grid.Row="3" Classes="k" Text="Усилители" />
-                <TextBlock Grid.Row="3" Grid.Column="1" Classes="v" Text="{Binding Shell.SelectedHouse.Amplifiers}" />
-                <TextBlock Grid.Row="4" Classes="k" Text="Ключ" />
-                <TextBlock Grid.Row="4" Grid.Column="1" Classes="v" Text="{Binding Shell.SelectedHouse.TechFloorKey}" />
-                <TextBlock Grid.Row="5" Classes="k" Text="Последний ППР" />
-                <TextBlock Grid.Row="5" Grid.Column="1" Classes="v" Text="{Binding Shell.LastPprText}" />
-                <TextBlock Grid.Row="6" Classes="k" Text="Не выполнено" />
-                <TextBlock Grid.Row="6" Grid.Column="1" Classes="v" Text="{Binding HouseOpenTickets}" />
-                <TextBlock Grid.Row="7" Classes="k" Text="Сведения" />
-                <TextBlock Grid.Row="7" Grid.Column="1" Classes="v" Text="{Binding Shell.HouseStats}" />
-              </Grid>
-            </StackPanel>
-          </HeaderedContentControl>
-
-          <HeaderedContentControl Classes="group" Margin="0" Header="Выгрузка для ОЭК">
-            <StackPanel>
-              <TextBlock Classes="hint" TextWrapping="Wrap" Text="Заявки, принятые за день. Если принято больше, чем выполнено — список не выводится." />
-              <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
-                <CalendarDatePicker Width="110" SelectedDate="{Binding OekDate}" />
-                <Button Content="Выгрузить в Excel" Command="{Binding ExportOekCommand}" />
-              </StackPanel>
-              <Border Classes="warn" Margin="0,6,0,0">
-                <TextBlock Text="{Binding OekWarning}" TextWrapping="Wrap" />
-              </Border>
-            </StackPanel>
-          </HeaderedContentControl>
+          </Expander>
         </StackPanel>
       </ScrollViewer>
+    </Border>
+
+    <StackPanel Grid.Row="2" Spacing="6" Margin="0,0,0,8">
+      <Border Classes="card" Padding="10,6">
+        <StackPanel>
+          <WrapPanel>
+            <StackPanel Classes="f"><TextBlock Text="Где искать" /><ComboBox Classes="cell" Width="155" ItemsSource="{Binding TicketScopes}" SelectedItem="{Binding ScopeFilter}" /></StackPanel>
+            <StackPanel Classes="f">
+              <TextBlock Text="Улица / дом для отбора" />
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <ComboBox Classes="cell" Width="180" ItemsSource="{Binding Shell.Streets}" SelectedItem="{Binding Shell.SelectedStreet}">
+                  <ComboBox.ItemTemplate><DataTemplate x:DataType="d:Street"><TextBlock Text="{Binding Name}" /></DataTemplate></ComboBox.ItemTemplate>
+                </ComboBox>
+                <ComboBox Classes="cell" Width="78" ItemsSource="{Binding Shell.HousesOnStreet}" SelectedItem="{Binding Shell.SelectedHouse}">
+                  <ComboBox.ItemTemplate><DataTemplate x:DataType="d:House"><TextBlock Text="{Binding Number}" /></DataTemplate></ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+            </StackPanel>
+            <StackPanel Classes="f"><TextBlock Text="Вид" /><ComboBox Classes="cell" Width="135" ItemsSource="{Binding TicketKinds}" SelectedItem="{Binding KindFilter}" /></StackPanel>
+            <StackPanel Classes="f"><TextBlock Text="Состояние" /><ComboBox Classes="cell" Width="125" ItemsSource="{Binding TicketStatuses}" SelectedItem="{Binding StatusFilter}" /></StackPanel>
+            <StackPanel Classes="f"><TextBlock Text="Поиск: №, фамилия, неисправность, механик" /><TextBox Classes="cell" MinWidth="240" Text="{Binding TicketSearch}" /></StackPanel>
+          </WrapPanel>
+          <WrapPanel VerticalAlignment="Center">
+            <StackPanel Classes="f"><TextBlock Text="Период с" /><CalendarDatePicker Width="110" SelectedDate="{Binding TicketFrom}" /></StackPanel>
+            <StackPanel Classes="f"><TextBlock Text="по" /><CalendarDatePicker Width="110" SelectedDate="{Binding TicketTo}" /></StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" Margin="0,0,12,4">
+              <Button Content="Сегодня" Command="{Binding PeriodTodayCommand}" />
+              <Button Content="Месяц" Command="{Binding PeriodMonthCommand}" />
+              <Button Content="Год" Command="{Binding PeriodYearCommand}" />
+              <Button Content="Всё время" Command="{Binding PeriodAllCommand}" />
+            </StackPanel>
+            <CheckBox Margin="0,0,12,0" Content="Только невыполненные" IsChecked="{Binding OnlyOpenTickets}" />
+            <CheckBox Content="Только просроченные" IsChecked="{Binding OnlyOverdueTickets}" ToolTip.Tip="Принятые и в работе, у которых прошёл срок: 3 дня от приёма" />
+          </WrapPanel>
+        </StackPanel>
+      </Border>
+      <Expander Header="Сводка по месяцам и выгрузка для ОЭК">
+        <StackPanel Spacing="8">
+          <WrapPanel>
+            <ComboBox Classes="cell" Width="84" ItemsSource="{Binding TicketYears}" SelectedItem="{Binding TicketYear}" Margin="0,0,12,0" />
+            <TextBlock Text="{Binding TicketMonthsCaption}" VerticalAlignment="Center" />
+          </WrapPanel>
+          <ItemsControl ItemsSource="{Binding TicketMonths}">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="12" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:TicketMonthRow">
+                <Button Classes="month" Classes.selected="{Binding IsSelected}" Classes.open="{Binding HasOpen}" Command="{Binding Select}" CommandParameter="{Binding Month}" ToolTip.Tip="{Binding Tip}">
+                  <StackPanel><TextBlock Text="{Binding Name}" FontSize="12" /><TextBlock Classes="counts" Text="{Binding Counts}" FontWeight="SemiBold" /></StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Classes="hint" Text="Принято / выполнено. Нажмите месяц, чтобы отобрать его заявки." />
+          <WrapPanel>
+            <CalendarDatePicker Width="110" SelectedDate="{Binding OekDate}" Margin="0,0,8,0" />
+            <Button Content="Выгрузить в Excel для ОЭК" Command="{Binding ExportOekCommand}" />
+          </WrapPanel>
+          <TextBlock Classes="hint" Text="{Binding OekWarning}" TextWrapping="Wrap" />
+        </StackPanel>
+      </Expander>
+    </StackPanel>
+
+    <Grid Grid.Row="3" RowDefinitions="Auto,*">
+      <StackPanel Margin="0,0,0,6">
+        <TextBlock Text="Журнал заявок" FontWeight="SemiBold" />
+        <TextBlock Classes="hint" Text="{Binding TicketCountText}" />
+        <TextBlock Classes="hint" Text="{Binding TicketPeriodText}" />
+      </StackPanel>
+      <DataGrid x:Name="TicketJournal" Grid.Row="1" MinHeight="100" ctl:GridTone.Enabled="True" ctl:GridTone.Selector="{Binding TicketTone}"
+                ItemsSource="{Binding Tickets}" SelectedItem="{Binding JournalSelectedTicket}" AutoGenerateColumns="False" IsReadOnly="True"
+                DoubleTapped="OnTicketDoubleTapped" AutomationProperties.Name="Журнал заявок">
+        <DataGrid.KeyBindings><KeyBinding Gesture="Enter" Command="{Binding OpenTicketCommand}" /></DataGrid.KeyBindings>
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="№" Binding="{Binding Number}" Width="65" />
+          <DataGridTextColumn Header="Дата" Binding="{Binding Date, StringFormat='{}{0:dd.MM.yyyy}'}" Width="95" />
+          <DataGridTextColumn Header="Время" Binding="{Binding Time}" Width="60" />
+          <DataGridTextColumn Header="Улица" Binding="{Binding House.Street.Name}" Width="110" />
+          <DataGridTextColumn Header="Дом" Binding="{Binding House.Number}" Width="58" />
+          <DataGridTextColumn Header="Под." Binding="{Binding Section}" Width="50" />
+          <DataGridTextColumn Header="Кв." Binding="{Binding Apartment}" Width="50" />
+          <DataGridTextColumn Header="ФИО" Binding="{Binding Subscriber.ShortName}" Width="120" />
+          <DataGridTextColumn Header="Неисправность" Binding="{Binding Fault}" Width="*" MinWidth="160" />
+          <DataGridTextColumn Header="Ответственный" Binding="{Binding Mechanic}" Width="140" />
+          <DataGridTextColumn Header="Состояние" Binding="{Binding StatusDescription}" Width="100" />
+        </DataGrid.Columns>
+      </DataGrid>
     </Grid>
-  </DockPanel>
-  </ScrollViewer>
+  </Grid>
 </UserControl>

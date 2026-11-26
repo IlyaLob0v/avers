@@ -164,14 +164,24 @@ public class ShellTests
     [InlineData("orlov", true)]     // начальник АДС
     [InlineData("sokolova", true)]  // пользователь АДС
     [InlineData("engineer", false)] // главный инженер только смотрит
-    public void Journal_AcceptButton_EnabledRightAfterLogin(string login, bool enabled)
+    public void Journal_CreationEntry_RespectsRoleRightAfterLogin(string login, bool enabled)
     {
         using var app = new DesktopApp(login);
         app.Go(AppModule.Disp);
 
-        var accept = app.Window.GetVisualDescendants().OfType<Button>()
-            .Single(b => b.IsEffectivelyVisible && Equals(b.Content, "Принять заявку"));
-        Assert.Equal(enabled, accept.IsEnabled);
+        var create = app.Window.GetVisualDescendants().OfType<Button>()
+            .Single(b => Equals(b.Content, "Новая заявка"));
+        Assert.Equal(enabled, create.IsEffectivelyVisible);
+        Assert.Equal(enabled, app.Vm.TicketsScreen.CanAcceptTickets);
+        app.Vm.TicketsScreen.ShowNewTicketCommand.Execute(null);
+        app.Pump();
+        Assert.Equal(enabled, app.Vm.TicketsScreen.IsNewTicketOpen);
+        if (enabled)
+        {
+            var accept = app.Window.GetVisualDescendants().OfType<Button>()
+                .Single(b => b.IsEffectivelyVisible && Equals(b.Content, "Принять заявку"));
+            Assert.True(accept.IsEffectivelyEnabled);
+        }
     }
 
     [AvaloniaFact]
@@ -517,7 +527,7 @@ public class ShellTests
     }
 
     [AvaloniaFact]
-    public async Task Claim_OpensNoticeInWordAndCourtPackageAsPdf()
+    public async Task Claim_OpensNoticeInWordAndCourtPackageAsArchive()
     {
         using var app = new DesktopApp("lawyer");
         app.Go(AppModule.Claim);
@@ -530,8 +540,11 @@ public class ShellTests
         Assert.Equal(2, opened.Count);
         using (var word = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(opened[0], false))
             Assert.Contains("10 (десяти) календарных дней", word.MainDocumentPart!.Document!.Body!.InnerText);
-        Assert.StartsWith("%PDF", File.ReadAllText(opened[1])[..4]);
-        var pages = System.Text.RegularExpressions.Regex.Count(File.ReadAllText(opened[1]), @"/Type /Page\b");
+        using var archive = System.IO.Compression.ZipFile.OpenRead(opened[1]);
+        using var pdfReader = new StreamReader(archive.GetEntry("расчёт.pdf")!.Open());
+        var pdf = await pdfReader.ReadToEndAsync();
+        Assert.StartsWith("%PDF", pdf);
+        var pages = System.Text.RegularExpressions.Regex.Count(pdf, @"/Type /Page\b");
         Assert.True(pages >= 2, $"В пакете {pages} стр.: справка и хотя бы один год оплат.");
         Assert.Contains("пакет для суда", app.Vm.Status);
     }

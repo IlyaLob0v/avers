@@ -74,8 +74,7 @@ public static class PdfForms
     {
         var unpaid = DueUnpaid(s, today);
         pdf.Title("Справка о задолженности за техническое обслуживание СКПТ");
-        pdf.Field("Абонент", s.FullName);
-        pdf.Field("Адрес", Address(s));
+        ClientFields(pdf, s);
         pdf.Field("Лицевой счёт", s.Account);
         pdf.Field("Договор", Contract(s));
         pdf.Gap();
@@ -96,9 +95,9 @@ public static class PdfForms
     {
         var months = s.Payments.Where(p => p.Year == year).OrderBy(p => p.Month).ToList();
         pdf.Paragraph(Organization);
-        pdf.Title($"Лицевой счёт абонента: {s.FullName} на {year} г.");
+        pdf.Title($"Лицевой счёт {(s.IsLegalEntity ? "организации" : "абонента")}: {s.FullName} на {year} г.");
         pdf.Field("Лицевой счёт", s.Account);
-        pdf.Field("Адрес", Address(s));
+        ClientFields(pdf, s);
         pdf.Field("Договор", Contract(s));
         pdf.Gap();
         var head = new List<(string, float)> { ("Месяц", 0), ("Начислено, руб.", 170), ("Оплачено, руб.", 290) };
@@ -124,6 +123,18 @@ public static class PdfForms
         pdf.Field("Отпечатано", DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"));
         pdf.Paragraph("Абон. отдел: 40-55-53. Пятница — неприёмный день!");
         pdf.Paragraph("Диспетчер по ремонту: 40-55-54");
+    }
+
+    private static void ClientFields(Page pdf, Subscriber s)
+    {
+        pdf.Field(s.IsLegalEntity ? "Организация" : "Абонент", s.FullName);
+        pdf.Field(s.IsLegalEntity ? "Адрес обслуживания" : "Адрес", Address(s));
+        if (!s.IsLegalEntity) return;
+        pdf.Field("ИНН", s.Inn);
+        pdf.Field("КПП", s.Kpp);
+        pdf.Field("ОГРН", s.Ogrn);
+        pdf.Field("Юридический адрес", s.LegalAddress);
+        pdf.Field("Руководитель", s.Director);
     }
 
     /// <summary>

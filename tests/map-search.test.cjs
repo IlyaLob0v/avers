@@ -428,3 +428,31 @@ test('Сбой загрузки домов показан явно и не ма�
   page.filter('братская');
   assert.match(page.context.$('search-note').textContent, /Ошибка сервера: 503/);
 });
+
+test('Телефон показывает квартиру, неисправность и ответственного открытой заявки дома', async () => {
+  const page = houseListPage(async () => ({ ok: true, json: async () => ({ total: 201, items: [{
+    number: 12, date: '2026-11-26', section: '2', apartment: '68', kindTitle: 'Антенна',
+    fault: '<img src=x onerror=alert(1)> Нет сигнала', responsible: 'Не назначен', statusTitle: 'Принята', dueDate: '2026-11-29'
+  }] }) }));
+  page.context.ticketTarget = page.context.document.createElement('section');
+  await vm.runInContext('loadHouseTickets(1, ticketTarget, viewRequest)', page.context);
+  const textOf = element => [element.textContent, ...element.children.map(textOf)].join(' ');
+  const result = textOf(page.context.ticketTarget);
+  assert.match(result, /Квартира 68/);
+  assert.match(result, /Ответственный Не назначен/);
+  assert.match(result, /Принята/);
+  assert.match(result, /Показаны последние 1 из 201/);
+  assert.match(result, /<img src=x onerror=alert\(1\)> Нет сигнала/);
+  assert.equal(page.context.ticketTarget.children.some(element => element.tagName === 'img'), false);
+});
+
+test('Поздний ответ заявок не наполняет карточку после ухода из дома', async () => {
+  let complete;
+  const page = houseListPage(() => new Promise(resolve => { complete = resolve; }));
+  page.context.ticketTarget = page.context.document.createElement('section');
+  const loading = vm.runInContext('loadHouseTickets(1, ticketTarget, viewRequest)', page.context);
+  vm.runInContext('show("search")', page.context);
+  complete({ ok: true, json: async () => ({ total: 0, items: [] }) });
+  await loading;
+  assert.equal(page.context.ticketTarget.children.length, 0);
+});

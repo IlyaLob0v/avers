@@ -263,6 +263,34 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
         return Task.CompletedTask;
     }
 
+    public Task<List<DocumentInfo>> LoadContractDocumentsAsync(int subscriberId)
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(SubscriberDocuments.List(ctx, subscriberId, SubscriberDocuments.ContractKind));
+    }
+
+    public Task<byte[]?> LoadContractDocumentFileAsync(int documentId)
+    {
+        using var ctx = db.CreateDbContext();
+        return Task.FromResult(SubscriberDocuments.File(ctx, documentId, SubscriberDocuments.ContractKind)?.Content);
+    }
+
+    public Task AddContractDocumentAsync(int subscriberId, AddDocumentRequest request)
+    {
+        if (request.Kind != SubscriberDocuments.ContractKind)
+            throw new StoreException("В этом разделе можно добавлять только сканы договора.");
+        if (SubscriberDocuments.Check(request.Kind, request.Name, request.Content) is { } error)
+            throw new StoreException(error);
+        return AddDocumentAsync(subscriberId, request);
+    }
+
+    public Task DeleteContractDocumentAsync(int documentId)
+    {
+        using var ctx = db.CreateDbContext();
+        SubscriberDocuments.Delete(ctx, documentId, ChangeLog.Who(ctx, _userId), DateTimeOffset.UtcNow, SubscriberDocuments.ContractKind);
+        return Task.CompletedTask;
+    }
+
     public Task SaveIntercomPanelAsync(int houseId, IntercomPanel draft)
     {
         using var ctx = db.CreateDbContext();
@@ -422,5 +450,16 @@ public sealed class LocalStore(IDbContextFactory<AversDbContext> db, DateOnly to
     {
         using var ctx = db.CreateDbContext();
         return Task.FromResult<IReadOnlyList<AccessLogEntry>>(AccessLog.Latest(ctx));
+    }
+
+    public Task<MobileTicketListDto> LoadMobileTicketsAsync(int houseId)
+    {
+        using var ctx = db.CreateDbContext();
+        var query = ctx.Tickets.AsNoTracking().Where(t => t.HouseId == houseId && t.Status != TicketStatus.Done);
+        var total = query.Count();
+        var items = query.OrderByDescending(t => t.Date).ThenByDescending(t => t.Number).ThenByDescending(t => t.Id)
+            .Take(200).Select(t => new MobileTicketDto(t.Id, t.Number, t.Date, t.Section, t.Apartment,
+                Billing.KindTitle(t.Kind), t.Fault, t.Mechanic, TicketJournal.StatusText(t.Status), t.Date.AddDays(TicketJournal.DueDays))).ToList();
+        return Task.FromResult(new MobileTicketListDto(total, items));
     }
 }

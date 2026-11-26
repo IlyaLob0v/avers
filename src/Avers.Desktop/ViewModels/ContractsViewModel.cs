@@ -52,6 +52,7 @@ public sealed partial class ContractsViewModel(MainViewModel shell) : Observable
         foreach (var s in list.OrderBy(s => s.Section).ThenBy(s => s.Apartment, NaturalOrder.Instance))
             ContractRows.Add(new ContractRow(s, shell.Today, shell.PaymentWarningMonths));
         SelectedContractRow = ContractRows.FirstOrDefault(r => r.Subscriber.Id == shell.SelectedSubscriber?.Id);
+        RefreshContractDocumentContext();
     }
 
     [RelayCommand]

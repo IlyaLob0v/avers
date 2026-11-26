@@ -13,16 +13,19 @@
       <TextBlock Classes="hint" Text="Выгрузка и претензии включают весь выбранный отбор" VerticalAlignment="Center" />
     </StackPanel>
     <Border DockPanel.Dock="Bottom" Classes="card" Margin="0">
+      <StackPanel>
       <WrapPanel Orientation="Horizontal">
         <TextBlock Classes="legend" Margin="0,0,8,0" Text="Калькулятор обратного отсчёта" VerticalAlignment="Center" />
         <ComboBox Classes="cell" Width="250" ItemsSource="{Binding LegalStages}" SelectedItem="{Binding LegalStage}" DisplayMemberBinding="{Binding Title, x:DataType=d:LegalStage}" />
-        <TextBlock Classes="label" Margin="8,0,0,0" VerticalAlignment="Center" Text="Дата события" />
+        <TextBlock Classes="label" Margin="8,0,0,0" VerticalAlignment="Center" Text="Дата исходного события" />
         <CalendarDatePicker Width="110" SelectedDate="{Binding LegalStart}" />
         <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Medium" Text="{Binding LegalRemaining}" />
       </WrapPanel>
+      <TextBlock Classes="hint" Margin="0,6,0,0" TextWrapping="Wrap" Text="{Binding LegalStageSummary}" />
+      </StackPanel>
     </Border>
     <WrapPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,0,0,10">
-      <Button Classes="primary" Content="Сформировать претензии (долг ≥ 3 мес.)" Command="{Binding PrintAllClaimsCommand}"
+      <Button Classes="primary" Content="Претензии физлицам (долг ≥ 3 мес.)" Command="{Binding PrintAllClaimsCommand}"
               ToolTip.Tip="Уведомления всем должникам без судебного приказа одним файлом Word, каждое с новой страницы" />
       <Button Content="Уведомление выбранному" Command="{Binding Shell.GoCommand}" CommandParameter="{x:Static d:AppModule.Claim}"
               ToolTip.Tip="Уведомление должнику, выбранному в списке: вариант текста, правка и печать через Word" />

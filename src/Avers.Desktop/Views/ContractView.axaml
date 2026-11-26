@@ -3,6 +3,7 @@
              xmlns:vm="using:Avers.Desktop.ViewModels"
              xmlns:ctl="using:Avers.Desktop.Controls"
              xmlns:d="using:Avers.Domain"
+             xmlns:data="using:Avers.Data"
              x:Class="Avers.Desktop.Views.ContractView"
              x:DataType="vm:ContractsViewModel">
   <ScrollViewer>
@@ -92,6 +93,25 @@
             <Button Classes="primary" Content="Сохранить" IsVisible="{Binding Shell.CanEditCard}" Command="{Binding Shell.SaveCardCommand}" />
             <Button Classes="link" Margin="0" Content="Карточка квартиры" Command="{Binding OpenCardCommand}" />
           </WrapPanel>
+          <Expander Header="Сканы бумажного договора" IsExpanded="True" Margin="0,8,0,0">
+            <StackPanel>
+              <TextBlock Classes="hint" TextWrapping="Wrap" Text="{Binding ContractDocumentsNotice}" />
+              <ListBox Height="90" Margin="0,6,0,0" ItemsSource="{Binding ContractDocuments}" SelectedItem="{Binding SelectedContractDocument}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="data:DocumentInfo">
+                    <TextBlock TextWrapping="Wrap"><Run Text="{Binding Name, Mode=OneWay}" /><Run Classes="hint" Text="{Binding AddedAt, StringFormat=' · {0:dd.MM.yyyy}', Mode=OneWay}" /></TextBlock>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <WrapPanel Margin="0,6,0,0">
+                <Button Content="Обновить сканы" Command="{Binding RefreshContractDocumentsCommand}" />
+                <Button Content="Открыть скан" Command="{Binding OpenContractDocumentCommand}" />
+                <Button Content="Добавить скан" IsVisible="{Binding CanAddContractDocument}" Command="{Binding AddContractDocumentCommand}" />
+                <Button Content="Удалить скан" IsVisible="{Binding CanAddContractDocument}" Command="{Binding DeleteContractDocumentCommand}" />
+              </WrapPanel>
+              <TextBlock Classes="hint" Text="PDF, JPG или PNG до 20 МБ. Номер и дата договора добавляются в название скана." TextWrapping="Wrap" />
+            </StackPanel>
+          </Expander>
         </StackPanel>
       </Grid>
     </Border>

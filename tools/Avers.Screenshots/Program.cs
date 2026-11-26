@@ -28,6 +28,8 @@ const string AccountOption = "--account=";
 var accountArg = args.FirstOrDefault(a => a.StartsWith(AccountOption, StringComparison.Ordinal));
 var account = accountArg?[AccountOption.Length..];
 args = args.Where(a => a != accountArg).ToArray();
+var newTicket = args.Contains("--new-ticket", StringComparer.Ordinal);
+args = args.Where(a => a != "--new-ticket").ToArray();
 
 var outDir = Path.GetFullPath(args.Length > 0 ? args[0] : "screenshots");
 var login = args.Length > 1 ? args[1] : "admin";
@@ -67,6 +69,7 @@ foreach (var module in modules)
         vm.FindCommand.Execute(null);
         if (module == AppModule.Anten) vm.OpenSubscriberHouseCommand.Execute(null);
     }
+    if (newTicket && module == AppModule.Disp) vm.TicketsScreen.ShowNewTicketCommand.Execute(null);
     Save($"{n++:00}-{module.ToString().ToLowerInvariant()}");
 }
 

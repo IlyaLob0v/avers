@@ -100,6 +100,7 @@ app.MapTickets();
 app.MapDesktop();
 app.MapSchemes();
 app.MapDocuments();
+app.MapContractDocuments();
 app.MapIntercoms();
 app.MapPhonebook();
 app.MapPpr();

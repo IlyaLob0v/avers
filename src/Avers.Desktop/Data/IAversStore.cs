@@ -103,6 +103,11 @@ public interface IAversStore
 
     Task DeleteDocumentAsync(int documentId);
 
+    Task<List<DocumentInfo>> LoadContractDocumentsAsync(int subscriberId);
+    Task<byte[]?> LoadContractDocumentFileAsync(int documentId);
+    Task AddContractDocumentAsync(int subscriberId, AddDocumentRequest request);
+    Task DeleteContractDocumentAsync(int documentId);
+
     /// <summary>Панель подъезда; Id = 0 — новая.</summary>
     Task SaveIntercomPanelAsync(int houseId, IntercomPanel draft);
 
@@ -175,6 +180,9 @@ public interface IAversStore
 
     /// <summary>Последние записи журнала просмотров персональных данных, новые сверху. Только для администратора.</summary>
     Task<IReadOnlyList<AccessLogEntry>> LoadAccessLogAsync();
+
+    /// <summary>Открытые заявки дома для механика; без персональных и расчётных данных абонента.</summary>
+    Task<MobileTicketListDto> LoadMobileTicketsAsync(int houseId);
 }
 
 public sealed class StoreException(string message, bool outcomeUnknown = false) : Exception(message)
