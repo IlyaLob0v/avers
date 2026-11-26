@@ -18,10 +18,7 @@
     <StackPanel Margin="16,0,16,12" Spacing="10">
       <HeaderedContentControl x:Name="SubscriberSearch" Classes="group" Header="Найти абонента" IsVisible="{Binding !HasSelectedSubscriber}">
         <StackPanel Spacing="10">
-          <StackPanel Spacing="10">
-            <StackPanel.KeyBindings>
-              <KeyBinding Gesture="Enter" Command="{Binding FindCommand}" />
-            </StackPanel.KeyBindings>
+          <StackPanel Spacing="10" KeyDown="OnSearchKeyDown">
             <TextBlock Classes="hint" Text="Укажите адрес или выберите другой способ поиска. Если найден один абонент, он откроется сразу." TextWrapping="Wrap" />
             <WrapPanel Orientation="Horizontal">
               <TextBlock Text="Искать по:" VerticalAlignment="Center" Margin="0,0,12,0" />
@@ -35,11 +32,15 @@
             <Grid ColumnDefinitions="*,120,110,110" IsVisible="{Binding SearchByAddress}">
               <StackPanel Margin="0,0,8,0">
                 <TextBlock Classes="hint" Text="Улица" />
-                <TextBox Text="{Binding FindStreet}" AutomationProperties.Name="Улица для поиска абонента" />
+                <AutoCompleteBox Text="{Binding FindStreet}" ItemsSource="{Binding FindStreetSuggestions}"
+                                 MinimumPrefixLength="1" FilterMode="Contains" IsTextCompletionEnabled="False"
+                                 AutomationProperties.Name="Улица для поиска абонента" />
               </StackPanel>
               <StackPanel Grid.Column="1" Margin="0,0,8,0">
                 <TextBlock Classes="hint" Text="Дом" />
-                <TextBox Text="{Binding FindHouse}" AutomationProperties.Name="Дом для поиска абонента" />
+                <AutoCompleteBox Text="{Binding FindHouse}" ItemsSource="{Binding FindHouseSuggestions}"
+                                 MinimumPrefixLength="1" FilterMode="Contains" IsTextCompletionEnabled="False"
+                                 AutomationProperties.Name="Дом для поиска абонента" />
               </StackPanel>
               <StackPanel Grid.Column="2" Margin="0,0,8,0">
                 <TextBlock Classes="hint" Text="Секция" />

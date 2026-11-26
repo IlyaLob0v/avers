@@ -273,6 +273,9 @@ async function openHouse(id, fromMapView = false) {
         ["Что", h.openFault], ["Почему не устранена", h.openFaultReason],
         ["Плановая дата", h.openFaultPlannedFix && new Date(h.openFaultPlannedFix).toLocaleDateString("ru-RU")]
       ], "fault"));
+    const tickets = section("Открытые заявки дома", [["Состояние", "Загрузка…"]]);
+    body.append(tickets);
+    loadHouseTickets(id, tickets, request);
     body.append(section("Обслуживающая организация", [
       ["Название", h.homeowner], ["Филиал", h.homeownerBranch], ["Адрес", h.homeownerAddress],
       ["Телефоны", h.homeownerPhones, true], ["Руководитель", h.headName], ["Телефон руководителя", h.headPhone, true],
@@ -296,6 +299,30 @@ async function openHouse(id, fromMapView = false) {
   } catch (err) {
     if (request !== viewRequest) return;
     body.append(Object.assign(document.createElement("div"), { className: "error", textContent: err.message }));
+  }
+}
+
+async function loadHouseTickets(id, target, request) {
+  try {
+    const result = await api(`/api/mobile/houses/${id}/tickets`);
+    if (request !== viewRequest) return;
+    target.replaceChildren(Object.assign(document.createElement("h2"), { textContent: "Открытые заявки дома" }));
+    const summary = document.createElement("div");
+    summary.className = "muted";
+    summary.textContent = result.total === 0 ? "Открытых заявок нет."
+      : result.total > result.items.length ? `Показаны последние ${result.items.length} из ${result.total} открытых заявок.`
+      : `Открытых заявок: ${result.total}.`;
+    target.append(summary);
+    for (const t of result.items) {
+      target.append(section(`№ ${t.number} · ${new Date(t.date).toLocaleDateString("ru-RU")}`, [
+        ["Подъезд", t.section || "Не указан"], ["Квартира", t.apartment || "Общедомовая заявка"],
+        ["Вид", t.kindTitle], ["Неисправность", t.fault], ["Ответственный", t.responsible],
+        ["Состояние", t.statusTitle], ["Срок", new Date(t.dueDate).toLocaleDateString("ru-RU")]
+      ]));
+    }
+  } catch (err) {
+    if (request !== viewRequest) return;
+    target.replaceChildren(Object.assign(document.createElement("div"), { className: "error", textContent: err.message }));
   }
 }
 

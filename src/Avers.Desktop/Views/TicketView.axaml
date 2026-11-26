@@ -5,43 +5,78 @@
              x:Class="Avers.Desktop.Views.TicketView"
              x:DataType="vm:TicketsViewModel">
   <ScrollViewer>
-    <HeaderedContentControl Classes="group" Margin="16,0,16,12" Width="920" HorizontalAlignment="Left" VerticalAlignment="Top" Header="{Binding TicketHeader}">
-      <StackPanel>
-        <Grid ColumnDefinitions="*,*">
-          <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,0,12,0">
-            <TextBlock Classes="label" Text="Адрес" />
-            <TextBox Grid.Column="1" Classes="cell" Text="{Binding TicketAddress, Mode=OneWay}" IsReadOnly="True" />
-            <TextBlock Grid.Row="1" Classes="label" Text="Заявитель" />
-            <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding TicketSubscriberName, Mode=OneWay}" IsReadOnly="True" />
-            <TextBlock Grid.Row="2" Classes="label" Text="Телефон" />
-            <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding SelectedTicket.Phone, Mode=OneWay}" IsReadOnly="True" />
-            <TextBlock Grid.Row="3" Classes="label" Text="Состояние" />
-            <ComboBox Grid.Row="3" Grid.Column="1" Classes="cell" HorizontalAlignment="Stretch" IsEnabled="{Binding CanEditSelectedTicket}" ItemsSource="{Binding TicketStates}" SelectedItem="{Binding TicketState}" />
+    <StackPanel Margin="16,0,16,12" MaxWidth="1200" Spacing="8" HorizontalAlignment="Stretch">
+      <WrapPanel>
+        <Button Content="К журналу заявок" Command="{Binding Shell.GoCommand}" CommandParameter="{x:Static d:AppModule.Disp}" />
+        <Button Content="Паспорт дома" Command="{Binding OpenTicketHouseCommand}" />
+        <Button Content="Лицевой счёт" Command="{Binding OpenTicketSubscriberCommand}" IsEnabled="{Binding HasTicketSubscriber}" />
+        <Button Content="Договор" Command="{Binding OpenTicketContractCommand}" IsEnabled="{Binding HasTicketSubscriber}" />
+        <Button Content="Печать наряд-заказа" Command="{Binding PrintWorkOrderCommand}" />
+      </WrapPanel>
+      <HeaderedContentControl Classes="group" Header="{Binding TicketHeader}">
+        <StackPanel>
+          <WrapPanel Margin="0,0,0,8">
+            <TextBlock Classes="hint" Text="{Binding TicketKindText}" Margin="0,0,16,0" />
+            <TextBlock Classes="hint" Text="{Binding TicketAcceptedBy, StringFormat='Принял(а): {0}'}" Margin="0,0,16,0" />
+            <Border Classes.debt="{Binding IsSelectedTicketOverdue}" Padding="4,0"><TextBlock Text="{Binding TicketDueText}" /></Border>
+          </WrapPanel>
+          <Grid ColumnDefinitions="*,*">
+            <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,0,12,0">
+              <TextBlock Classes="label" Text="Адрес" />
+              <TextBox Grid.Column="1" Classes="cell" Text="{Binding TicketAddress, Mode=OneWay}" IsReadOnly="True" />
+              <TextBlock Grid.Row="1" Classes="label" Text="Заявитель" />
+              <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding TicketSubscriberName, Mode=OneWay}" IsReadOnly="True" />
+              <TextBlock Grid.Row="2" Classes="label" Text="Телефон" />
+              <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding SelectedTicket.Phone, Mode=OneWay}" IsReadOnly="True" />
+              <TextBlock Grid.Row="3" Classes="label" Text="Состояние" />
+              <ComboBox Grid.Row="3" Grid.Column="1" Classes="cell" HorizontalAlignment="Stretch" IsEnabled="{Binding CanEditSelectedTicket}" ItemsSource="{Binding TicketStates}" SelectedItem="{Binding TicketState}" />
+            </Grid>
+            <Grid Grid.Column="1" ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto">
+              <TextBlock Classes="label" Text="Ответственный" />
+              <AutoCompleteBox Grid.Column="1" Classes="cell" IsEnabled="{Binding CanEditSelectedTicket}" ItemsSource="{Binding MechanicNames}" Text="{Binding TicketMechanic}"
+                               FilterMode="ContainsOrdinal" MinimumPrefixLength="0" PlaceholderText="Не назначен" />
+              <TextBlock Grid.Row="1" Classes="label" Text="Лицевой счёт" />
+              <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding TicketAccount, Mode=OneWay}" IsReadOnly="True" />
+              <TextBlock Grid.Row="2" Classes="label" Text="Индекс" />
+              <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding TicketSubscriber.PzhreuIndex, Mode=OneWay}" IsReadOnly="True" />
+              <TextBlock Grid.Row="3" Classes="label" Text="Выполнена" />
+              <TextBox Grid.Row="3" Grid.Column="1" Classes="cell" Text="{Binding TicketDoneDate}" IsEnabled="{Binding IsTicketDone}" IsReadOnly="{Binding !CanEditSelectedTicket}" PlaceholderText="дд.мм.гггг — день работы" />
+            </Grid>
           </Grid>
-          <Grid Grid.Column="1" ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto">
-            <TextBlock Classes="label" Text="Исполнитель" />
-            <AutoCompleteBox Grid.Column="1" Classes="cell" IsEnabled="{Binding CanEditSelectedTicket}" ItemsSource="{Binding MechanicNames}" Text="{Binding TicketMechanic}"
-                             FilterMode="ContainsOrdinal" MinimumPrefixLength="0" PlaceholderText="радиомеханик из «Словаря»" />
-            <TextBlock Grid.Row="1" Classes="label" Text="Лиц. счёт" />
-            <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Text="{Binding TicketAccount, Mode=OneWay}" IsReadOnly="True" />
-            <TextBlock Grid.Row="2" Classes="label" Text="Индекс" />
-            <TextBox Grid.Row="2" Grid.Column="1" Classes="cell" Text="{Binding TicketSubscriber.PzhreuIndex, Mode=OneWay}" IsReadOnly="True" />
-            <TextBlock Grid.Row="3" Classes="label" Text="Выполнена" />
-            <TextBox Grid.Row="3" Grid.Column="1" Classes="cell" Text="{Binding TicketDoneDate}" IsEnabled="{Binding IsTicketDone}" IsReadOnly="{Binding !CanEditSelectedTicket}" PlaceholderText="дд.мм.гггг — день работы" />
-          </Grid>
-        </Grid>
-        <TextBlock Classes="hint" Margin="0,8,0,2" Text="Описание неисправности" />
-        <TextBox Classes="cell" Height="64" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" Text="{Binding TicketFault}" IsReadOnly="{Binding !CanEditSelectedTicket}" />
-        <TextBlock Classes="hint" Margin="0,8,0,2" Text="Что произведено (как в наряд-заказе)" />
-        <TextBox Classes="cell" Height="56" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" PlaceholderText="Заполняет диспетчерская служба после отчёта радиомеханика. У отложенной — почему отложена." Text="{Binding TicketWork}" IsReadOnly="{Binding !CanEditSelectedTicket}" />
-        <Border Classes="warn" Margin="0,8,0,0" IsVisible="{Binding HasTicketRightsHint}">
-          <TextBlock Text="{Binding TicketRightsHint}" TextWrapping="Wrap" />
-        </Border>
-        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-          <Button Classes="primary" Content="Сохранить" Command="{Binding SaveTicketCommand}" IsEnabled="{Binding CanEditSelectedTicket}" />
-          <Button Content="Закрыть" Command="{Binding Shell.GoCommand}" CommandParameter="{x:Static d:AppModule.Disp}" />
+          <TextBlock Classes="hint" Margin="0,8,0,2" Text="Описание неисправности — обязательно" />
+          <TextBox Classes="cell" MinHeight="64" MaxHeight="150" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" Text="{Binding TicketFault}" IsReadOnly="{Binding !CanEditSelectedTicket}" />
+          <TextBlock Classes="hint" Margin="0,8,0,2" Text="Что произведено; для отложенной заявки — причина" />
+          <TextBox Classes="cell" MinHeight="56" MaxHeight="150" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" PlaceholderText="По отчёту радиомеханика" Text="{Binding TicketWork}" IsReadOnly="{Binding !CanEditSelectedTicket}" />
+          <Border Classes="warn" Margin="0,8,0,0" IsVisible="{Binding HasTicketRightsHint}"><TextBlock Text="{Binding TicketRightsHint}" TextWrapping="Wrap" /></Border>
+          <Button Classes="primary" HorizontalAlignment="Left" Margin="0,10,0,0" Content="Сохранить" Command="{Binding SaveTicketCommand}" IsEnabled="{Binding CanEditSelectedTicket}" />
         </StackPanel>
-      </StackPanel>
-    </HeaderedContentControl>
+      </HeaderedContentControl>
+      <Expander Header="Абонент этой заявки" IsVisible="{Binding HasTicketSubscriber}">
+        <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto">
+          <TextBlock Classes="label" Text="Договор" />
+          <TextBlock Grid.Column="1" Text="{Binding TicketContract}" TextWrapping="Wrap" />
+          <TextBlock Grid.Row="1" Classes="label" Text="Последняя оплата" />
+          <Border Grid.Row="1" Grid.Column="1" Classes.warn="{Binding IsTicketPaymentLate}" Padding="4,0"><TextBlock Text="{Binding TicketLastPayment}" TextWrapping="Wrap" /></Border>
+          <TextBlock Grid.Row="2" Classes="label" Text="Примечание" />
+          <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding TicketNotes}" TextWrapping="Wrap" />
+        </Grid>
+      </Expander>
+      <Expander Header="Сведения о доме заявки">
+        <StackPanel Spacing="4">
+          <TextBlock Text="{Binding TicketHouse.AddressLine}" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding TicketHomeowner}" />
+          <TextBlock Text="{Binding TicketHouse.Organization.Phones}" />
+          <TextBlock Text="{Binding TicketHouse.Antennas}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding TicketHouse.AerialCables}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding TicketHouse.Amplifiers}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding TicketHouse.PowerSupplies}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding TicketHouse.TechFloorKey}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding TicketHouse.LastPpr, StringFormat='Последний ППР: {0:dd.MM.yyyy}'}" />
+          <TextBlock Text="{Binding TicketHouse.OpenFault}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding TicketHouse.OpenFaultReason}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding TicketHouse.OpenFaultPlannedFix, StringFormat='План устранения: {0:dd.MM.yyyy}'}" />
+        </StackPanel>
+      </Expander>
+    </StackPanel>
   </ScrollViewer>
 </UserControl>

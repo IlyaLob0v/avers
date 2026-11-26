@@ -1,5 +1,14 @@
 namespace Avers.Contracts;
 
+/// <summary>Краткая заявка дома для механика, без контактов, договора и расчётов абонента.</summary>
+public sealed record MobileTicketDto(int Id, int Number, DateOnly Date, string Section, string Apartment,
+    string KindTitle, string Fault, string Mechanic, string StatusTitle, DateOnly DueDate)
+{
+    public string Responsible => string.IsNullOrWhiteSpace(Mechanic) ? "Не назначен" : Mechanic;
+}
+
+public sealed record MobileTicketListDto(int Total, List<MobileTicketDto> Items);
+
 /// <summary>Дом для радиомеханика с телефона (REQ-MECH-01): домовладелец, техника, открытая неисправность, схемы.</summary>
 public sealed record MobileHouseDto(
     int Id,

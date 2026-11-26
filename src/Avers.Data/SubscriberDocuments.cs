@@ -9,6 +9,7 @@ public sealed record DocumentInfo(int Id, string Kind, string Name, string Forma
 /// <summary>Сканы документов абонента: PDF, JPG или PNG до <see cref="MaxBytes"/>, с записью в журнал изменений.</summary>
 public static class SubscriberDocuments
 {
+    public const string ContractKind = "Договор";
     public const int MaxBytes = 20 * 1024 * 1024;
 
     public static IReadOnlyList<string> Kinds { get; } = ["Договор", "Решение суда", "Постановление ОСП", "Другое"];
@@ -35,15 +36,15 @@ public static class SubscriberDocuments
         : !content.AsSpan().StartsWith("%PDF-"u8) || content.AsSpan(Math.Max(0, content.Length - 1024)).IndexOf("%%EOF"u8) < 0
             ? "PDF повреждён или загружен не полностью." : null;
 
-    public static List<DocumentInfo> List(AversDbContext db, int subscriberId) =>
+    public static List<DocumentInfo> List(AversDbContext db, int subscriberId, string? kind = null) =>
         db.SubscriberDocuments.AsNoTracking()
-            .Where(d => d.SubscriberId == subscriberId)
+            .Where(d => d.SubscriberId == subscriberId && (kind == null || d.Kind == kind))
             .OrderBy(d => d.Id)
             .Select(d => new DocumentInfo(d.Id, d.Kind, d.Name, d.Format, d.AddedAt, d.AddedBy))
             .ToList();
 
-    public static SubscriberDocument? File(AversDbContext db, int id) =>
-        db.SubscriberDocuments.AsNoTracking().FirstOrDefault(d => d.Id == id);
+    public static SubscriberDocument? File(AversDbContext db, int id, string? kind = null) =>
+        db.SubscriberDocuments.AsNoTracking().FirstOrDefault(d => d.Id == id && (kind == null || d.Kind == kind));
 
     public static void Add(AversDbContext db, Subscriber subscriber, string kind, string name, byte[] content, DateOnly today, string who, DateTimeOffset at)
     {
@@ -62,9 +63,9 @@ public static class SubscriberDocuments
     }
 
     /// <summary>Удаляет скан; false — такого нет.</summary>
-    public static bool Delete(AversDbContext db, int id, string who, DateTimeOffset at)
+    public static bool Delete(AversDbContext db, int id, string who, DateTimeOffset at, string? kind = null)
     {
-        var doc = db.SubscriberDocuments.Include(d => d.Subscriber).FirstOrDefault(d => d.Id == id);
+        var doc = db.SubscriberDocuments.Include(d => d.Subscriber).FirstOrDefault(d => d.Id == id && (kind == null || d.Kind == kind));
         if (doc is null)
             return false;
         db.SubscriberDocuments.Remove(doc);

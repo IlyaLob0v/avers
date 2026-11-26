@@ -72,13 +72,85 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     [ObservableProperty] private int _ticketYear;
     [ObservableProperty] private string _ticketSearch = "";
     [ObservableProperty] private string _newTicketFault = "";
-    [ObservableProperty] private WorkTicket? _selectedTicket;
+    private WorkTicket? _selectedTicket;
     [ObservableProperty] private string _ticketFault = "";
     [ObservableProperty] private string _ticketWork = "";
     [ObservableProperty] private string _ticketMechanic = "";
     [ObservableProperty] private TicketOption<TicketStatus>? _ticketState;
     [ObservableProperty] private string _ticketDoneDate = "";
     [ObservableProperty] private string _newTicketPhone = "";
+    [ObservableProperty] private bool _isNewTicketOpen;
+    [ObservableProperty] private Street? _newTicketStreet;
+    [ObservableProperty] private House? _newTicketHouse;
+    [ObservableProperty] private string _newTicketSection = "";
+    [ObservableProperty] private string _newTicketApartment = "";
+    [ObservableProperty] private string _newTicketMechanic = "";
+
+    public IEnumerable<House> NewTicketHouses => shell.Houses
+        .Where(h => h.StreetId == NewTicketStreet?.Id).OrderBy(h => h.Number, NaturalOrder.Instance);
+    public bool HasNewTicketHouse => NewTicketHouse is not null;
+    public bool HasNewTicketHouseFault => !string.IsNullOrWhiteSpace(NewTicketHouse?.OpenFault);
+    public string NewTicketHouseFaultText => NewTicketHouse is { } house && HasNewTicketHouseFault
+        ? house.OpenFault + (string.IsNullOrWhiteSpace(house.OpenFaultReason) ? "" : $" Причина: {house.OpenFaultReason}.")
+          + (house.OpenFaultPlannedFix is { } date ? $" План устранения: {date:dd.MM.yyyy}." : "") : "";
+    public string NewTicketDueText => $"Срок выполнения — до {shell.Today.AddDays(TicketJournal.DueDays):dd.MM.yyyy}. Дата и время приёма записываются автоматически.";
+
+    private sealed record NewTicketDraft(int? StreetId, int? HouseId, string Section, string Apartment,
+        string Phone, string Fault, string Mechanic, TicketKind? Kind);
+    private NewTicketDraft? _newTicketBaseline;
+    private NewTicketDraft CaptureNewTicketDraft() => new(NewTicketStreet?.Id, NewTicketHouse?.Id,
+        NewTicketSection, NewTicketApartment, NewTicketPhone, NewTicketFault, NewTicketMechanic, NewTicketKind?.Value);
+    internal bool HasNewTicketDraft => IsNewTicketOpen && CaptureNewTicketDraft() != _newTicketBaseline;
+
+    partial void OnNewTicketStreetChanged(Street? value)
+    {
+        NewTicketHouse = null;
+        OnPropertyChanged(nameof(NewTicketHouses));
+        ClearRepeatCallTickets();
+    }
+
+    partial void OnNewTicketHouseChanged(House? value)
+    {
+        NewTicketSection = NewTicketApartment = NewTicketPhone = "";
+        OnPropertyChanged(nameof(HasNewTicketHouse));
+        OnPropertyChanged(nameof(HasNewTicketHouseFault));
+        OnPropertyChanged(nameof(NewTicketHouseFaultText));
+        ClearRepeatCallTickets();
+    }
+
+    partial void OnNewTicketApartmentChanged(string value) => ClearRepeatCallTickets();
+
+    [RelayCommand]
+    private void ShowNewTicket()
+    {
+        if (!CanAcceptTickets || IsNewTicketOpen) return;
+        NewTicketStreet = shell.SelectedHouse?.Street ?? shell.SelectedStreet;
+        NewTicketHouse = shell.SelectedHouse;
+        var subscriber = shell.SelectedSubscriber?.HouseId == NewTicketHouse?.Id ? shell.SelectedSubscriber : null;
+        NewTicketSection = subscriber?.Section ?? "";
+        NewTicketApartment = subscriber?.Apartment ?? "";
+        NewTicketPhone = subscriber?.Phone ?? "";
+        NewTicketFault = NewTicketMechanic = "";
+        _newTicketBaseline = CaptureNewTicketDraft();
+        IsNewTicketOpen = true;
+    }
+
+    internal void DiscardNewTicketDraft()
+    {
+        IsNewTicketOpen = false;
+        NewTicketStreet = null;
+        NewTicketHouse = null;
+        NewTicketSection = NewTicketApartment = NewTicketPhone = NewTicketFault = NewTicketMechanic = "";
+        ClearRepeatCallTickets();
+        _newTicketBaseline = null;
+    }
+
+    [RelayCommand]
+    private void CancelNewTicket()
+    {
+        if (!shell.TryLeaveEdits(() => { CancelNewTicket(); return Task.CompletedTask; })) return;
+        DiscardNewTicketDraft();
+    }
 
     /// <summary>Состояние на экране заявки: выполненной нужна дата работы.</summary>
     public IReadOnlyList<TicketOption<TicketStatus>> TicketStates { get; } =
@@ -90,6 +162,28 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     ];
 
     public IEnumerable<string> MechanicNames => shell.Mechanics.Select(m => m.FullName);
+
+    public WorkTicket? SelectedTicket
+    {
+        get => _selectedTicket;
+        set
+        {
+            if (ReferenceEquals(_selectedTicket, value)) return;
+            if (HasTicketEdits && value?.Id == _selectedTicket?.Id) return;
+            if (HasTicketEdits && !shell.TryLeaveEdits(() => { SelectedTicket = value; return Task.CompletedTask; })) return;
+            if (!SetProperty(ref _selectedTicket, value)) return;
+            OnPropertyChanged(nameof(JournalSelectedTicket));
+            BindTicket();
+        }
+    }
+
+    private sealed record TicketEdit(int Id, string Fault, string Work, string Mechanic, TicketStatus? Status, string DoneDate);
+    private TicketEdit? _ticketEditBaseline;
+    private TicketEdit? CaptureTicketEdit() => SelectedTicket is null ? null : new(SelectedTicket.Id,
+        TicketFault, TicketWork, TicketMechanic, TicketState?.Value, TicketDoneDate);
+    internal bool HasTicketEdits => _ticketEditBaseline is not null && CaptureTicketEdit() != _ticketEditBaseline;
+    internal void DiscardTicketEdits() => BindTicket();
+    internal Task<bool> SaveTicketEditsAsync() => SaveTicketCore(false);
 
     public bool IsTicketDone => TicketState?.Value == TicketStatus.Done;
 
@@ -141,7 +235,7 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         if (shell.User != user || shell.Module != module || shell.SelectedHouse?.Id != houseId
             || shell.SelectedSubscriber?.Id != subscriberId) return;
         SelectedTicket = state.Ticket is { } ticket
-            ? Tickets.FirstOrDefault(row => row.Id == ticket.Id) ?? ticket : null;
+            ? Tickets.FirstOrDefault(row => row.Id == ticket.Id) ?? (module == AppModule.Ticket ? ticket : null) : null;
     }
 
     private void EnsureTicketFilter()
@@ -171,11 +265,6 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         }
     }
 
-    partial void OnSelectedTicketChanged(WorkTicket? value)
-    {
-        OnPropertyChanged(nameof(JournalSelectedTicket));
-        BindTicket();
-    }
     partial void OnScopeFilterChanged(TicketOption<TicketScope> value) => RefreshTickets();
     partial void OnKindFilterChanged(TicketOption<TicketKind> value) => RefreshTickets();
     partial void OnStatusFilterChanged(TicketOption<TicketStatus> value) => RefreshTickets();
@@ -322,6 +411,8 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         _oekTickets = [];
         _loadedFor = null;
         _ticketApartment = null;
+        DiscardNewTicketDraft();
+        DiscardTicketEdits();
         SelectedTicket = null;
         Tickets.Clear();
         TicketYears.Clear();
@@ -390,7 +481,8 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         if (rows.Count == TicketQueries.MaxResults)
             shell.Status = $"Показаны последние {TicketQueries.MaxResults} заявок. Сузьте отбор, чтобы увидеть остальные.";
         if (keep is not null)
-            SelectedTicket = Tickets.FirstOrDefault(t => t.Id == keep) ?? SelectedTicket;
+            SelectedTicket = Tickets.FirstOrDefault(t => t.Id == keep)
+                ?? (shell.Module == AppModule.Ticket ? SelectedTicket : null);
         OnPropertyChanged(nameof(JournalSelectedTicket));
 
         ShowTicketMonths(months);
@@ -445,8 +537,9 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     [RelayCommand]
     private async Task CheckRepeatCall()
     {
-        if (!CanAcceptTickets || shell.SelectedHouse is not { } house) return;
-        var apartment = ScopeApartment.Trim();
+        var house = IsNewTicketOpen ? NewTicketHouse : shell.SelectedHouse;
+        if (!CanAcceptTickets || house is null) return;
+        var apartment = IsNewTicketOpen ? NewTicketApartment.Trim() : ScopeApartment.Trim();
 
         ClearRepeatCallTickets();
         var version = _repeatCallVersion;
@@ -476,8 +569,7 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     private void OpenRepeatCallTicket(WorkTicket? ticket)
     {
         if (!CanAcceptTickets || ticket is null || !RepeatCallTickets.Contains(ticket)) return;
-        shell.GoCommand.Execute(AppModule.Ticket);
-        SelectedTicket = ticket;
+        OpenTicketCard(ticket);
     }
 
     internal void NotifyTicketPanel()
@@ -514,6 +606,7 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
         OnPropertyChanged(nameof(HasTicketRightsHint));
         NotifyTicketSubscriber();
         shell.NotifyWindowTitle();
+        _ticketEditBaseline = CaptureTicketEdit();
         // Каждый раз заново: после оплаты в карточке последняя оплата квартиры уже другая.
         _ = LoadTicketApartmentAsync();
     }
@@ -649,30 +742,56 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     {
         if (SelectedTicket is null) { shell.Status = "Выберите заявку в журнале."; return; }
         if (!CanEditSelectedTicket) { shell.Status = TicketRightsHint; return; }
+        OpenTicketCard(SelectedTicket);
+    }
+
+    [RelayCommand]
+    private void OpenTicket()
+    {
+        if (SelectedTicket is null) { shell.Status = "Выберите заявку в журнале."; return; }
+        OpenTicketCard(SelectedTicket);
+    }
+
+    private void OpenTicketCard(WorkTicket ticket)
+    {
+        if (!shell.TryLeaveEdits(() => { OpenTicketCard(ticket); return Task.CompletedTask; })) return;
         shell.GoCommand.Execute(AppModule.Ticket);
+        if (shell.Module == AppModule.Ticket) SelectedTicket = ticket;
     }
 
     [RelayCommand]
     private async Task AcceptTicket()
     {
-        if (shell.SelectedHouse is null || shell.User is null) return;
+        if (shell.User is null) return;
         if (!CanAcceptTickets) { shell.Status = $"Роль «{RoleCatalog.Title(shell.User.Role)}» не принимает заявки."; return; }
-        var subscriber = shell.SelectedSubscriber?.HouseId == shell.SelectedHouse.Id ? shell.SelectedSubscriber : null;
+        var house = IsNewTicketOpen ? NewTicketHouse : shell.SelectedHouse;
+        if (house is null) { shell.Status = "Выберите дом для новой заявки."; return; }
+        if (string.IsNullOrWhiteSpace(NewTicketFault)) { shell.Status = "Опишите неисправность перед приёмом заявки."; return; }
+        var contextualSubscriber = shell.SelectedSubscriber?.HouseId == house.Id ? shell.SelectedSubscriber : null;
+        var section = IsNewTicketOpen ? NewTicketSection.Trim() : contextualSubscriber?.Section ?? shell.FindSection.Trim();
+        var apartment = IsNewTicketOpen ? NewTicketApartment.Trim() : contextualSubscriber?.Apartment ?? shell.FindApartment.Trim();
+        var subscriber = contextualSubscriber is { } selected
+            && selected.Section.Trim() == section && selected.Apartment.Trim() == apartment ? selected : null;
         var request = new CreateTicketRequest(
-            shell.SelectedHouse.Id,
-            string.IsNullOrWhiteSpace(NewTicketFault) ? "Принята с рабочего места диспетчера" : NewTicketFault.Trim(),
+            house.Id,
+            NewTicketFault.Trim(),
             (NewTicketKind?.Value ?? TicketKind.Antenna).ToString(),
             subscriber?.Id,
-            subscriber?.Section ?? shell.FindSection,
-            subscriber?.Apartment ?? shell.FindApartment,
-            string.IsNullOrWhiteSpace(NewTicketPhone) ? subscriber?.Phone ?? "" : NewTicketPhone.Trim());
+            section,
+            apartment,
+            string.IsNullOrWhiteSpace(NewTicketPhone) ? subscriber?.Phone ?? "" : NewTicketPhone.Trim(),
+            (NewTicketMechanic ?? "").Trim());
+        var user = shell.User;
+        var module = shell.Module;
+        var draft = CaptureNewTicketDraft();
         await shell.Save(async () =>
         {
-            var number = await shell.Store.AcceptTicketAsync(request, shell.User);
+            var number = await shell.Store.AcceptTicketAsync(request, user);
+            if (shell.User != user || shell.Module != module) return;
             await shell.ReloadTicketsAsync();
+            if (shell.User != user || shell.Module != module) return;
             ClearRepeatCallTickets();
-            NewTicketFault = "";
-            NewTicketPhone = "";
+            if (CaptureNewTicketDraft() == draft) DiscardNewTicketDraft();
             SelectedTicket = Tickets.FirstOrDefault(t => t.Number == number);
             shell.Status = $"Принята заявка № {number}.";
             shell.Module = AppModule.Disp;
@@ -680,11 +799,18 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
     }
 
     [RelayCommand]
-    private async Task SaveTicket()
+    private async Task SaveTicket() => await SaveTicketCore(true);
+
+    private async Task<bool> SaveTicketCore(bool returnToJournal)
     {
-        if (SelectedTicket is null) return;
-        if (!CanEditSelectedTicket) { shell.Status = TicketRightsHint; return; }
+        if (SelectedTicket is null) return false;
+        if (!CanEditSelectedTicket) { shell.Status = TicketRightsHint; return false; }
+        if (string.IsNullOrWhiteSpace(TicketFault)) { shell.Status = "Опишите неисправность перед сохранением заявки."; return false; }
         var (id, number, accepted) = (SelectedTicket.Id, SelectedTicket.Number, SelectedTicket.Date);
+        var user = shell.User;
+        var fault = TicketFault.Trim();
+        var mechanic = (TicketMechanic ?? "").Trim();
+        var work = TicketWork;
         var status = TicketState?.Value ?? SelectedTicket.Status;
         DateOnly? doneDate = null;
         if (status == TicketStatus.Done)
@@ -692,18 +818,26 @@ public sealed partial class TicketsViewModel(MainViewModel shell) : ObservableOb
             if (!MainViewModel.TryParseDate(TicketDoneDate, out doneDate) || doneDate is not { } d || d > shell.Today || d < accepted)
             {
                 shell.Status = $"Дата выполнения — дд.мм.гггг, с {accepted:dd.MM.yyyy} по {shell.Today:dd.MM.yyyy}.";
-                return;
+                return false;
             }
         }
+        var success = false;
         await shell.Save(async () =>
         {
-            var saved = await shell.Store.SaveTicketAsync(id, TicketFault.Trim(), (TicketMechanic ?? "").Trim(), TicketWork, status, doneDate);
+            var saved = await shell.Store.SaveTicketAsync(id, fault, mechanic, work, status, doneDate);
+            if (shell.User != user || SelectedTicket?.Id != id) return;
+            SetProperty(ref _selectedTicket, saved, nameof(SelectedTicket));
+            OnPropertyChanged(nameof(JournalSelectedTicket));
+            BindTicket();
             await shell.ReloadTicketsAsync();
+            if (shell.User != user || SelectedTicket?.Id != id) return;
             shell.LinkTickets([saved]);
-            SelectedTicket = Tickets.FirstOrDefault(x => x.Id == id) ?? saved;
+            SelectedTicket = Tickets.FirstOrDefault(x => x.Id == id) ?? (returnToJournal ? null : saved);
             shell.Status = $"Заявка № {number} записана.";
-            shell.Module = AppModule.Disp;
+            if (returnToJournal) shell.Module = AppModule.Disp;
+            success = true;
         });
+        return success;
     }
 }
 

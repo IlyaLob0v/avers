@@ -184,6 +184,8 @@ public sealed partial class MainViewModel : ObservableObject
             Streets.Add(s);
 
         _houses = data.Houses;
+        OnPropertyChanged(nameof(FindStreetSuggestions));
+        OnPropertyChanged(nameof(FindHouseSuggestions));
         // Заявок в снимке нет: уже загруженные строки только переставляем на новые дома.
         LinkTickets(TicketsScreen.Tickets);
         LinkTickets(HouseTickets);
@@ -369,6 +371,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnUserChanged(AppUser? value)
     {
+        ClearReaderTickets();
         OnPropertyChanged(nameof(ShowLogin));
         OnPropertyChanged(nameof(ShowShell));
         OnPropertyChanged(nameof(CanEditCard));
@@ -392,6 +395,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnModuleChanged(AppModule value)
     {
+        if (value == AppModule.Reader) _ = LoadReaderTicketsAsync(force: true);
+        else ClearReaderTickets();
         MarkCurrent();
         OnPropertyChanged(nameof(WindowTitle));
         OnPropertyChanged(nameof(ModuleTitle));
@@ -427,6 +432,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnSelectedHouseChanged(House? value)
     {
+        _ = LoadReaderTicketsAsync();
         TicketsScreen.ClearRepeatCallTickets();
         PhonebookScreen.EditHouse = value;
         EditFaultFix = value?.OpenFaultPlannedFix?.ToString("dd.MM.yyyy") ?? "";

@@ -29,6 +29,9 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
 
     partial void OnSelectedDebtorChanged(DebtorRow? value)
     {
+        OnPropertyChanged(nameof(CanUsePersonTemplates));
+        OnPropertyChanged(nameof(PackageTitle));
+        OnPropertyChanged(nameof(PackageExplanation));
         BuildClaim();
         BindCourtCase();
         _ = LoadDocumentsAsync();
@@ -164,7 +167,23 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
     internal void BuildClaim()
     {
         var row = SelectedDebtor ?? Debtors.FirstOrDefault(d => d.Unpaid >= Billing.ClaimUnpaidMonths);
-        ClaimText = row is null ? "" : ClaimNotice.Text(ClaimVariant.Kind, $"г. Омск, {row.Address}", row.Debt, row.ContractTerminated);
+        ClaimText = row is null ? "" : row.IsLegalEntity
+            ? "Для юрлиц согласованного шаблона уведомления пока нет. Доступен расчётный комплект с реквизитами и сканами договора."
+            : ClaimNotice.Text(ClaimVariant.Kind, $"г. Омск, {row.Address}", row.Debt, row.ContractTerminated);
+    }
+
+    public bool CanUsePersonTemplates => SelectedDebtor is { IsLegalEntity: false };
+    public string PackageTitle => SelectedDebtor?.IsLegalEntity == true ? "Расчётный комплект организации" : "Пакет документов физлица";
+    public string PackageExplanation => SelectedDebtor?.IsLegalEntity == true
+        ? "Юрлицо: справка, история платежей, реквизиты и сканы договора. Согласованных юридических шаблонов для организаций пока нет. Неустойка не рассчитывается: ставка и условия договора юрлица не заданы."
+        : "Физлицо: справка, история платежей и сканы договора. Уведомление и заявления формируются отдельными кнопками.";
+
+    private bool RequirePersonTemplate()
+    {
+        if (SelectedDebtor is null) { shell.Status = "Выберите должника."; return false; }
+        if (CanUsePersonTemplates) return true;
+        shell.Status = "Для юрлиц согласованного шаблона пока нет. Используйте расчётный комплект; формы физлица не применяются.";
+        return false;
     }
 
     internal void RefreshRights() => OnPropertyChanged(nameof(CanEditCourtCases));
@@ -173,6 +192,7 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(LegalRemaining))]
+    [NotifyPropertyChangedFor(nameof(LegalStageSummary))]
     private LegalStage _legalStage = LegalDeadline.Stages[0];
 
     [ObservableProperty]
@@ -181,7 +201,11 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
 
     public string LegalRemaining => LegalStart is { } start
         ? LegalDeadline.Remaining(LegalDeadline.Due(LegalStage, DateOnly.FromDateTime(start)), shell.Today)
-        : "";
+        : "Укажите дату исходного события.";
+
+    public string LegalStageSummary => $"{LegalStage.Title}: " + (LegalStage.Days > 0
+        ? $"{LegalStage.Days} дн." : LegalStage.Months > 0 ? $"{LegalStage.Months} мес." : $"{LegalStage.Years} г.") +
+        " от указанной даты. Это справочный расчёт; список должников и судебное дело не изменяются.";
 
     private int _caseId;
     [ObservableProperty] private string _caseOrder = "";
@@ -273,6 +297,7 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
 
     [ObservableProperty] private bool _packageDebtNote = true;
     [ObservableProperty] private bool _packageHistory = true;
+    [ObservableProperty] private bool _packageContractScans = true;
 
     public IReadOnlyList<ClaimVariant> ClaimVariants => ClaimNotice.Variants;
 
@@ -284,6 +309,7 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
     [RelayCommand]
     private void PrintClaim()
     {
+        if (!RequirePersonTemplate()) return;
         if (SelectedDebtor is not { } d) { shell.Status = "Выберите должника."; return; }
         shell.OpenWord(MainViewModel.PrintPath("уведомление", d.Account, ".docx"), $"уведомление {d.FullName}",
             path => WordForms.Claim($"г. Омск, {d.Address}", ClaimText, path));
@@ -297,8 +323,8 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
     private async Task PrintAllClaims()
     {
         if (await LoadAllDebtorsAsync() is not { } all) return;
-        var rows = all.Where(d => d.Unpaid >= Billing.ClaimUnpaidMonths && d.Debt > 0 && d.CourtCase is null && d.ContractTerminated is null).ToList();
-        if (rows.Count == 0) { shell.Status = $"Нет должников без судебного приказа с долгом от {Billing.ClaimUnpaidMonths} мес."; return; }
+        var rows = all.Where(d => !d.IsLegalEntity && d.Unpaid >= Billing.ClaimUnpaidMonths && d.Debt > 0 && d.CourtCase is null && d.ContractTerminated is null).ToList();
+        if (rows.Count == 0) { shell.Status = $"Нет должников-физлиц без судебного приказа с долгом от {Billing.ClaimUnpaidMonths} мес."; return; }
         shell.OpenWord(MainViewModel.PrintPath("уведомления", shell.Today.ToString("yyyy-MM-dd"), ".docx"), $"уведомлений: {rows.Count}",
             path => WordForms.Claims(rows.Select(d =>
             {
@@ -312,10 +338,37 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
     private async Task ExportCourtPackage()
     {
         if (SelectedDebtor is not { } d) { shell.Status = "Выберите должника."; return; }
-        if (!PackageDebtNote && !PackageHistory) { shell.Status = "Отметьте, что положить в пакет."; return; }
-        if (await LoadDebtorAsync(d) is not { } s) return;
-        shell.OpenPdf(MainViewModel.PrintPath("пакет-для-суда", d.Account), $"пакет для суда {d.FullName}",
-            path => PdfForms.CourtPackage(s, shell.Today, PackageDebtNote, PackageHistory, path));
+        var debtNote = PackageDebtNote;
+        var history = PackageHistory;
+        var includeContracts = PackageContractScans;
+        if (!debtNote && !history) { shell.Status = "Отметьте, что положить в пакет."; return; }
+        var user = shell.User;
+        var module = shell.Module;
+        bool Current() => shell.User == user && SelectedDebtor == d && shell.Module == module;
+        try
+        {
+            if (await LoadDebtorAsync(d) is not { } s || !Current()) return;
+            var contracts = includeContracts
+                ? (await shell.Store.LoadDocumentsAsync(d.SubscriberId)).Where(doc => doc.Kind == SubscriberDocuments.ContractKind).ToList()
+                : [];
+            if (!Current()) return;
+            var path = MainViewModel.PrintPath(s.IsLegalEntity ? "расчётный-комплект-юрлица" : "пакет-физлица", d.Account, ".zip");
+            await LegalPackageArchive.WriteAsync(path, s, shell.Today, debtNote, history, contracts, async id =>
+            {
+                if (!Current()) throw new OperationCanceledException();
+                var content = await shell.Store.LoadDocumentFileAsync(id);
+                if (!Current()) throw new OperationCanceledException();
+                return content;
+            });
+            if (!Current()) return;
+            shell.OpenFile(path);
+            shell.Status = $"Открыт ZIP: {(s.IsLegalEntity ? "расчётный комплект юрлица" : "пакет для суда физлица")} {d.FullName}; сканов договора: {contracts.Count}.";
+        }
+        catch (OperationCanceledException) when (!Current()) { }
+        catch (Exception e) when (e is StoreException or IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            if (Current()) shell.Status = $"Не удалось выгрузить комплект: {e.Message}";
+        }
     }
 
     [ObservableProperty] private DateTime? _penaltyDate;
@@ -324,9 +377,16 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
     [RelayCommand]
     private async Task PrintPenalty()
     {
+        if (!RequirePersonTemplate())
+        {
+            if (SelectedDebtor?.IsLegalEntity == true)
+                shell.Status = "Для юрлиц ставка и условия неустойки в договоре не заданы. Процент из договора физлица не применяется.";
+            return;
+        }
         if (SelectedDebtor is not { } d) { shell.Status = "Выберите должника."; return; }
         var date = PenaltyDate is { } chosen ? DateOnly.FromDateTime(chosen) : shell.Today;
         if (await LoadDebtorAsync(d) is not { } s) return;
+        if (s.IsLegalEntity) { shell.Status = "Для юрлиц ставка и условия неустойки в договоре не заданы."; return; }
         shell.OpenPdf(MainViewModel.PrintPath("неустойка", d.Account), $"расчёт неустойки {d.FullName}", path => PdfForms.Penalty(s, date, path));
     }
 
@@ -345,8 +405,10 @@ public sealed partial class LegalViewModel(MainViewModel shell) : ObservableObje
 
     private async Task OpenApplication(string file, string title, Func<Subscriber, (string[] Header, string Title, string[] Body)> text)
     {
+        if (!RequirePersonTemplate()) return;
         if (SelectedDebtor is not { } d) { shell.Status = "Выберите должника."; return; }
         if (await LoadDebtorAsync(d) is not { } s) return;
+        if (s.IsLegalEntity) { shell.Status = "Для юрлиц согласованного шаблона заявления пока нет."; return; }
         var (header, heading, body) = text(s);
         shell.OpenWord(MainViewModel.PrintPath(file, d.Account, ".docx"), $"{title} {d.FullName}",
             path => WordForms.Application(header, heading, body, path));

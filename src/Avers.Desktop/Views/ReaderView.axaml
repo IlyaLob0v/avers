@@ -2,10 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Avers.Desktop.ViewModels"
              xmlns:d="using:Avers.Domain"
+             xmlns:contracts="using:Avers.Contracts"
              x:Class="Avers.Desktop.Views.ReaderView"
              x:DataType="vm:MainViewModel">
+  <ScrollViewer>
   <StackPanel Margin="16,0,16,12">
-    <TextBlock Classes="hint" TextWrapping="Wrap" Text="Радиомеханик входит с правом читателя. Улица и номер дома. Схема на экране, выгрузка файла недоступна." />
+    <TextBlock Classes="hint" TextWrapping="Wrap" Text="Выберите дом, чтобы посмотреть открытые заявки, технические сведения и схему." />
     <Border Classes="card" Margin="0,8,0,10" Padding="12,6">
       <StackPanel Orientation="Horizontal">
         <TextBlock Classes="label" Text="Улица" />
@@ -26,6 +28,42 @@
         </ComboBox>
       </StackPanel>
     </Border>
+    <HeaderedContentControl Classes="group" Header="Открытые заявки дома" Margin="0,0,0,10">
+      <StackPanel Spacing="8">
+        <DockPanel>
+          <Button DockPanel.Dock="Right" Content="Обновить заявки" Command="{Binding RefreshReaderTicketsCommand}" IsEnabled="{Binding !IsLoadingReaderTickets}" />
+          <TextBlock Text="{Binding ReaderTicketsStatus}" TextWrapping="Wrap" VerticalAlignment="Center" />
+        </DockPanel>
+        <DataGrid ItemsSource="{Binding ReaderTickets}" AutoGenerateColumns="False" IsReadOnly="True"
+                  Height="260" RowHeight="NaN" AutomationProperties.Name="Открытые заявки выбранного дома">
+          <DataGrid.Columns>
+            <DataGridTemplateColumn Header="Заявка" Width="110">
+              <DataGridTemplateColumn.CellTemplate><DataTemplate x:DataType="contracts:MobileTicketDto">
+                <StackPanel Margin="5"><TextBlock Text="{Binding Number, StringFormat='№ {0}'}" /><TextBlock Classes="hint" Text="{Binding Date, StringFormat='{}{0:dd.MM.yyyy}'}" /></StackPanel>
+              </DataTemplate></DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+            <DataGridTemplateColumn Header="Под. / кв." Width="85">
+              <DataGridTemplateColumn.CellTemplate><DataTemplate x:DataType="contracts:MobileTicketDto">
+                <StackPanel Margin="5"><TextBlock Text="{Binding Section, StringFormat='Под. {0}'}" /><TextBlock Text="{Binding Apartment, StringFormat='Кв. {0}'}" /></StackPanel>
+              </DataTemplate></DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+            <DataGridTemplateColumn Header="Неисправность" Width="3*" MinWidth="190">
+              <DataGridTemplateColumn.CellTemplate><DataTemplate x:DataType="contracts:MobileTicketDto">
+                <StackPanel Margin="5"><TextBlock Classes="hint" Text="{Binding KindTitle}" /><TextBlock Text="{Binding Fault}" TextWrapping="Wrap" /></StackPanel>
+              </DataTemplate></DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+            <DataGridTemplateColumn Header="Ответственный" Width="2*" MinWidth="140">
+              <DataGridTemplateColumn.CellTemplate><DataTemplate x:DataType="contracts:MobileTicketDto"><TextBlock Margin="5" Text="{Binding Responsible}" TextWrapping="Wrap" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+            <DataGridTemplateColumn Header="Состояние и срок" Width="160">
+              <DataGridTemplateColumn.CellTemplate><DataTemplate x:DataType="contracts:MobileTicketDto">
+                <StackPanel Margin="5"><TextBlock Text="{Binding StatusTitle}" /><TextBlock Classes="hint" Text="{Binding DueDate, StringFormat='До {0:dd.MM.yyyy}'}" /></StackPanel>
+              </DataTemplate></DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+          </DataGrid.Columns>
+        </DataGrid>
+      </StackPanel>
+    </HeaderedContentControl>
     <Grid ColumnDefinitions="*,*">
       <HeaderedContentControl Classes="group" Margin="0,0,5,10" Header="Организация">
         <StackPanel>
@@ -48,4 +86,5 @@
     </Grid>
     <Button HorizontalAlignment="Left" Content="Схема СКПТ (без выгрузки)" Command="{Binding GoCommand}" CommandParameter="{x:Static d:AppModule.Scheme}" />
   </StackPanel>
+  </ScrollViewer>
 </UserControl>

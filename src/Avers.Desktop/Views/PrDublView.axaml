@@ -4,6 +4,13 @@
              x:Class="Avers.Desktop.Views.PrDublView"
              x:DataType="vm:ReceiptsViewModel">
   <StackPanel Margin="16,0,16,12">
+    <Border Classes="card" Padding="12,8" Margin="0,0,0,10">
+      <StackPanel>
+        <TextBlock Classes="legend" Text="Платежи по единым квитанциям ОЭК" />
+        <TextBlock TextWrapping="Wrap" Text="Введите лицевой счёт, нажмите «Найти» и выберите период. Здесь можно проверить строки платежей из единой квитанции; сами единые квитанции выпускает ОЭК." />
+        <TextBlock Classes="hint" Margin="0,4,0,0" TextWrapping="Wrap" Text="Администратор и начальник АДС также загружают ежемесячный файл ОЭК. N_OS, N_KASS, N_OPER и N_КВИТ — служебные реквизиты исходной записи для сверки с квитанцией." />
+      </StackPanel>
+    </Border>
     <Border Classes="card" Padding="12,6,4,8">
       <StackPanel>
         <Grid ColumnDefinitions="*,*,*,*,Auto">

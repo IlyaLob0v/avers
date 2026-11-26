@@ -37,6 +37,15 @@ public static class TicketJournal
     /// <summary>Срок выполнения заявки, дней от приёма (Q-31).</summary>
     public const int DueDays = 3;
 
+    public static string StatusText(TicketStatus status) => status switch
+    {
+        TicketStatus.Accepted => "Принята",
+        TicketStatus.InProgress => "В работе",
+        TicketStatus.Done => "Выполнена",
+        TicketStatus.Deferred => "Отложена",
+        _ => "Неизвестное состояние"
+    };
+
     public static DateOnly DueDate(WorkTicket ticket) => ticket.Date.AddDays(DueDays);
 
     /// <summary>Срок прошёл, а заявка принята или в работе. Отложенная не просрочена: её отложили с причиной.</summary>

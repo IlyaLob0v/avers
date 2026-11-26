@@ -30,17 +30,20 @@ public sealed partial class MainViewModel
     private bool HasPaymentInput => !string.IsNullOrWhiteSpace(PaymentAmount);
 
     public bool CanUseWorkspace => !IsLoadingSubscriber && !HasPendingEditTransition;
-    public bool CanSavePendingEdits => !HasPaymentInput;
+    public bool CanSavePendingEdits => !HasPaymentInput && !TicketsScreen.HasNewTicketDraft;
     public string PendingEditMessage => HasPaymentInput
         ? "В поле оплаты осталась введённая сумма. Можно остаться либо очистить ввод и несохранённые правки перед переходом. Результат внесения оплаты указан ниже; переход сам по себе не проводит оплату."
-        : "Есть несохранённые изменения дома или карточки абонента. Сохраните их, отмените или останьтесь на текущем экране.";
+        : TicketsScreen.HasNewTicketDraft
+            ? "Новая заявка ещё не принята. Останьтесь, чтобы проверить и принять её, либо отмените черновик перед переходом."
+            : "Есть несохранённые изменения дома, панели домофона, заявки или карточки абонента. Сохраните их, отмените или останьтесь на текущем экране.";
 
     /// <summary>Вызывается до изменения экрана или записи; continuation повторяет весь переход.</summary>
     public bool TryLeaveEdits(Func<Task> continuation)
     {
         if (_allowEditTransition) return true;
         if (HasPendingEditTransition) return false;
-        if (!HasHouseEdits && !HasCardEdits && !HasPaymentInput) return true;
+        if (!HasHouseEdits && !HasCardEdits && !HasPaymentInput && !IntercomScreen.HasPanelEdits
+            && !TicketsScreen.HasNewTicketDraft && !TicketsScreen.HasTicketEdits) return true;
         _pendingEditTransition = continuation;
         HasPendingEditTransition = true;
         return false;
@@ -107,8 +110,11 @@ public sealed partial class MainViewModel
     private async Task DiscardEditsAndContinue()
     {
         if (IsResolvingEditTransition) return;
+        if (TicketsScreen.HasTicketEdits) TicketsScreen.DiscardTicketEdits();
         if (HasHouseEdits) DiscardHouseEdits();
         if (HasCardEdits) BindCardEditors();
+        if (IntercomScreen.HasPanelEdits) IntercomScreen.DiscardPanelEdits();
+        if (TicketsScreen.HasNewTicketDraft) TicketsScreen.DiscardNewTicketDraft();
         PaymentAmount = "";
         await ContinueEditTransition();
     }
@@ -116,12 +122,15 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private async Task SaveEditsAndContinue()
     {
-        if (IsResolvingEditTransition || _pendingEditTransition is null || HasPaymentInput) return;
+        if (IsResolvingEditTransition || _pendingEditTransition is null || !CanSavePendingEdits) return;
         IsResolvingEditTransition = true;
         try
         {
+            // Сохраняем заявку до перечитывания дома, которое заново привязывает её редакторы.
+            if (TicketsScreen.HasTicketEdits && !await TicketsScreen.SaveTicketEditsAsync()) return;
             // Перезагрузка дома сохраняет редакторы текущей карточки с тем же Id.
             if (HasHouseEdits && !await SaveHouseEdits()) return;
+            if (IntercomScreen.HasPanelEdits && !await IntercomScreen.SavePanelEditsAsync()) return;
             if (HasCardEdits && !await SaveCardEdits()) return;
             await ContinueEditTransition();
         }

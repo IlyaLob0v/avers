@@ -9,29 +9,31 @@
   <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" Margin="16,0,16,12" VerticalAlignment="Top">
     <HeaderedContentControl Classes="group" Margin="0,0,5,0" Header="Досудебное уведомление">
       <StackPanel>
-        <ComboBox Classes="cell" Width="300" Margin="0,0,0,8" ItemsSource="{Binding ClaimVariants}" SelectedItem="{Binding ClaimVariant}" DisplayMemberBinding="{Binding Title, x:DataType=pr:ClaimVariant}" />
-        <TextBox Height="220" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" Text="{Binding ClaimText}" />
-        <Button Classes="primary" HorizontalAlignment="Left" Margin="0,8,0,0" Content="Открыть в Word" Command="{Binding PrintClaimCommand}" />
+        <ComboBox Classes="cell" Width="300" Margin="0,0,0,8" IsEnabled="{Binding CanUsePersonTemplates}" ItemsSource="{Binding ClaimVariants}" SelectedItem="{Binding ClaimVariant}" DisplayMemberBinding="{Binding Title, x:DataType=pr:ClaimVariant}" />
+        <TextBox Height="220" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top" Text="{Binding ClaimText}" IsReadOnly="{Binding !CanUsePersonTemplates}" />
+        <Button Classes="primary" HorizontalAlignment="Left" Margin="0,8,0,0" Content="Открыть в Word" IsEnabled="{Binding CanUsePersonTemplates}" Command="{Binding PrintClaimCommand}" />
         <TextBlock Classes="hint" Margin="0,6,0,0" TextWrapping="Wrap" Text="Текст по образцу юристов; адрес, сумму и дату отключения Аверс подставляет сам. Окончательно правится в Word." />
       </StackPanel>
     </HeaderedContentControl>
-    <HeaderedContentControl Grid.Column="1" Classes="group" Margin="5,0,0,0" Header="Пакет документов для суда">
+    <HeaderedContentControl Grid.Column="1" Classes="group" Margin="5,0,0,0" Header="{Binding PackageTitle}">
       <StackPanel>
         <TextBlock FontWeight="SemiBold" Text="{Binding SelectedDebtor.FullName}" />
         <TextBlock Classes="hint" Text="{Binding SelectedDebtor.Case}" />
+        <TextBlock TextWrapping="Wrap" Margin="0,6,0,0" Text="{Binding PackageExplanation}" />
         <CheckBox Margin="0,6,0,0" IsChecked="{Binding PackageDebtNote}" Content="Справка о задолженности" />
         <CheckBox IsChecked="{Binding PackageHistory}" Content="История платежей (лицевой счёт за каждый год)" />
-        <Button Classes="primary" HorizontalAlignment="Left" Margin="0,10,0,0" Content="Выгрузить пакет в PDF" Command="{Binding ExportCourtPackageCommand}" />
-        <StackPanel Orientation="Horizontal" Margin="0,10,0,0" Spacing="8">
+        <CheckBox IsChecked="{Binding PackageContractScans}" Content="Включить все сканы договора абонента (список ниже)" />
+        <Button Classes="primary" HorizontalAlignment="Left" Margin="0,10,0,0" Content="Выгрузить комплект в ZIP" Command="{Binding ExportCourtPackageCommand}" />
+        <WrapPanel Orientation="Horizontal" Margin="0,10,0,0" IsEnabled="{Binding CanUsePersonTemplates}">
           <TextBlock Classes="label" VerticalAlignment="Center" Text="Неустойка на" />
           <CalendarDatePicker Width="110" PlaceholderText="сегодня" SelectedDate="{Binding PenaltyDate}" />
           <Button Content="Расчёт неустойки" Command="{Binding PrintPenaltyCommand}" />
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Spacing="8">
+        </WrapPanel>
+        <WrapPanel Orientation="Horizontal" Margin="0,8,0,0" IsEnabled="{Binding CanUsePersonTemplates}">
           <Button Content="Заявление на судебный приказ (Word)" Command="{Binding PrintCourtOrderCommand}" />
           <Button Content="Заявление в ОСП (Word)" Command="{Binding PrintEnforcementCommand}" />
-        </StackPanel>
-        <TextBlock Classes="hint" Margin="0,6,0,0" TextWrapping="Wrap" Text="Копию договора приложите из бумажного архива." />
+        </WrapPanel>
+        <TextBlock Classes="hint" Margin="0,6,0,0" TextWrapping="Wrap" Text="В ZIP входят расчёт.pdf, договорные сканы в исходном формате и Состав.txt. Отсутствие скана отмечается в перечне; судебные документы автоматически не добавляются." />
       </StackPanel>
     </HeaderedContentControl>
     <HeaderedContentControl Grid.Row="1" Grid.ColumnSpan="2" Classes="group" Margin="0,10,0,0" Header="Судебное дело (последнее)">

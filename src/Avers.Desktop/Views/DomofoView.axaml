@@ -8,7 +8,7 @@
     <Border Classes="card" Padding="12,6" Margin="0,0,0,10">
       <StackPanel Orientation="Horizontal">
         <TextBlock Classes="label" Text="Улица" />
-        <ComboBox Classes="cell" Width="190" Margin="0,0,12,0" ItemsSource="{Binding Shell.Streets}" SelectedItem="{Binding Shell.SelectedStreet}">
+        <ComboBox Classes="cell" Width="190" Margin="0,0,12,0" ItemsSource="{Binding Shell.Streets}" SelectedItem="{Binding SelectedStreet}">
           <ComboBox.ItemTemplate>
             <DataTemplate x:DataType="d:Street">
               <TextBlock Text="{Binding Name}" />
@@ -16,7 +16,7 @@
           </ComboBox.ItemTemplate>
         </ComboBox>
         <TextBlock Classes="label" Text="Дом" />
-        <ComboBox Classes="cell" Width="90" Margin="0,0,12,0" ItemsSource="{Binding Shell.HousesOnStreet}" SelectedItem="{Binding Shell.SelectedHouse}">
+        <ComboBox Classes="cell" Width="90" Margin="0,0,12,0" ItemsSource="{Binding Shell.HousesOnStreet}" SelectedItem="{Binding SelectedHouse}">
           <ComboBox.ItemTemplate>
             <DataTemplate x:DataType="d:House">
               <TextBlock Text="{Binding Number}" />
@@ -29,7 +29,11 @@
     <Grid ColumnDefinitions="*,*" VerticalAlignment="Top">
       <HeaderedContentControl Classes="group" Margin="0,0,5,0" Header="Панель подъезда">
         <StackPanel>
-          <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+          <StackPanel IsVisible="{Binding HasNoPanels}" Margin="0,0,0,12" Spacing="6">
+            <TextBlock Text="В этом доме ещё нет панелей домофона." TextWrapping="Wrap" />
+            <TextBlock Classes="hint" Text="Чтобы заполнить технические сведения подъезда, нажмите «Добавить панель»." TextWrapping="Wrap" IsVisible="{Binding CanEditIntercoms}" />
+          </StackPanel>
+          <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" IsVisible="{Binding HasPanelEditor}">
             <TextBlock Classes="label" Text="Подъезд" VerticalAlignment="Center" />
             <ComboBox Grid.Column="1" Classes="cell" HorizontalAlignment="Stretch" ItemsSource="{Binding Shell.SelectedHouse.Intercoms}" SelectedItem="{Binding SelectedIntercomPanel}"
                       PlaceholderText="нет панелей">
@@ -51,15 +55,20 @@
             <TextBox Grid.Row="5" Grid.Column="1" Classes="cell" Text="{Binding Intercom.Power}" IsReadOnly="{Binding !CanEditIntercoms}" />
           </Grid>
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0" IsVisible="{Binding CanEditIntercoms}">
-            <Button Content="Новая панель" Command="{Binding NewIntercomPanelCommand}" />
+            <Button Content="Добавить панель" Command="{Binding NewIntercomPanelCommand}" />
             <Button Classes="primary" Margin="0" Content="Сохранить панель" Command="{Binding SaveIntercomPanelCommand}" />
           </StackPanel>
         </StackPanel>
       </HeaderedContentControl>
       <HeaderedContentControl Grid.Column="1" Classes="group" Margin="5,0,0,0" Header="Заявки по домофону">
         <StackPanel>
-          <DataGrid Height="220" ItemsSource="{Binding IntercomTickets}" SelectedItem="{Binding SelectedIntercomTicket}" AutoGenerateColumns="False" IsReadOnly="True">
+          <DockPanel Margin="0,0,0,8">
+            <CheckBox DockPanel.Dock="Right" Content="Показать выполненные" IsChecked="{Binding ShowClosedIntercomTickets}" />
+            <TextBlock Classes="hint" Text="{Binding IntercomTicketSummary}" VerticalAlignment="Center" />
+          </DockPanel>
+          <DataGrid Height="220" ItemsSource="{Binding VisibleIntercomTickets}" SelectedItem="{Binding SelectedIntercomTicket}" AutoGenerateColumns="False" IsReadOnly="True">
             <DataGrid.Columns>
+              <DataGridTextColumn Header="№" Binding="{Binding Id}" Width="58" />
               <DataGridTextColumn Header="Дата" Binding="{Binding Date}" Width="100" />
               <DataGridTextColumn Header="Под." Binding="{Binding Entrance}" Width="56" />
               <DataGridTextColumn Header="Неисправность" Binding="{Binding Fault}" Width="*" />
@@ -68,10 +77,14 @@
             </DataGrid.Columns>
           </DataGrid>
           <StackPanel IsVisible="{Binding CanAcceptIntercomTickets}">
-            <Grid ColumnDefinitions="70,*" RowDefinitions="Auto,Auto" Margin="0,8,0,0">
-              <TextBox Classes="cell" Margin="0,0,8,6" PlaceholderText="Под." Text="{Binding IntercomEntrance}" />
-              <TextBox Grid.Column="1" Classes="cell" Margin="0,0,0,6" PlaceholderText="Неисправность" Text="{Binding IntercomFault}" />
-              <ComboBox Grid.Row="1" Grid.ColumnSpan="2" Classes="cell" HorizontalAlignment="Stretch" PlaceholderText="Радиомеханик"
+            <TextBlock Text="Новая заявка по домофону" FontWeight="SemiBold" Margin="0,12,0,6" />
+            <Grid ColumnDefinitions="70,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,0,0,0">
+              <TextBlock Classes="label" Text="Подъезд" />
+              <TextBlock Grid.Column="1" Classes="label" Text="Неисправность" />
+              <TextBox Grid.Row="1" Classes="cell" Margin="0,0,8,6" Text="{Binding IntercomEntrance}" />
+              <TextBox Grid.Row="1" Grid.Column="1" Classes="cell" Margin="0,0,0,6" PlaceholderText="Что произошло со слов заявителя" Text="{Binding IntercomFault}" />
+              <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Classes="label" Text="Ответственный радиомеханик" />
+              <ComboBox Grid.Row="3" Grid.ColumnSpan="2" Classes="cell" HorizontalAlignment="Stretch" PlaceholderText="Выберите радиомеханика"
                         ItemsSource="{Binding Shell.Mechanics}" SelectedItem="{Binding IntercomMechanic}">
                 <ComboBox.ItemTemplate>
                   <DataTemplate x:DataType="d:Mechanic">
@@ -81,7 +94,7 @@
               </ComboBox>
             </Grid>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-              <Button Content="Выполнена" Command="{Binding CloseIntercomTicketCommand}" ToolTip.Tip="Отметить выбранную заявку выполненной" />
+              <Button Content="Закрыть выбранную" Command="{Binding CloseIntercomTicketCommand}" ToolTip.Tip="Отметить выбранную открытую заявку выполненной" />
               <Button Classes="primary" Margin="0" Content="Принять заявку" Command="{Binding AcceptIntercomTicketCommand}" />
             </StackPanel>
           </StackPanel>

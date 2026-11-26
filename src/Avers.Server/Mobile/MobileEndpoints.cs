@@ -22,7 +22,20 @@ public static class MobileEndpoints
 
         api.MapGet("/houses", Search);
         api.MapGet("/houses/{id:int}", Get);
+        api.MapGet("/houses/{id:int}/tickets", Tickets);
         api.MapGet("/schemes/{id:int}", SchemeEndpoints.Screen);
+    }
+
+    private static async Task<Results<Ok<MobileTicketListDto>, NotFound>> Tickets(
+        int id, AversDbContext db, CancellationToken ct)
+    {
+        if (!await db.Houses.AnyAsync(h => h.Id == id, ct)) return TypedResults.NotFound();
+        var query = db.Tickets.AsNoTracking().Where(t => t.HouseId == id && t.Status != TicketStatus.Done);
+        var total = await query.CountAsync(ct);
+        var items = await query.OrderByDescending(t => t.Date).ThenByDescending(t => t.Number).ThenByDescending(t => t.Id)
+            .Take(200).Select(t => new MobileTicketDto(t.Id, t.Number, t.Date, t.Section, t.Apartment,
+                Billing.KindTitle(t.Kind), t.Fault, t.Mechanic, TicketJournal.StatusText(t.Status), t.Date.AddDays(TicketJournal.DueDays))).ToListAsync(ct);
+        return TypedResults.Ok(new MobileTicketListDto(total, items));
     }
 
     private static async Task<Ok<List<HouseDto>>> Search(

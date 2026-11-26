@@ -191,6 +191,23 @@ public sealed class ServerStore(HttpClient http) : IAversStore
     public Task DeleteDocumentAsync(int documentId) =>
         Write(() => http.DeleteAsync($"api/documents/{documentId}"));
 
+    public Task<List<DocumentInfo>> LoadContractDocumentsAsync(int subscriberId) =>
+        Read<List<DocumentInfo>>(() => http.GetAsync($"api/subscribers/{subscriberId}/contract-documents"));
+
+    public async Task<byte[]?> LoadContractDocumentFileAsync(int documentId)
+    {
+        using var response = await Send(() => http.GetAsync($"api/contract-documents/{documentId}/file"));
+        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+        await EnsureSuccess(response);
+        return await response.Content.ReadAsByteArrayAsync();
+    }
+
+    public Task AddContractDocumentAsync(int subscriberId, AddDocumentRequest request) =>
+        Write(() => http.PostAsJsonAsync($"api/subscribers/{subscriberId}/contract-documents", request, Json));
+
+    public Task DeleteContractDocumentAsync(int documentId) =>
+        Write(() => http.DeleteAsync($"api/contract-documents/{documentId}"));
+
     public Task SaveIntercomPanelAsync(int houseId, IntercomPanel draft)
     {
         var request = new IntercomPanelRequest(draft.Entrance, draft.PanelType, draft.SwitchBlock, draft.Keys, draft.Power);
@@ -456,6 +473,9 @@ public sealed class ServerStore(HttpClient http) : IAversStore
                       ?? problem?.Detail ?? problem?.Title ?? $"Сервер ответил {(int)response.StatusCode}.";
         throw new StoreException(message, outcomeUnknown: (int)response.StatusCode >= 500);
     }
+
+    public Task<MobileTicketListDto> LoadMobileTicketsAsync(int houseId) =>
+        Read<MobileTicketListDto>(() => http.GetAsync($"api/mobile/houses/{houseId}/tickets"));
 
     private sealed record TokenResponse(string AccessToken);
 

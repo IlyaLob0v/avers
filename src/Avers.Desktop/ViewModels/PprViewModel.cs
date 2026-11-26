@@ -26,6 +26,7 @@ public sealed partial class PprViewModel(MainViewModel shell) : ObservableObject
 
     public bool CanEditPpr => shell.User is { } u && RoleCatalog.Can(u.Role, AppModule.Anten, out var level) && level == RoleCatalog.AccessLevel.Edit;
     public string PprCopyTitle => $"Скопировать план на {PprYear + 1}";
+    public string PprFilterTitle => PprByZone ? "Зона" : "Организация";
 
     /// <summary>Сменился пользователь: права на отметки.</summary>
     internal void RefreshRights() => OnPropertyChanged(nameof(CanEditPpr));
@@ -36,7 +37,11 @@ public sealed partial class PprViewModel(MainViewModel shell) : ObservableObject
         RefreshPpr();
     }
 
-    partial void OnPprByZoneChanged(bool value) => LoadPprFilters();
+    partial void OnPprByZoneChanged(bool value)
+    {
+        OnPropertyChanged(nameof(PprFilterTitle));
+        LoadPprFilters();
+    }
     partial void OnPprFilterChanged(string? value) => RefreshPpr();
     partial void OnPprOnlyOverdueChanged(bool value) => RefreshPpr();
 

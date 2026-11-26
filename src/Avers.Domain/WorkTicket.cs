@@ -28,5 +28,6 @@ public sealed class WorkTicket
 
     public string RisersNote { get; set; } = "";
     public string StatusLabel => Billing.StatusTitle(Status);
+    public string StatusDescription => TicketJournal.StatusText(Status);
     public string KindLabel => Billing.KindTitle(Kind);
 }
